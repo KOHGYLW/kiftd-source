@@ -1,0 +1,39 @@
+package kohgylw.kiftd.server.configation;
+
+import org.springframework.web.servlet.resource.*;
+
+import com.google.gson.Gson;
+
+import org.springframework.beans.factory.annotation.*;
+import org.springframework.web.servlet.config.annotation.*;
+import kohgylw.kiftd.server.util.*;
+import java.io.*;
+import javax.servlet.*;
+import org.springframework.boot.web.servlet.*;
+import org.springframework.context.annotation.*;
+
+@Configurable
+@ComponentScan({ "kohgylw.kiftd.server.controller", "kohgylw.kiftd.server.service.impl", "kohgylw.kiftd.server.util" })
+@ServletComponentScan({ "kohgylw.kiftd.server.listener", "kohgylw.kiftd.server.filter" })
+@Import({ DataAccess.class })
+public class MVC extends ResourceHttpRequestHandler implements WebMvcConfigurer {
+	public void addResourceHandlers(final ResourceHandlerRegistry registry) {
+		registry.addResourceHandler(new String[] { "/**" }).addResourceLocations(new String[] {
+				"file:" + ConfigureReader.instance().getPath() + File.separator + "webContext" + File.separator });
+		registry.addResourceHandler(new String[] { "/fileblocks/**" })
+				.addResourceLocations(new String[] { "file:" + ConfigureReader.instance().getFileBlockPath() });
+	}
+
+	@Bean
+	public MultipartConfigElement multipartConfigElement() {
+		final MultipartConfigFactory factory = new MultipartConfigFactory();
+		factory.setMaxFileSize(-1L);
+		factory.setLocation(ConfigureReader.instance().getTemporaryfilePath());
+		return factory.createMultipartConfig();
+	}
+
+	@Bean
+	public Gson gson() {
+		return new Gson();
+	}
+}
