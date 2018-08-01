@@ -28,6 +28,7 @@ public class SettingWindow extends KiftdDynamicWindow {
 	protected static UpdateSetting us;
 
 	private SettingWindow() {
+		setUIFont();
 		(SettingWindow.window = new JDialog(ServerUIModule.window, "kiftd-设置")).setModal(true);
 		SettingWindow.window.setSize(400, 320);
 		SettingWindow.window.setLocation(150, 150);
@@ -35,15 +36,15 @@ public class SettingWindow extends KiftdDynamicWindow {
 		SettingWindow.window.setResizable(false);
 		SettingWindow.window.setLayout(new BoxLayout(SettingWindow.window.getContentPane(), 3));
 		final JPanel titlebox = new JPanel(new FlowLayout(1));
-		titlebox.setBorder(new EmptyBorder(0, 0, -15, 0));
+		titlebox.setBorder(new EmptyBorder(0, 0, (int)(-15*proportion), 0));
 		final JLabel title = new JLabel("服务器设置 Server Setting");
-		title.setFont(new Font("宋体", 1, 20));
+		title.setFont(new Font("宋体", 1, (int)(20*proportion)));
 		titlebox.add(title);
 		SettingWindow.window.add(titlebox);
 		final JPanel settingbox = new JPanel(new GridLayout(5, 1));
 		settingbox.setBorder(new EtchedBorder());
 		final JPanel mlbox = new JPanel(new FlowLayout(1));
-		mlbox.setBorder(new EmptyBorder(0, 0, -5, 0));
+		mlbox.setBorder(new EmptyBorder(0, 0, (int)(-5*proportion), 0));
 		final JLabel mltitle = new JLabel("必须登入(must login)：");
 		(SettingWindow.mlinput = new JComboBox<String>()).addItem(ML_OPEN);
 		SettingWindow.mlinput.addItem(ML_CLOSE);
@@ -51,13 +52,13 @@ public class SettingWindow extends KiftdDynamicWindow {
 		mlbox.add(mltitle);
 		mlbox.add(SettingWindow.mlinput);
 		final JPanel portbox = new JPanel(new FlowLayout(1));
-		portbox.setBorder(new EmptyBorder(0, 0, -20, 0));
+		portbox.setBorder(new EmptyBorder(0, 0, (int)(-20*proportion), 0));
 		final JLabel porttitle = new JLabel("端口(port)：");
 		(SettingWindow.portinput = new JTextField()).setPreferredSize(new Dimension(100, 25));
 		portbox.add(porttitle);
 		portbox.add(SettingWindow.portinput);
 		final JPanel bufferbox = new JPanel(new FlowLayout(1));
-		bufferbox.setBorder(new EmptyBorder(0, 0, -20, 0));
+		bufferbox.setBorder(new EmptyBorder(0, 0, (int)(-20*proportion), 0));
 		final JLabel buffertitle = new JLabel("缓存大小(buffer)：");
 		(SettingWindow.bufferinput = new JTextField()).setPreferredSize(new Dimension(170, 25));
 		final JLabel bufferUnit = new JLabel("KB");
@@ -65,7 +66,7 @@ public class SettingWindow extends KiftdDynamicWindow {
 		bufferbox.add(SettingWindow.bufferinput);
 		bufferbox.add(bufferUnit);
 		final JPanel logbox = new JPanel(new FlowLayout(1));
-		logbox.setBorder(new EmptyBorder(0, 0, -20, 0));
+		logbox.setBorder(new EmptyBorder(0, 0, (int)(-20*proportion), 0));
 		final JLabel logtitle = new JLabel("日志等级(port)：");
 		(SettingWindow.logLevelinput = new JComboBox<String>()).addItem("记录全部(ALL)");
 		SettingWindow.logLevelinput.addItem("仅异常(EXCEPTION)");
@@ -74,7 +75,7 @@ public class SettingWindow extends KiftdDynamicWindow {
 		logbox.add(logtitle);
 		logbox.add(SettingWindow.logLevelinput);
 		final JPanel filePathBox = new JPanel(new FlowLayout(1));
-		filePathBox.setBorder(new EmptyBorder(0, 0, -20, 0));
+		filePathBox.setBorder(new EmptyBorder(0, 0, (int)(-20*proportion), 0));
 		final JLabel filePathtitle = new JLabel("文件系统路径(file system path)：");
 		SettingWindow.changeFileSystemPath = new JButton("选择(Choose)");
 		filePathBox.add(filePathtitle);
@@ -86,7 +87,7 @@ public class SettingWindow extends KiftdDynamicWindow {
 		settingbox.add(filePathBox);
 		SettingWindow.window.add(settingbox);
 		final JPanel buttonbox = new JPanel(new FlowLayout(1));
-		buttonbox.setBorder(new EmptyBorder(0, 0, -20, 0));
+		buttonbox.setBorder(new EmptyBorder(0, 0, (int)(-20*proportion), 0));
 		SettingWindow.update = new JButton("应用(Update)");
 		SettingWindow.cancel = new JButton("取消(Cancel)");
 		buttonbox.add(SettingWindow.update);
@@ -170,7 +171,6 @@ public class SettingWindow extends KiftdDynamicWindow {
 			}
 		});
 		modifyComponentSize(window);
-		modifyComponentSize(changeFileSystemPathChooser);
 	}
 
 	protected void show() {

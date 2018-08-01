@@ -6,6 +6,8 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Toolkit;
 
+import javax.swing.UIManager;
+
 /**
  * 
  * <h2>kiftd窗口父类，所有窗口均应继承自该父类</h2>
@@ -41,7 +43,7 @@ public class KiftdDynamicWindow {
 	/**
 	 * 选出较小的比例，作为显示窗口的比例
 	 */
-	private double proportion = proportionW > proportionH ? proportionH : proportionW;
+	protected double proportion = proportionW > proportionH ? proportionH : proportionW;
 
 	/**
 	 * 
@@ -58,6 +60,7 @@ public class KiftdDynamicWindow {
 	 */
 	protected void modifyComponentSize(Container c) {
 		try {
+			c.setSize((int) (c.getWidth() * proportion), (int) (c.getHeight() * proportion));
 			Component[] components = c.getComponents();
 			for (Component co : components) {
 				double locX = co.getX() * proportion;
@@ -66,12 +69,9 @@ public class KiftdDynamicWindow {
 				double height = co.getHeight() * proportion;
 				co.setLocation((int) locX, (int) locY);
 				co.setSize((int) width, (int) height);
-				int size = (int) (co.getFont().getSize() * proportion);
-				Font font = new Font(co.getFont().getFontName(), co.getFont().getStyle(), size);
-				co.setFont(font);
 			}
 		} catch (Exception e) {
-
+			e.printStackTrace();
 		}
 	}
 
@@ -101,6 +101,24 @@ public class KiftdDynamicWindow {
 	 */
 	public int getOriginResolution_H() {
 		return OriginResolution_H;
+	}
+	
+	/**
+	 * 
+	 * <h2>自适应分辨率字体缩放方法</h2>
+	 * <p>该方法用于定义默认的全局字体样式并自适应调整大小。该方法应该在显示之前进行。</p>
+	 * @author 青阳龙野(kohgylw)
+	 */
+	protected void setUIFont() {
+		Font f = new Font("宋体", Font.PLAIN, (int)(13*proportion));
+		String names[] = { "Label", "CheckBox", "PopupMenu", "MenuItem", "CheckBoxMenuItem", "JRadioButtonMenuItem",
+				"ComboBox", "Button", "Tree", "ScrollPane", "TabbedPane", "EditorPane", "TitledBorder", "Menu",
+				"TextArea", "OptionPane", "MenuBar", "ToolBar", "ToggleButton", "ToolTip", "ProgressBar", "TableHeader",
+				"Panel", "List", "ColorChooser", "PasswordField", "TextField", "Table", "Label", "Viewport",
+				"RadioButtonMenuItem", "RadioButton", "DesktopPane", "InternalFrame" };
+		for (String item : names) {
+			UIManager.put(item + ".font", f);
+		}
 	}
 
 }

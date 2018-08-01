@@ -11,7 +11,7 @@ import java.text.*;
 import java.util.*;
 import kohgylw.kiftd.ui.callback.*;
 
-public class ServerUIModule extends KiftdDynamicWindow{
+public class ServerUIModule extends KiftdDynamicWindow {
 
 	protected static JFrame window;
 	private static SystemTray tray;
@@ -49,6 +49,7 @@ public class ServerUIModule extends KiftdDynamicWindow{
 	private final int OriginSize_Height = 550;
 
 	private ServerUIModule() {
+		setUIFont();
 		(ServerUIModule.window = new JFrame("kiftd-服务器控制台")).setSize(OriginSize_Width, OriginSize_Height);
 		ServerUIModule.window.setLocation(100, 100);
 		ServerUIModule.window.setResizable(false);
@@ -98,36 +99,36 @@ public class ServerUIModule extends KiftdDynamicWindow{
 		}
 		ServerUIModule.window.setLayout(new BoxLayout(ServerUIModule.window.getContentPane(), 3));
 		final JPanel titlebox = new JPanel(new FlowLayout(1));
-		titlebox.setBorder(new EmptyBorder(0, 0, -25, 0));
+		titlebox.setBorder(new EmptyBorder(0, 0, (int) (-25 * proportion), 0));
 		final JLabel title = new JLabel("kiftd");
-		title.setFont(new Font("宋体", 1, 30));
+		title.setFont(new Font("宋体", 1, (int) (30 * proportion)));
 		titlebox.add(title);
 		ServerUIModule.window.add(titlebox);
 		final JPanel subtitlebox = new JPanel(new FlowLayout(1));
-		subtitlebox.setBorder(new EmptyBorder(0, 0, -20, 0));
+		subtitlebox.setBorder(new EmptyBorder(0, 0, (int) (-20 * proportion), 0));
 		final JLabel subtitle = new JLabel("青阳网络文件系统-服务器");
-		subtitle.setFont(new Font("宋体", 0, 13));
+		subtitle.setFont(new Font("宋体", 0, (int) (13 * proportion)));
 		subtitlebox.add(subtitle);
 		ServerUIModule.window.add(subtitlebox);
 		final JPanel statusBox = new JPanel(new GridLayout(4, 1));
 		statusBox.setBorder(BorderFactory.createEtchedBorder());
 		final JPanel serverStatus = new JPanel(new FlowLayout());
-		serverStatus.setBorder(new EmptyBorder(0, 0, -8, 0));
+		serverStatus.setBorder(new EmptyBorder(0, 0, (int) (-8 * proportion), 0));
 		serverStatus.add(new JLabel("服务器状态(Status)："));
 		serverStatus.add(ServerUIModule.serverStatusLab = new JLabel("--"));
 		statusBox.add(serverStatus);
 		final JPanel portStatus = new JPanel(new FlowLayout());
-		portStatus.setBorder(new EmptyBorder(0, 0, -8, 0));
+		portStatus.setBorder(new EmptyBorder(0, 0, (int) (-8 * proportion), 0));
 		portStatus.add(new JLabel("端口号(Port)："));
 		portStatus.add(ServerUIModule.portStatusLab = new JLabel("--"));
 		statusBox.add(portStatus);
 		final JPanel addrStatus = new JPanel(new FlowLayout());
-		addrStatus.setBorder(new EmptyBorder(0, 0, -8, 0));
+		addrStatus.setBorder(new EmptyBorder(0, 0, (int) (-8 * proportion), 0));
 		addrStatus.add(new JLabel("日志等级(LogLevel)："));
 		addrStatus.add(ServerUIModule.logLevelLab = new JLabel("--"));
 		statusBox.add(addrStatus);
 		final JPanel bufferStatus = new JPanel(new FlowLayout());
-		bufferStatus.setBorder(new EmptyBorder(0, 0, -8, 0));
+		bufferStatus.setBorder(new EmptyBorder(0, 0, (int) (-8 * proportion), 0));
 		bufferStatus.add(new JLabel("下载缓冲区(Buffer)："));
 		bufferStatus.add(ServerUIModule.bufferSizeLab = new JLabel("--"));
 		statusBox.add(bufferStatus);
@@ -141,7 +142,9 @@ public class ServerUIModule extends KiftdDynamicWindow{
 		ServerUIModule.window.add(buttonBox);
 		final JPanel outputBox = new JPanel(new FlowLayout(1));
 		outputBox.add(new JLabel("[输出信息(Server Message)]："));
-		(ServerUIModule.output = new JTextArea(4, 23)).setLineWrap(true);
+		(ServerUIModule.output = new JTextArea()).setLineWrap(true);
+		output.setRows(3+(int)(proportion));
+		output.setSize((int)(292*proportion), 100);
 		ServerUIModule.output.setEditable(false);
 		ServerUIModule.output.setForeground(Color.RED);
 		ServerUIModule.output.getDocument().addDocumentListener(new DocumentListener() {
@@ -180,7 +183,7 @@ public class ServerUIModule extends KiftdDynamicWindow{
 		outputBox.add(new JScrollPane(ServerUIModule.output));
 		ServerUIModule.window.add(outputBox);
 		final JPanel bottombox = new JPanel(new FlowLayout(1));
-		bottombox.setBorder(new EmptyBorder(0, 0, -30, 0));
+		bottombox.setBorder(new EmptyBorder(0, 0, (int) (-30 * proportion), 0));
 		bottombox.add(new JLabel("--青阳龙野@kohgylw--"));
 		ServerUIModule.window.add(bottombox);
 		ServerUIModule.start.setEnabled(false);
@@ -281,7 +284,7 @@ public class ServerUIModule extends KiftdDynamicWindow{
 				t.start();
 			}
 		});
-		modifyComponentSize(window);
+		modifyComponentSize(ServerUIModule.window);
 	}
 
 	public void show() {
