@@ -11,7 +11,8 @@ import java.text.*;
 import java.util.*;
 import kohgylw.kiftd.ui.callback.*;
 
-public class ServerUIModule {
+public class ServerUIModule extends KiftdDynamicWindow{
+
 	protected static JFrame window;
 	private static SystemTray tray;
 	private static TrayIcon trayIcon;
@@ -38,9 +39,17 @@ public class ServerUIModule {
 	protected static final String L_ALL = "记录全部(ALL)";
 	protected static final String L_EXCEPTION = "仅异常(EXCEPTION)";
 	protected static final String L_NONE = "不记录(NONE)";
+	/**
+	 * 窗口原始宽度
+	 */
+	private final int OriginSize_Width = 300;
+	/**
+	 * 窗口原始高度
+	 */
+	private final int OriginSize_Height = 550;
 
 	private ServerUIModule() {
-		(ServerUIModule.window = new JFrame("kiftd-服务器控制台")).setSize(300, 550);
+		(ServerUIModule.window = new JFrame("kiftd-服务器控制台")).setSize(OriginSize_Width, OriginSize_Height);
 		ServerUIModule.window.setLocation(100, 100);
 		ServerUIModule.window.setResizable(false);
 		try {
@@ -272,6 +281,7 @@ public class ServerUIModule {
 				t.start();
 			}
 		});
+		modifyComponentSize(window);
 	}
 
 	public void show() {

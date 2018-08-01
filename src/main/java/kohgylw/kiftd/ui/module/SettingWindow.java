@@ -10,7 +10,7 @@ import javax.swing.border.*;
 import java.awt.*;
 import java.awt.event.*;
 
-public class SettingWindow {
+public class SettingWindow extends KiftdDynamicWindow {
 	private static JDialog window;
 	private static JTextField portinput;
 	private static JTextField bufferinput;
@@ -169,6 +169,8 @@ public class SettingWindow {
 				}
 			}
 		});
+		modifyComponentSize(window);
+		modifyComponentSize(changeFileSystemPathChooser);
 	}
 
 	protected void show() {
