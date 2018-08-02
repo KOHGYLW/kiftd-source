@@ -1,6 +1,5 @@
 package kohgylw.kiftd.ui.module;
 
-import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -47,11 +46,10 @@ public class KiftdDynamicWindow {
 
 	/**
 	 * 
-	 * <h2>自适应分辨率大小方法</h2>
+	 * <h2>自适应窗体分辨率大小方法</h2>
 	 * <p>
 	 * 该方法用于窗口的自适应大小调整。请在窗口组件设定完成之后、显示之前调用该方法。其基本原理为：首先计算出当前屏幕尺寸与基准屏幕尺寸的比例
-	 * P=当前屏幕尺寸/基准屏幕尺寸（取长宽比例中较小的一个，以便能够在屏幕中显示完全），之后设置显示窗口大小=使用原始窗口大小*P，
-	 * 同时将字体等比扩大或缩小。
+	 * P=当前屏幕尺寸/基准屏幕尺寸（取长宽比例中较小的一个，以便能够在屏幕中显示完全），之后设置显示窗口大小=使用原始窗口大小*P。
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
@@ -59,20 +57,7 @@ public class KiftdDynamicWindow {
 	 *            Container 需要动态调整的容器对象
 	 */
 	protected void modifyComponentSize(Container c) {
-		try {
-			c.setSize((int) (c.getWidth() * proportion), (int) (c.getHeight() * proportion));
-			Component[] components = c.getComponents();
-			for (Component co : components) {
-				double locX = co.getX() * proportion;
-				double locY = co.getY() * proportion;
-				double width = co.getWidth() * proportion;
-				double height = co.getHeight() * proportion;
-				co.setLocation((int) locX, (int) locY);
-				co.setSize((int) width, (int) height);
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		c.setSize((int) (c.getWidth() * proportion), (int) (c.getHeight() * proportion));
 	}
 
 	/**
@@ -102,15 +87,18 @@ public class KiftdDynamicWindow {
 	public int getOriginResolution_H() {
 		return OriginResolution_H;
 	}
-	
+
 	/**
 	 * 
 	 * <h2>自适应分辨率字体缩放方法</h2>
-	 * <p>该方法用于定义默认的全局字体样式并自适应调整大小。该方法应该在显示之前进行。</p>
+	 * <p>
+	 * 该方法用于定义默认的全局字体样式并自适应调整大小。该方法应该在显示之前进行。
+	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
 	 */
 	protected void setUIFont() {
-		Font f = new Font("宋体", Font.PLAIN, (int)(13*proportion));
+		Font f = new Font("宋体", Font.PLAIN, (int) (13 * proportion));
 		String names[] = { "Label", "CheckBox", "PopupMenu", "MenuItem", "CheckBoxMenuItem", "JRadioButtonMenuItem",
 				"ComboBox", "Button", "Tree", "ScrollPane", "TabbedPane", "EditorPane", "TitledBorder", "Menu",
 				"TextArea", "OptionPane", "MenuBar", "ToolBar", "ToggleButton", "ToolTip", "ProgressBar", "TableHeader",
