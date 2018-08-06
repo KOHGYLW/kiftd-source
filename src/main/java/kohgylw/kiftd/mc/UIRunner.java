@@ -4,6 +4,7 @@ import kohgylw.kiftd.printer.*;
 import kohgylw.kiftd.ui.module.*;
 import kohgylw.kiftd.server.ctl.*;
 import kohgylw.kiftd.server.enumeration.LogLevel;
+import kohgylw.kiftd.server.pojo.ServerSetting;
 import kohgylw.kiftd.server.util.ConfigureReader;
 import kohgylw.kiftd.server.util.ServerTimeUtil;
 import kohgylw.kiftd.ui.callback.*;
@@ -65,7 +66,14 @@ public class UIRunner {
 					return ConfigureReader.instance().getBuffSize();
 				}
 			});
-			ServerUIModule.setUpdateSetting((ss)->ConfigureReader.instance().doUpdate(ss));
+			ServerUIModule.setUpdateSetting(new UpdateSetting() {
+				
+				@Override
+				public boolean update(ServerSetting s) {
+					// TODO 自动生成的方法存根
+					return ConfigureReader.instance().doUpdate(s);
+				}
+			});
 			if(ConfigureReader.instance().getPropertiesStatus()==ConfigureReader.LEGAL_PROPERTIES) {
 				ui.updateServerStatus();
 			}

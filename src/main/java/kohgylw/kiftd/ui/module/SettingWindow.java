@@ -2,6 +2,7 @@ package kohgylw.kiftd.ui.module;
 
 import java.io.*;
 
+import kohgylw.kiftd.printer.Printer;
 import kohgylw.kiftd.server.enumeration.LogLevel;
 import kohgylw.kiftd.server.pojo.ServerSetting;
 import kohgylw.kiftd.ui.callback.*;
@@ -36,49 +37,51 @@ public class SettingWindow extends KiftdDynamicWindow {
 		SettingWindow.window.setResizable(false);
 		SettingWindow.window.setLayout(new BoxLayout(SettingWindow.window.getContentPane(), 3));
 		final JPanel titlebox = new JPanel(new FlowLayout(1));
-		titlebox.setBorder(new EmptyBorder(0, 0, (int)(-15*proportion), 0));
+		titlebox.setBorder(new EmptyBorder(0, 0, (int) (-15 * proportion), 0));
 		final JLabel title = new JLabel("服务器设置 Server Setting");
-		title.setFont(new Font("宋体", 1, (int)(20*proportion)));
+		title.setFont(new Font("宋体", 1, (int) (20 * proportion)));
 		titlebox.add(title);
 		SettingWindow.window.add(titlebox);
 		final JPanel settingbox = new JPanel(new GridLayout(5, 1));
 		settingbox.setBorder(new EtchedBorder());
 		final JPanel mlbox = new JPanel(new FlowLayout(1));
-		mlbox.setBorder(new EmptyBorder(0, 0, (int)(-5*proportion), 0));
+		mlbox.setBorder(new EmptyBorder(0, 0, (int) (-5 * proportion), 0));
 		final JLabel mltitle = new JLabel("必须登入(must login)：");
 		(SettingWindow.mlinput = new JComboBox<String>()).addItem(ML_OPEN);
 		SettingWindow.mlinput.addItem(ML_CLOSE);
-		SettingWindow.mlinput.setPreferredSize(new Dimension((int)(170*proportion), (int)(20*proportion)));
+		SettingWindow.mlinput.setPreferredSize(new Dimension((int) (170 * proportion), (int) (20 * proportion)));
 		mlbox.add(mltitle);
 		mlbox.add(SettingWindow.mlinput);
 		final JPanel portbox = new JPanel(new FlowLayout(1));
-		portbox.setBorder(new EmptyBorder(0, 0, (int)(-20*proportion), 0));
+		portbox.setBorder(new EmptyBorder(0, 0, (int) (-20 * proportion), 0));
 		final JLabel porttitle = new JLabel("端口(port)：");
-		(SettingWindow.portinput = new JTextField()).setPreferredSize(new Dimension((int)(120*proportion), (int)(25*proportion)));
+		(SettingWindow.portinput = new JTextField())
+				.setPreferredSize(new Dimension((int) (120 * proportion), (int) (25 * proportion)));
 		portbox.add(porttitle);
 		portbox.add(SettingWindow.portinput);
 		final JPanel bufferbox = new JPanel(new FlowLayout(1));
-		bufferbox.setBorder(new EmptyBorder(0, 0, (int)(-20*proportion), 0));
+		bufferbox.setBorder(new EmptyBorder(0, 0, (int) (-20 * proportion), 0));
 		final JLabel buffertitle = new JLabel("缓存大小(buffer)：");
-		(SettingWindow.bufferinput = new JTextField()).setPreferredSize(new Dimension((int)(170*proportion), (int)(25*proportion)));
+		(SettingWindow.bufferinput = new JTextField())
+				.setPreferredSize(new Dimension((int) (170 * proportion), (int) (25 * proportion)));
 		final JLabel bufferUnit = new JLabel("KB");
 		bufferbox.add(buffertitle);
 		bufferbox.add(SettingWindow.bufferinput);
 		bufferbox.add(bufferUnit);
 		final JPanel logbox = new JPanel(new FlowLayout(1));
-		logbox.setBorder(new EmptyBorder(0, 0, (int)(-20*proportion), 0));
+		logbox.setBorder(new EmptyBorder(0, 0, (int) (-20 * proportion), 0));
 		final JLabel logtitle = new JLabel("日志等级(port)：");
 		(SettingWindow.logLevelinput = new JComboBox<String>()).addItem("记录全部(ALL)");
 		SettingWindow.logLevelinput.addItem("仅异常(EXCEPTION)");
 		SettingWindow.logLevelinput.addItem("不记录(NONE)");
-		SettingWindow.logLevelinput.setPreferredSize(new Dimension((int)(170*proportion), (int)(20*proportion)));
+		SettingWindow.logLevelinput.setPreferredSize(new Dimension((int) (170 * proportion), (int) (20 * proportion)));
 		logbox.add(logtitle);
 		logbox.add(SettingWindow.logLevelinput);
 		final JPanel filePathBox = new JPanel(new FlowLayout(1));
-		filePathBox.setBorder(new EmptyBorder((int)(-5*proportion), 0, (int)(-5*proportion), 0));
+		filePathBox.setBorder(new EmptyBorder((int) (-5 * proportion), 0, (int) (-5 * proportion), 0));
 		final JLabel filePathtitle = new JLabel("文件系统路径(file system path)：");
 		SettingWindow.changeFileSystemPath = new JButton("选择(Choose)");
-		changeFileSystemPath.setPreferredSize(new Dimension((int)(140*proportion), (int)(32*proportion)));
+		changeFileSystemPath.setPreferredSize(new Dimension((int) (140 * proportion), (int) (32 * proportion)));
 		filePathBox.add(filePathtitle);
 		filePathBox.add(SettingWindow.changeFileSystemPath);
 		settingbox.add(portbox);
@@ -88,11 +91,11 @@ public class SettingWindow extends KiftdDynamicWindow {
 		settingbox.add(filePathBox);
 		SettingWindow.window.add(settingbox);
 		final JPanel buttonbox = new JPanel(new FlowLayout(1));
-		buttonbox.setBorder(new EmptyBorder((int)(5*proportion), 0, (int)(-20*proportion), 0));
+		buttonbox.setBorder(new EmptyBorder((int) (5 * proportion), 0, (int) (-20 * proportion), 0));
 		SettingWindow.update = new JButton("应用(Update)");
 		SettingWindow.cancel = new JButton("取消(Cancel)");
-		update.setPreferredSize(new Dimension((int)(150*proportion), (int)(32*proportion)));
-		cancel.setPreferredSize(new Dimension((int)(150*proportion), (int)(32*proportion)));
+		update.setPreferredSize(new Dimension((int) (150 * proportion), (int) (32 * proportion)));
+		cancel.setPreferredSize(new Dimension((int) (150 * proportion), (int) (32 * proportion)));
 		buttonbox.add(SettingWindow.update);
 		buttonbox.add(SettingWindow.cancel);
 		SettingWindow.window.add(buttonbox);
@@ -153,7 +156,7 @@ public class SettingWindow extends KiftdDynamicWindow {
 									window.setVisible(false);
 								}
 							} catch (Exception exc) {
-
+								Printer.instance.print("错误：无法应用设置");
 							}
 						} else {
 							window.setVisible(false);
@@ -186,9 +189,9 @@ public class SettingWindow extends KiftdDynamicWindow {
 			if (SettingWindow.st != null) {
 				SettingWindow.bufferinput.setText(SettingWindow.st.getBufferSize() / 1024 + "");
 				SettingWindow.portinput.setText(SettingWindow.st.getPort() + "");
-				File fsp = new File(SettingWindow.st.getFileSystemPath());
-				if (fsp.isDirectory()) {
-					changeFileSystemPathChooser.setSelectedFile(fsp);
+				chooserPath = new File(SettingWindow.st.getFileSystemPath());
+				if (chooserPath.isDirectory()) {
+					changeFileSystemPathChooser.setSelectedFile(chooserPath);
 				}
 				switch (st.getLogLevel()) {
 				case Event: {
