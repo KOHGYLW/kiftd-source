@@ -122,7 +122,7 @@ public class SettingWindow extends KiftdDynamicWindow {
 							try {
 								ServerSetting ss = new ServerSetting();
 								ss.setPort(Integer.parseInt(portinput.getText()));
-								ss.setBuffSize(Integer.parseInt(bufferinput.getText()));
+								ss.setBuffSize(Integer.parseInt(bufferinput.getText())*1024);
 								if (chooserPath.isDirectory()) {
 									ss.setFsPath(chooserPath.getAbsolutePath());
 								}
