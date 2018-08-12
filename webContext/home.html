@@ -57,12 +57,16 @@
 					</div>
 					<table class="table table-hover">
 						<thead>
-							<tr onclick="checkallfile()">
-								<th>文件名</th>
-								<th>创建日期</th>
-								<th>大小</th>
-								<th>创建者</th>
-								<th>操作</th>
+							<tr>
+								<th onclick="sortbyfn()">文件名<span id="sortByFN"
+									aria-hidden="true" style="float: right"></span></th>
+								<th onclick="sortbycd()">创建日期<span id="sortByCD"
+									aria-hidden="true" style="float: right"></span></th>
+								<th onclick="sortbyfs()">大小<span id="sortByFS"
+									aria-hidden="true" style="float: right"></span></th>
+								<th onclick="sortbycn()">创建者<span id="sortByCN"
+									aria-hidden="true" style="float: right"></span></th>
+								<th onclick="">操作</th>
 							</tr>
 						</thead>
 						<tbody id="foldertable"></tbody>
@@ -110,7 +114,8 @@
 				</div>
 				<div class="modal-footer">
 					<button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
-					<button type="button" id="dologinButton" class="btn btn-primary" onclick="dologin()">登录</button>
+					<button type="button" id="dologinButton" class="btn btn-primary"
+						onclick="dologin()">登录</button>
 				</div>
 			</div>
 		</div>
@@ -458,5 +463,5 @@
 <!-- 音乐播放器 -->
 <script type="text/javascript" src="js/APlayer.min.js"></script>
 <!-- 页面操作定义 -->
-<script type="text/javascript" src="js/home.min.js"></script>
+<script type="text/javascript" src="js/home.js"></script>
 </html>

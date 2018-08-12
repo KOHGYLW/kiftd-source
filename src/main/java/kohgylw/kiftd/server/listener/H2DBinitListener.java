@@ -13,8 +13,7 @@ public class H2DBinitListener implements ServletContextListener {
 		Printer.instance.print("\u6587\u4ef6\u7cfb\u7edf\u521d\u59cb\u5316...");
 		try {
 			Class.forName("org.h2.Driver");
-			final Connection conn = DriverManager.getConnection(
-					"jdbc:h2:file:" + ConfigureReader.instance().getFileNodePath() + "kift", "root", "301537gY");
+			final Connection conn = DriverManager.getConnection(ConfigureReader.instance().getFileNodePathURL(), "root", "301537gY");
 			final Statement state1 = conn.createStatement();
 			ResultSet result = state1
 					.executeQuery("SELECT count(*) from INFORMATION_SCHEMA.TABLES where TABLE_NAME='FOLDER'");

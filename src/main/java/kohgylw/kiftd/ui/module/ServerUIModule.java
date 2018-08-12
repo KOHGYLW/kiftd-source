@@ -143,8 +143,8 @@ public class ServerUIModule extends KiftdDynamicWindow {
 		final JPanel outputBox = new JPanel(new FlowLayout(1));
 		outputBox.add(new JLabel("[输出信息(Server Message)]："));
 		(ServerUIModule.output = new JTextArea()).setLineWrap(true);
-		output.setRows(3+(int)(proportion));
-		output.setSize((int)(292*proportion), 100);
+		output.setRows(3 + (int) (proportion));
+		output.setSize((int) (292 * proportion), 100);
 		ServerUIModule.output.setEditable(false);
 		ServerUIModule.output.setForeground(Color.RED);
 		ServerUIModule.output.getDocument().addDocumentListener(new DocumentListener() {
@@ -321,10 +321,8 @@ public class ServerUIModule extends KiftdDynamicWindow {
 					ServerUIModule.resatrt.setEnabled(true);
 					ServerUIModule.setting.setEnabled(false);
 				} else {
-					ServerUIModule.serverStatusLab.setText("停止[Stopped]");
-					if (ServerUIModule.st.getPropertiesStatus()) {
-						ServerUIModule.start.setEnabled(true);
-					}
+					ServerUIModule.serverStatusLab.setText(S_STOP);
+					ServerUIModule.start.setEnabled(true);
 					ServerUIModule.stop.setEnabled(false);
 					ServerUIModule.resatrt.setEnabled(false);
 					ServerUIModule.setting.setEnabled(true);

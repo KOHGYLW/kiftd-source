@@ -108,29 +108,34 @@ public class ConsoleRunner {
 	private void awaiting() {
 		Thread t = new Thread(() -> {
 			Scanner reader = new Scanner(System.in);
-			while (true) {
-				String command = reader.nextLine();
-				switch (command) {
-				case "-start":
-					startServer();
-					break;
-				case "-stop":
-					stopServer();
-					break;
-				case "-restart":
-					restartServer();
-					break;
-				case "-status":
-					printServerStatus();
-					break;
-				case "-exit":
-					reader.close();
-					exit();
-					return;
-				default:
-					Printer.instance.print(commandTips);
-					break;
+			try {
+				while (true) {
+					String command = reader.nextLine();
+					switch (command) {
+					case "-start":
+						startServer();
+						break;
+					case "-stop":
+						stopServer();
+						break;
+					case "-restart":
+						restartServer();
+						break;
+					case "-status":
+						printServerStatus();
+						break;
+					case "-exit":
+						reader.close();
+						exit();
+						return;
+					default:
+						Printer.instance.print("错误：未能识别输入的内容，"+commandTips);
+						break;
+					}
 				}
+			} catch (Exception e) {
+				// TODO: handle exception
+				Printer.instance.print("错误：读取命令时出现意外，"+commandTips+"\r\n，如问题依然存在请尝试重启kiftd。");
 			}
 		});
 		t.start();

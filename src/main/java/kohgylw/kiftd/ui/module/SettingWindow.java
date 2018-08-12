@@ -191,7 +191,7 @@ public class SettingWindow extends KiftdDynamicWindow {
 				SettingWindow.portinput.setText(SettingWindow.st.getPort() + "");
 				chooserPath = new File(SettingWindow.st.getFileSystemPath());
 				if (chooserPath.isDirectory()) {
-					changeFileSystemPathChooser.setSelectedFile(chooserPath);
+					changeFileSystemPathChooser.setCurrentDirectory(chooserPath);
 				}
 				switch (st.getLogLevel()) {
 				case Event: {

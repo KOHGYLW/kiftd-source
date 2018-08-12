@@ -76,6 +76,9 @@ public class UIRunner {
 			});
 			if(ConfigureReader.instance().getPropertiesStatus()==ConfigureReader.LEGAL_PROPERTIES) {
 				ui.updateServerStatus();
+			}else {
+				ConfigureReader.instance().createDefaultServerPropertiesFile();
+				Printer.instance.print("配置文件存在错误，已还原为初始状态，请重新启动kiftd。");
 			}
 		});
 		t.start();

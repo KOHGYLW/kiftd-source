@@ -52,33 +52,27 @@ public class ConfigureReader {
 		this.accountp = new Properties();
 		final File serverProp = new File(this.confdir + SERVER_PROPERTIES_FILE);
 		if (!serverProp.isFile()) {
-			Printer.instance.print(
-					"\u670d\u52a1\u5668\u914d\u7f6e\u6587\u4ef6\u4e0d\u5b58\u5728\uff0c\u9700\u8981\u521d\u59cb\u5316\u670d\u52a1\u5668\u914d\u7f6e\u3002");
+			Printer.instance.print("服务器配置文件不存在，需要初始化服务器配置。");
 			this.createDefaultServerPropertiesFile();
 		}
 		final File accountProp = new File(this.confdir + ACCOUNT_PROPERTIES_FILE);
 		if (!accountProp.isFile()) {
-			Printer.instance.print(
-					"\u7528\u6237\u8d26\u6237\u914d\u7f6e\u6587\u4ef6\u4e0d\u5b58\u5728\uff0c\u9700\u8981\u521d\u59cb\u5316\u8d26\u6237\u914d\u7f6e\u3002");
+			Printer.instance.print("用户账户配置文件不存在，需要初始化账户配置。");
 			this.createDefaultAccountPropertiesFile();
 		}
 		try {
-			Printer.instance.print("\u6b63\u5728\u8f7d\u5165\u914d\u7f6e\u6587\u4ef6...");
+			Printer.instance.print("正在载入配置文件...");
 			final FileInputStream serverPropIn = new FileInputStream(serverProp);
 			this.serverp.load(serverPropIn);
 			final FileInputStream accountPropIn = new FileInputStream(accountProp);
 			this.accountp.load(accountPropIn);
-			Printer.instance.print(
-					"\u914d\u7f6e\u6587\u4ef6\u8f7d\u5165\u5b8c\u6bd5\u3002\u6b63\u5728\u68c0\u67e5\u914d\u7f6e...");
+			Printer.instance.print("配置文件载入完毕。正在检查配置...");
 			this.propertiesStatus = this.testServerPropertiesAndEffect();
 			if (this.propertiesStatus == 0) {
-				Printer.instance.print("\u51c6\u5907\u5c31\u7eea\u3002");
+				Printer.instance.print("准备就绪。");
 			}
 		} catch (Exception e) {
-			Printer.instance.print(
-					"\u9519\u8bef\uff1a\u65e0\u6cd5\u52a0\u8f7d\u4e00\u4e2a\u6216\u591a\u4e2a\u914d\u7f6e\u6587\u4ef6\uff08\u4f4d\u4e8e"
-							+ this.confdir
-							+ "\u8def\u5f84\u4e0b\uff09\uff0c\u8bf7\u5c1d\u8bd5\u5220\u9664\u65e7\u7684\u914d\u7f6e\u6587\u4ef6\u5e76\u91cd\u65b0\u542f\u52a8\u672c\u5e94\u7528\u6216\u67e5\u770b\u5b89\u88c5\u8def\u5f84\u7684\u6743\u9650\uff08\u5fc5\u987b\u53ef\u8bfb\u5199\uff09\u3002");
+			Printer.instance.print("错误：无法加载一个或多个配置文件（位于" + this.confdir + "路径下），请尝试删除旧的配置文件并重新启动本应用或查看安装路径的权限（必须可读写）。");
 		}
 	}
 
@@ -265,7 +259,7 @@ public class ConfigureReader {
 
 	public boolean doUpdate(final ServerSetting ss) {
 		if (ss != null) {
-			Printer.instance.print("\u6b63\u5728\u66f4\u65b0\u670d\u52a1\u5668\u914d\u7f6e...");
+			Printer.instance.print("正在更新服务器配置...");
 			this.serverp.setProperty("mustLogin", ss.isMustLogin() ? "N" : "O");
 			this.serverp.setProperty("buff.size", ss.getBuffSize() + "");
 			String loglevelCode = "E";
@@ -292,11 +286,10 @@ public class ConfigureReader {
 				try {
 					this.serverp.store(new FileOutputStream(this.confdir + SERVER_PROPERTIES_FILE),
 							"<Kiftd server setting file is update.>");
-					Printer.instance.print("\u914d\u7f6e\u66f4\u65b0\u5b8c\u6bd5\uff0c\u51c6\u5907\u5c31\u7eea\u3002");
+					Printer.instance.print("配置更新完毕，准备就绪。");
 					return true;
 				} catch (Exception e) {
-					Printer.instance.print(
-							"\u9519\u8bef\uff1a\u66f4\u65b0\u8bbe\u7f6e\u5931\u8d25\uff0c\u65e0\u6cd5\u5b58\u5165\u8bbe\u7f6e\u6587\u4ef6\u3002");
+					Printer.instance.print("错误：更新设置失败，无法存入设置文件。");
 				}
 			}
 		}
@@ -304,17 +297,15 @@ public class ConfigureReader {
 	}
 
 	private int testServerPropertiesAndEffect() {
-		Printer.instance.print("\u6b63\u5728\u68c0\u67e5\u670d\u52a1\u5668\u914d\u7f6e...");
+		Printer.instance.print("正在检查服务器配置...");
 		this.mustLogin = this.serverp.getProperty("mustLogin");
 		if (this.mustLogin == null) {
-			Printer.instance.print(
-					"\u8b66\u544a\uff1a\u672a\u627e\u5230\u662f\u5426\u5fc5\u987b\u767b\u5f55\u914d\u7f6e\uff0c\u5c06\u91c7\u7528\u9ed8\u8ba4\u503c\uff08O\uff09\u3002");
+			Printer.instance.print("警告：未找到是否必须登录配置，将采用默认值（O）。");
 			this.mustLogin = "O";
 		}
 		final String ports = this.serverp.getProperty("port");
 		if (ports == null) {
-			Printer.instance.print(
-					"\u8b66\u544a\uff1a\u672a\u627e\u5230\u7aef\u53e3\u914d\u7f6e\uff0c\u5c06\u91c7\u7528\u9ed8\u8ba4\u503c\uff088080\uff09\u3002");
+			Printer.instance.print("警告：未找到端口配置，将采用默认值（8080）。");
 			this.port = 8080;
 		} else {
 			try {
@@ -328,8 +319,7 @@ public class ConfigureReader {
 		}
 		final String logs = this.serverp.getProperty("log");
 		if (logs == null) {
-			Printer.instance.print(
-					"\u8b66\u544a\uff1a\u672a\u627e\u5230\u65e5\u5fd7\u7b49\u7ea7\u914d\u7f6e\uff0c\u5c06\u91c7\u7528\u9ed8\u8ba4\u503c\uff08E\uff09\u3002");
+			Printer.instance.print("警告：未找到日志等级配置，将采用默认值（E）。");
 			this.log = "E";
 		} else {
 			if (!logs.equals("N") && !logs.equals("R") && !logs.equals("E")) {
@@ -339,27 +329,23 @@ public class ConfigureReader {
 		}
 		final String bufferSizes = this.serverp.getProperty("buff.size");
 		if (bufferSizes == null) {
-			Printer.instance.print(
-					"\u8b66\u544a\uff1a\u672a\u627e\u5230\u7f13\u51b2\u5927\u5c0f\u914d\u7f6e\uff0c\u5c06\u91c7\u7528\u9ed8\u8ba4\u503c\uff081048576\uff09\u3002");
+			Printer.instance.print("警告：未找到缓冲大小配置，将采用默认值（1048576）。");
 			this.bufferSize = 1048576;
 		} else {
 			try {
 				this.bufferSize = Integer.parseInt(bufferSizes);
 				if (this.bufferSize <= 0) {
-					Printer.instance
-							.print("\u9519\u8bef\uff1a\u7f13\u51b2\u533a\u5927\u5c0f\u8bbe\u7f6e\u65e0\u6548\u3002");
+					Printer.instance.print("错误：缓冲区大小设置无效。");
 					return 4;
 				}
 			} catch (Exception e2) {
-				Printer.instance
-						.print("\u9519\u8bef\uff1a\u7f13\u51b2\u533a\u5927\u5c0f\u8bbe\u7f6e\u65e0\u6548\u3002");
+				Printer.instance.print("错误：缓冲区大小设置无效。");
 				return 4;
 			}
 		}
 		this.FSPath = this.serverp.getProperty("FS.path");
 		if (this.FSPath == null) {
-			Printer.instance.print(
-					"\u8b66\u544a\uff1a\u672a\u627e\u5230\u6587\u4ef6\u7cfb\u7edf\u914d\u7f6e\uff0c\u5c06\u91c7\u7528\u9ed8\u8ba4\u503c\u3002");
+			Printer.instance.print("警告：未找到文件系统配置，将采用默认值。");
 			this.fileSystemPath = this.DEFAULT_FILE_SYSTEM_PATH;
 		} else if (this.FSPath.equals("DEFAULT")) {
 			this.fileSystemPath = this.DEFAULT_FILE_SYSTEM_PATH;
@@ -368,40 +354,33 @@ public class ConfigureReader {
 		}
 		final File fsFile = new File(this.fileSystemPath);
 		if (!fsFile.isDirectory() || !fsFile.canRead() || !fsFile.canWrite()) {
-			Printer.instance.print("\u9519\u8bef\uff1a\u6587\u4ef6\u7cfb\u7edf\u8def\u5f84[" + this.fileSystemPath
-					+ "]\u65e0\u6548\uff0c\u8be5\u8def\u5f84\u5fc5\u987b\u6307\u5411\u4e00\u4e2a\u5177\u5907\u8bfb\u5199\u6743\u9650\u7684\u6587\u4ef6\u5939\u3002");
+			Printer.instance.print("错误：文件系统路径[" + this.fileSystemPath + "]无效，该路径必须指向一个具备读写权限的文件夹。");
 			return 3;
 		}
-		this.fileBlockPath = this.fileSystemPath + "fileblocks" + File.separator;
+		this.fileBlockPath = this.fileSystemPath + File.separator + "fileblocks";
 		final File fbFile = new File(this.fileBlockPath);
 		if (!fbFile.isDirectory() && !fbFile.mkdirs()) {
-			Printer.instance.print("\u9519\u8bef\uff1a\u65e0\u6cd5\u521b\u5efa\u6587\u4ef6\u5757\u5b58\u653e\u533a["
-					+ this.fileBlockPath + "]\u3002");
+			Printer.instance.print("错误：无法创建文件块存放区[" + this.fileBlockPath + "]。");
 			return 5;
 		}
-		this.fileNodePath = this.fileSystemPath + "filenodes" + File.separator;
+		this.fileNodePath = this.fileSystemPath + File.separator + "filenodes";
 		final File fnFile = new File(this.fileNodePath);
 		if (!fnFile.isDirectory() && !fnFile.mkdirs()) {
-			Printer.instance
-					.print("\u9519\u8bef\uff1a\u65e0\u6cd5\u521b\u5efa\u6587\u4ef6\u8282\u70b9\u5b58\u653e\u533a["
-							+ this.fileNodePath + "]\u3002");
+			Printer.instance.print("错误：无法创建文件节点存放区[" + this.fileNodePath + "]。");
 			return 6;
 		}
 		this.TFPath = this.fileSystemPath + File.separator + "temporaryfiles";
 		final File tfFile = new File(this.TFPath);
 		if (!tfFile.isDirectory() && !tfFile.mkdirs()) {
-			Printer.instance
-					.print("\u9519\u8bef\uff1a\u65e0\u6cd5\u521b\u5efa\u4e34\u65f6\u6587\u4ef6\u5b58\u653e\u533a["
-							+ this.TFPath + "]\u3002");
+			Printer.instance.print("错误：无法创建临时文件存放区[" + this.TFPath + "]。");
 			return 7;
 		}
-		Printer.instance.print("\u68c0\u67e5\u5b8c\u6bd5\u3002");
+		Printer.instance.print("检查完毕。");
 		return 0;
 	}
 
-	private void createDefaultServerPropertiesFile() {
-		Printer.instance.print("\u6b63\u5728\u751f\u6210\u521d\u59cb\u670d\u52a1\u5668\u914d\u7f6e\u6587\u4ef6\uff08"
-				+ this.confdir + SERVER_PROPERTIES_FILE + "\uff09...");
+	public void createDefaultServerPropertiesFile() {
+		Printer.instance.print("正在生成初始服务器配置文件（" + this.confdir + SERVER_PROPERTIES_FILE + "）...");
 		final Properties dsp = new Properties();
 		dsp.setProperty("mustLogin", DEFAULT_MUST_LOGIN);
 		dsp.setProperty("port", DEFAULT_PORT + "");
@@ -411,20 +390,16 @@ public class ConfigureReader {
 		try {
 			dsp.store(new FileOutputStream(this.confdir + SERVER_PROPERTIES_FILE),
 					"<This is the default kiftd server setting file. >");
-			Printer.instance
-					.print("\u521d\u59cb\u670d\u52a1\u5668\u914d\u7f6e\u6587\u4ef6\u751f\u6210\u5b8c\u6bd5\u3002");
+			Printer.instance.print("初始服务器配置文件生成完毕。");
 		} catch (FileNotFoundException e) {
-			Printer.instance.print(
-					"\u9519\u8bef\uff1a\u65e0\u6cd5\u751f\u6210\u521d\u59cb\u670d\u52a1\u5668\u914d\u7f6e\u6587\u4ef6\uff0c\u5b58\u50a8\u8def\u5f84\u4e0d\u5b58\u5728\u3002");
+			Printer.instance.print("错误：无法生成初始服务器配置文件，存储路径不存在。");
 		} catch (IOException e2) {
-			Printer.instance.print(
-					"\u9519\u8bef\uff1a\u65e0\u6cd5\u751f\u6210\u521d\u59cb\u670d\u52a1\u5668\u914d\u7f6e\u6587\u4ef6\uff0c\u5199\u5165\u5931\u8d25\u3002");
+			Printer.instance.print("错误：无法生成初始服务器配置文件，写入失败。");
 		}
 	}
 
 	private void createDefaultAccountPropertiesFile() {
-		Printer.instance.print("\u6b63\u5728\u751f\u6210\u521d\u59cb\u8d26\u6237\u914d\u7f6e\u6587\u4ef6\uff08"
-				+ this.confdir + ACCOUNT_PROPERTIES_FILE + "\uff09...");
+		Printer.instance.print("正在生成初始账户配置文件（" + this.confdir + ACCOUNT_PROPERTIES_FILE + "）...");
 		final Properties dap = new Properties();
 		dap.setProperty(DEFAULT_ACCOUNT_ID + ".pwd", DEFAULT_ACCOUNT_PWD);
 		dap.setProperty(DEFAULT_ACCOUNT_ID + ".auth", DEFAULT_ACCOUNT_AUTH);
@@ -432,13 +407,22 @@ public class ConfigureReader {
 		try {
 			dap.store(new FileOutputStream(this.confdir + ACCOUNT_PROPERTIES_FILE),
 					"<This is the default kiftd account setting file. >");
-			Printer.instance.print("\u521d\u59cb\u8d26\u6237\u914d\u7f6e\u6587\u4ef6\u751f\u6210\u5b8c\u6bd5\u3002");
+			Printer.instance.print("初始账户配置文件生成完毕。");
 		} catch (FileNotFoundException e) {
-			Printer.instance.print(
-					"\u9519\u8bef\uff1a\u65e0\u6cd5\u751f\u6210\u521d\u59cb\u8d26\u6237\u914d\u7f6e\u6587\u4ef6\uff0c\u5b58\u50a8\u8def\u5f84\u4e0d\u5b58\u5728\u3002");
+			Printer.instance.print("错误：无法生成初始账户配置文件，存储路径不存在。");
 		} catch (IOException e2) {
-			Printer.instance.print(
-					"\u9519\u8bef\uff1a\u65e0\u6cd5\u751f\u6210\u521d\u59cb\u8d26\u6237\u914d\u7f6e\u6587\u4ef6\uff0c\u5199\u5165\u5931\u8d25\u3002");
+			Printer.instance.print("错误：无法生成初始账户配置文件，写入失败。");
 		}
+	}
+	
+	/**
+	 * 
+	 * <h2>获取文件节点数据库链接位置</h2>
+	 * <p>该位置为存储文件系统的数据库的链接位置，其表示为一个文件路径。</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @return String 用于数据源或jdbc进行连接的文件节点数据库URL地址
+	 */
+	public String getFileNodePathURL() {
+		return "jdbc:h2:file:" + ConfigureReader.instance().getFileNodePath() + File.separator + "kift";
 	}
 }

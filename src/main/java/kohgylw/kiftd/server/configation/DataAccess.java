@@ -20,7 +20,7 @@ public class DataAccess
     public DataSource dataSource() {
         final DriverManagerDataSource ds = new DriverManagerDataSource();
         ds.setDriverClassName("org.h2.Driver");
-        ds.setUrl("jdbc:h2:file:" + ConfigureReader.instance().getFileNodePath() + "kift");
+        ds.setUrl(ConfigureReader.instance().getFileNodePathURL());
         ds.setUsername("root");
         ds.setPassword("301537gY");
         return (DataSource)ds;

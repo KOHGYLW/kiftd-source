@@ -6,12 +6,14 @@ var locationpath = "root";// 记录当前文件路径
 var parentpath = "null";// 记录当前文件路径的父级目录
 var ap;// 音乐播放器对象
 var zipTimer;// 打包下载计时器
+var folderView;// 返回的文件系统视图对象
+var fs;// 选中的要上传的文件列表
 
 // 页面初始化
 $(function() {
 	getServerOS();// 得到服务器操作系统信息
 	showFolderView(locationpath);// 显示根节点页面视图
-	// 点击空白处取消选中文件（不支持火狐）
+	// 点击空白处取消选中文件并重新加载文件视图（不支持火狐）
 	$(document).click(function(e) {
 		var filetable = $("#filetable")[0];
 		if (e.target !== filetable && !$.contains(filetable, e.target)) {
@@ -36,9 +38,55 @@ $(function() {
 		$("#accountid").val('');
 		$("#accountpwd").val('');
 	});
+	// 回车键快捷登录响应
+	$("#loginModal").keypress(function (e) {
+		var keyCode = e.keyCode ? e.keyCode : e.which ? e.which : e.charCode;
+ 		if (keyCode == 13){
+ 			dologin();
+		}
+	});
+	// 响应拖动上传文件
+	document.ondragover = function(e) {
+		e.preventDefault();
+	}
+	document.ondrop = function(e) {
+		e.preventDefault();
+		if (folderView.authList != null) {
+			if (checkAuth(folderView.authList, "U")) {// 如果有上传权限
+				fs = e.dataTransfer.files; // 获取到拖入上传的文件对象
+				var filename = "";
+				for (var i = 0; i < fs.length; i++) {
+					filename = filename + fs[i].name;
+					if (i < (fs.length - 1)) {
+						filename = filename + "、";
+					}
+				}
+				if (fs.length <= 1) {
+					$("#selectcount").text("");
+				} else {
+					$("#selectcount").text("（共" + fs.length + "个）");
+				}
+				$("#filepath").val(filename);
+				showUploadFileModel();
+			}else{
+				alert("您不具备上传权限，无法上传文件。");
+			}
+		}else{
+			alert("您不具备上传权限，无法上传文件。");
+		}
+	}
+	// Shift+A全选文件/反选文件
+	$(document).keypress(function (e) {
+		var keyCode = e.keyCode ? e.keyCode : e.which ? e.which : e.charCode;
+		if (keyCode == 65){
+			if (window.event.shiftKey) {
+				checkallfile();
+			}
+		}
+	});
 });
 
-//全局请求失败提示
+// 全局请求失败提示
 function doAlert(){
 	alert("kiftd错误：无法连接到服务器，请检查网络连接或服务器运行状态。");
 }
@@ -79,12 +127,16 @@ function showFolderView(fid) {
 			if (result == "mustLogin") {
 				window.location.href = "login.html";
 			} else {
-				var folderView = eval("(" + result + ")");
+				folderView = eval("(" + result + ")");
 				locationpath = folderView.folder.folderId;
 				parentpath = folderView.folder.folderParent;
 				showParentList(folderView);
 				showAccountView(folderView);
 				showPublishTime(folderView);
+				$("#sortByFN").removeClass();
+				$("#sortByCD").removeClass();
+				$("#sortByFS").removeClass();
+				$("#sortByCN").removeClass();
 				showFolderTable(folderView);
 			}
 		},
@@ -110,14 +162,14 @@ function endLoading(){
 	$('#loadingModal').modal('hide');
 }
 
-//开始登陆加载动画
+// 开始登陆加载动画
 function startLogin(){
 	$("#accountid").attr('disabled','disabled');
 	$("#accountpwd").attr('disabled','disabled');
 	$("#dologinButton").attr('disabled','disabled');
 }
 
-//结束登陆加载动画
+// 结束登陆加载动画
 function finishLogin(){
 	$("#accountid").removeAttr('disabled','disabled');
 	$("#accountpwd").removeAttr('disabled','disabled');
@@ -698,7 +750,7 @@ function checkpath() {
 
 // 文件选中后自动回填文件路径
 function showfilepath() {
-	var fs = $("#uploadfile").get(0).files;
+	fs = $("#uploadfile").get(0).files;
 	var filename = "";
 	for (var i = 0; i < fs.length; i++) {
 		filename = filename + fs[i].name;
@@ -723,7 +775,6 @@ function checkUploadFile() {
 	$("#uploadFileAlert").removeClass("alert-danger");
 	$("#uploadFileAlert").text("");
 
-	var fs = $("#uploadfile").get(0).files;
 	var filenames = new Array();
 	for (var i = 0; i < fs.length; i++) {
 		filenames[i] = fs[i].name.replace(/^.+?\\([^\\]+?)?$/gi, "$1");
@@ -766,13 +817,10 @@ var xhr;
 
 // 执行文件上传并实现上传进度显示
 function doupload(count) {
-
-	var fs = $("#uploadfile").get(0).files;
 	var fcount = fs.length;
 	$("#pros").width("0%");// 先将进度条置0
 	var uploadfile = fs[count - 1];// 获取要上传的文件
 	if (uploadfile != null) {
-
 		var fname = uploadfile.name;
 		if (fcount > 1) {
 			$("#filecount").text("（" + count + "/" + fcount + "）");// 显示当前进度
@@ -1099,7 +1147,7 @@ function showDownloadAllCheckedModel() {
 	if (checkedfiles.length == 0) {
 		$("#downloadAllCheckedName")
 				.text(
-						"提示：您还未选择任何文件，请先选中一些文件后再执行本操作（点击某一文件行来选中单一文件；按住Shift并点击文件行选中多个文件；点击列表的表头来选中/取消选中所有文件）。");
+						"提示：您还未选择任何文件，请先选中一些文件后再执行本操作（点击某一文件行来选中单一文件；按住Shift并点击文件行选中多个文件；使用Shitf+A选中/取消选中所有文件）。");
 	} else {
 		$("#downloadAllCheckedName").text(
 				"提示：您确认要打包并下载这" + checkedfiles.length + "项么？");
@@ -1199,7 +1247,7 @@ function showDeleteAllCheckedModel() {
 	if (checkedfiles.length == 0) {
 		$('#deleteFileMessage')
 				.text(
-						"提示：您还未选择任何文件，请先选中一些文件后再执行本操作（点击某一文件行来选中单一文件；按住Shift并点击文件行选中多个文件；点击列表的表头来选中/取消选中所有文件）。");
+						"提示：您还未选择任何文件，请先选中一些文件后再执行本操作（点击某一文件行来选中单一文件；按住Shift并点击文件行选中多个文件；使用Shift+A选中/取消选中所有文件）。");
 	} else {
 		$('#deleteFileBox')
 				.html(
@@ -1337,4 +1385,67 @@ function audio_vulome_up(){
 // 音量减少，每次10%
 function audio_vulome_down(){
 	ap.volume(ap.audio.volume-0.1,true);
+}
+
+// 按文件名排序
+function sortbyfn(){
+	$("#sortByFN").addClass("glyphicon glyphicon-triangle-bottom");
+	$("#sortByCD").removeClass();
+	$("#sortByFS").removeClass();
+	$("#sortByCN").removeClass();
+	folderView.fileList.sort(function(v1,v2){
+		return v1.fileName.localeCompare(v2.fileName,"zh");
+	});
+	folderView.folderList.sort(function(v1,v2){
+		return v1.folderName.localeCompare(v2.folderName,"zh");
+	});
+	showFolderTable(folderView);
+}
+
+// 按创建日期排序
+function sortbycd(){
+	$("#sortByFN").removeClass();
+	$("#sortByCD").addClass("glyphicon glyphicon-triangle-bottom");
+	$("#sortByFS").removeClass();
+	$("#sortByCN").removeClass();
+	folderView.fileList.sort(function(v1,v2){
+		var v1DateStr=v1.fileCreationDate.replace("年","-").replace("月","-").replace("日","");
+		var v2DateStr=v2.fileCreationDate.replace("年","-").replace("月","-").replace("日","");
+		var res=((new Date(Date.parse(v1DateStr)).getTime())-(new Date(Date.parse(v2DateStr)).getTime()));
+		return -1*res;
+	});
+	folderView.folderList.sort(function(v1,v2){
+		var v1DateStr=v1.folderCreationDate.replace("年","-").replace("月","-").replace("日","");
+		var v2DateStr=v2.folderCreationDate.replace("年","-").replace("月","-").replace("日","");
+		var res=((new Date(Date.parse(v1DateStr)).getTime())-(new Date(Date.parse(v2DateStr)).getTime()));
+		return -1*res;
+	});
+	showFolderTable(folderView);
+}
+
+// 按文件大小排序
+function sortbyfs(){
+	$("#sortByFN").removeClass();
+	$("#sortByCD").removeClass();
+	$("#sortByFS").addClass("glyphicon glyphicon-triangle-bottom");
+	$("#sortByCN").removeClass();
+	folderView.fileList.sort(function(v1,v2){
+		return v2.fileSize-v1.fileSize;
+	});
+	showFolderTable(folderView);
+}
+
+// 按创建者排序
+function sortbycn(){
+	$("#sortByFN").removeClass();
+	$("#sortByCD").removeClass();
+	$("#sortByFS").removeClass();
+	$("#sortByCN").addClass("glyphicon glyphicon-triangle-bottom");
+	folderView.fileList.sort(function(v1,v2){
+		return v1.fileCreator.localeCompare(v2.fileCreator,"zh");
+	});
+	folderView.folderList.sort(function(v1,v2){
+		return v1.folderCreator.localeCompare(v2.folderCreator,"zh");
+	});
+	showFolderTable(folderView);
 }
