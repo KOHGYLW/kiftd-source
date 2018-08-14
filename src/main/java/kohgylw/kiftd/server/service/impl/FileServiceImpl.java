@@ -296,4 +296,38 @@ public class FileServiceImpl implements FileService {
 		}
 		return "0";
 	}
+
+	@Override
+	public String doMoveFiles(HttpServletRequest request) {
+		// TODO 自动生成的方法存根
+		final String strIdList = request.getParameter("strIdList");
+		final String locationpath=request.getParameter("locationpath");
+		final String account = (String) request.getSession().getAttribute("ACCOUNT");
+		if (ConfigureReader.instance().authorized(account, AccountAuth.MOVE_FILES)) {
+			try {
+				final List<String> idList = gson.fromJson(strIdList, new TypeToken<List<String>>() {
+				}.getType());
+				for (final String fileId : idList) {
+					if (fileId == null || fileId.length() <= 0) {
+						return "errorParameter";
+					}
+					final Node node = this.fm.queryById(fileId);
+					if (node == null) {
+						return "errorParameter";
+					}
+					Map<String, String> map=new HashMap<>();
+					map.put("fileId", fileId);
+					map.put("locationpath", locationpath);
+					if (this.fm.moveById(map) <= 0) {
+						return "cannotMoveFiles";
+					}
+					this.lu.writeMoveFileEvent(request, node, locationpath);
+				}
+				return "moveFilesSuccess";
+			} catch (Exception e) {
+				return "errorParameter";
+			}
+		}
+		return "noAuthorized";
+	}
 }

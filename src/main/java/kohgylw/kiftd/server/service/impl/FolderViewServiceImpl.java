@@ -50,6 +50,9 @@ public class FolderViewServiceImpl implements FolderViewService {
 		if (cr.authorized(account, AccountAuth.DOWNLOAD_FILES)) {
 			authList.add("L");
 		}
+		if (cr.authorized(account, AccountAuth.MOVE_FILES)) {
+			authList.add("M");
+		}
 		fv.setAuthList(authList);
 		fv.setPublishTime(ServerTimeUtil.accurateToMinute());
 		return gson.toJson(fv);

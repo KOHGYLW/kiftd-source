@@ -32,7 +32,7 @@ public class ConfigureReader {
 	private final String DEFAULT_FILE_SYSTEM_PATH_SETTING = "DEFAULT";
 	private final String DEFAULT_ACCOUNT_ID = "admin";
 	private final String DEFAULT_ACCOUNT_PWD = "000000";
-	private final String DEFAULT_ACCOUNT_AUTH = "cudr";
+	private final String DEFAULT_ACCOUNT_AUTH = "cudrm";
 	private final String DEFAULT_AUTH_OVERALL = "l";
 	public static final int INVALID_PORT = 1;
 	public static final int INVALID_LOG = 2;
@@ -119,6 +119,9 @@ public class ConfigureReader {
 			}
 			case DOWNLOAD_FILES: {
 				return auths.indexOf("l") != -1;
+			}
+			case MOVE_FILES: {
+				return auths.indexOf("m") != -1;
 			}
 			default: {
 				return false;
@@ -357,7 +360,7 @@ public class ConfigureReader {
 			Printer.instance.print("错误：文件系统路径[" + this.fileSystemPath + "]无效，该路径必须指向一个具备读写权限的文件夹。");
 			return 3;
 		}
-		this.fileBlockPath = this.fileSystemPath + "fileblocks"+File.separator;
+		this.fileBlockPath = this.fileSystemPath + "fileblocks" + File.separator;
 		final File fbFile = new File(this.fileBlockPath);
 		if (!fbFile.isDirectory() && !fbFile.mkdirs()) {
 			Printer.instance.print("错误：无法创建文件块存放区[" + this.fileBlockPath + "]。");
@@ -414,11 +417,14 @@ public class ConfigureReader {
 			Printer.instance.print("错误：无法生成初始账户配置文件，写入失败。");
 		}
 	}
-	
+
 	/**
 	 * 
 	 * <h2>获取文件节点数据库链接位置</h2>
-	 * <p>该位置为存储文件系统的数据库的链接位置，其表示为一个文件路径。</p>
+	 * <p>
+	 * 该位置为存储文件系统的数据库的链接位置，其表示为一个文件路径。
+	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
 	 * @return String 用于数据源或jdbc进行连接的文件节点数据库URL地址
 	 */

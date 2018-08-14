@@ -169,4 +169,10 @@ public class HomeController {
 	public String playAudios(final HttpServletRequest request) {
 		return this.pas.getAudioInfoListByJson(request);
 	}
+	
+	@RequestMapping({"/moveCheckedFiles.ajax"})
+	@ResponseBody
+	public String moveCheckedFiles(final HttpServletRequest request) {
+		return fis.doMoveFiles(request);
+	}
 }

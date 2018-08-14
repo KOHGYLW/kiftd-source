@@ -129,13 +129,13 @@ public class ConsoleRunner {
 						exit();
 						return;
 					default:
-						Printer.instance.print("错误：未能识别输入的内容，"+commandTips);
+						Printer.instance.print("错误：未能识别输入的内容，" + commandTips);
 						break;
 					}
 				}
 			} catch (Exception e) {
 				// TODO: handle exception
-				Printer.instance.print("错误：读取命令时出现意外，"+commandTips+"\r\n，如问题依然存在请尝试重启kiftd。");
+				Printer.instance.print("错误：读取命令时出现意外导致程序退出，请重启kiftd。");
 			}
 		});
 		t.start();

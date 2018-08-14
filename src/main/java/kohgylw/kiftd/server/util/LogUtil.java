@@ -243,6 +243,37 @@ public class LogUtil {
 			t.start();
 		}
 	}
+	
+	/**
+	 * 
+	 * <h2>日志记录：移动文件</h2>
+	 * <p>记录移动文件操作，谁、在什么时候、将哪个文件移动到哪。</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @param request HttpServletRequest 请求对象
+	 * @param f Node 被移动的文件节点
+	 * @param locationpath String 被移动到的位置
+	 */
+	public void writeMoveFileEvent(HttpServletRequest request, Node f, String locationpath) {
+		if (ConfigureReader.instance().inspectLogLevel(LogLevel.Event)) {
+			String account = (String) request.getSession().getAttribute("ACCOUNT");
+			if (account == null || account.length() == 0) {
+				account = "Anonymous";
+			}
+			String a = account;
+			Thread t = new Thread(() -> {
+				Folder folder = fm.queryById(f.getFileParentFolder());
+				List<Folder> l = fu.getParentList(folder.getFolderId());
+				String pl = new String();
+				for (Folder i : l) {
+					pl = pl + i.getFolderName() + "/";
+				}
+				String content = ">ACCOUNT [" + a + "]\r\n>OPERATE [Move file]\r\n>PATH [" + pl
+						+ folder.getFolderName() + "]\r\n>NEW PATH [" + locationpath + "]";
+				writeToLog("Event", content);
+			});
+			t.start();
+		}
+	}
 
 	private void writeToLog(String type, String content) {
 		String t = ServerTimeUtil.accurateToLogName();

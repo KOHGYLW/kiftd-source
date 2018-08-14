@@ -6,5 +6,6 @@ public enum AccountAuth
     UPLOAD_FILES, 
     DELETE_FILE_OR_FOLDER, 
     RENAME_FILE_OR_FOLDER, 
-    DOWNLOAD_FILES;
+    DOWNLOAD_FILES,
+	MOVE_FILES;
 }
