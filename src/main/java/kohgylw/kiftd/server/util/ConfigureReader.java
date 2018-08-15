@@ -360,7 +360,7 @@ public class ConfigureReader {
 			Printer.instance.print("错误：文件系统路径[" + this.fileSystemPath + "]无效，该路径必须指向一个具备读写权限的文件夹。");
 			return 3;
 		}
-		this.fileBlockPath = this.fileSystemPath + "fileblocks" + File.separator;
+		this.fileBlockPath = this.fileSystemPath + File.separator + "fileblocks";
 		final File fbFile = new File(this.fileBlockPath);
 		if (!fbFile.isDirectory() && !fbFile.mkdirs()) {
 			Printer.instance.print("错误：无法创建文件块存放区[" + this.fileBlockPath + "]。");
