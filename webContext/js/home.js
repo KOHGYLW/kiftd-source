@@ -121,11 +121,17 @@ $(function() {
 		$("#cutSignSp").addClass("glyphicon glyphicon-scissors");
 		$('#moveFilesBox').html("");
 	});
+	// IE内核浏览器内的startsWith方法的自实现
+	if(typeof String.prototype.endsWith != 'function') {
+		String.prototype.endsWith = function(suffix) {
+			return this.indexOf(suffix, this.length - suffix.length) !== -1;
+		};
+	}
 });
 
 // 全局请求失败提示
 function doAlert(){
-	alert("kiftd错误：无法连接到服务器，请检查网络连接或服务器运行状态。");
+	alert("错误：无法连接到kiftd服务器，请检查您的网络连接或查看服务器运行状态。");
 }
 
 // 获取服务器操作系统
