@@ -26,6 +26,5 @@ public class ErrorController {
 		Printer.instance
 				.print("\u5904\u7406\u8bf7\u6c42\u65f6\u53d1\u751f\u9519\u8bef\uff1a\n\r------\u4fe1\u606f------\n\r"
 						+ e.getMessage() + "\n\r------\u4fe1\u606f------");
-		e.printStackTrace();
 	}
 }
