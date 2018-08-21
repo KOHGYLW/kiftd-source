@@ -201,7 +201,6 @@ function showFolderView(fid) {
 
 // 开始文件视图加载动画
 function startLoading(){
-	$("#loadingcontext").text("加载中...");
 	$('#loadingModal').modal({backdrop:'static', keyboard: false}); 
 	$('#loadingModal').modal('show');
 }
@@ -1135,21 +1134,8 @@ function pdfView(fileId) {
 	window.open("homeController/pdfView.do?fileId=" + fileId);
 }
 
-//开始图片加载动画
-function startPreparePicutres(){
-	$("#loadingcontext").text("正在生成图片预览...");
-	$('#loadingModal').modal({backdrop:'static', keyboard: false}); 
-	$('#loadingModal').modal('show');
-}
-
-// 结束图片加载动画
-function endPreparePicutres(){
-	$('#loadingModal').modal('hide');
-}
-
 // 查看图片
 function showPicture(fileId) {
-	startPreparePicutres();
 	$.ajax({
 		url : "homeController/getPrePicture.ajax",
 		data : {
@@ -1158,14 +1144,18 @@ function showPicture(fileId) {
 		type : "POST",
 		dataType : "text",
 		success : function(result) {
-			endPreparePicutres();
 			if (result != "ERROR") {
 				var pvl = eval("(" + result + ")");
 				// TODO 整合viewer.js插件
 				var imageslist = document.createElement("ul");
 				$.each(pvl.pictureViewList, function(n, val) {
 					var image = new Image();
-					image.src = "fileblocks/" + val.filePath;
+					//判断直接显示原图还是请求压缩流
+					if(val.filePath.startsWith("homeController")){
+						image.src = val.filePath;
+					}else{
+						image.src = "fileblocks/"+val.filePath;
+					}
 					image.alt = val.fileName;
 					var imagerow = document.createElement("li");
 					imagerow.appendChild(image);
@@ -1183,7 +1173,6 @@ function showPicture(fileId) {
 			}
 		},
 		error : function() {
-			endPreparePicutres();
 			alert("错误：请求失败，请刷新重试。");
 		}
 	});

@@ -53,26 +53,7 @@ public class ShowPictureServiceImpl implements ShowPictureService {
 							|| suffix.equals("png")) {
 						int pSize = Integer.parseInt(n.getFileSize());
 						if (pSize > 1) {
-							String tempPictureName = "temp_" + n.getFileId() + "_"+n.getFileName();
-							String tempPicturePath = ConfigureReader.instance().getTemporaryfilePath()
-									+ tempPictureName;
-							if (!new File(tempPicturePath).exists()) {
-								String nPath = ConfigureReader.instance().getFileBlockPath() + n.getFilePath();
-								try {
-									if (pSize < 3) {
-										Thumbnails.of(nPath).scale(0.6).toFile(tempPicturePath);
-									} else if(pSize<5){
-										Thumbnails.of(nPath).scale(0.4).toFile(tempPicturePath);
-									}else {
-										Thumbnails.of(nPath).scale(0.4).outputQuality(0.6).toFile(tempPicturePath);
-									}
-									n.setFilePath(tempPictureName);
-								} catch (IOException e) {
-									// TODO 自动生成的 catch 块
-								}
-							}else {
-								n.setFilePath(tempPictureName);
-							}
+							n.setFilePath("homeController/showCondensedPicture.do?fileId="+n.getFileId());
 						}
 						pictureViewList.add(n);
 						if (!n.getFileId().equals(fileId)) {
@@ -96,5 +77,34 @@ public class ShowPictureServiceImpl implements ShowPictureService {
 			return gson.toJson((Object) pvl);
 		}
 		return "ERROR";
+	}
+
+	@Override
+	public void getCondensedPicture(final HttpServletRequest request,final HttpServletResponse response) {
+		// TODO 自动生成的方法存根
+		if(ConfigureReader.instance().authorized((String)request.getSession().getAttribute("ACCOUNT"), AccountAuth.DOWNLOAD_FILES)) {
+			String fileId=request.getParameter("fileId");
+			if(fileId!=null) {
+				Node node=fm.queryById(fileId);
+				if(node!=null) {
+					File pBlock=new File(ConfigureReader.instance().getFileBlockPath(),node.getFilePath());
+					if(pBlock.exists()) {
+						try {
+							int pSize=Integer.parseInt(node.getFileSize());
+							if (pSize < 3) {
+								Thumbnails.of(pBlock).scale(0.6).outputFormat("JPG").toOutputStream(response.getOutputStream());
+							} else if(pSize<5){
+								Thumbnails.of(pBlock).scale(0.4).outputFormat("JPG").toOutputStream(response.getOutputStream());
+							}else {
+								Thumbnails.of(pBlock).scale(0.4).outputQuality(0.6).outputFormat("JPG").toOutputStream(response.getOutputStream());
+							}
+						} catch (IOException e) {
+							// TODO 自动生成的 catch 块
+							e.printStackTrace();
+						}
+					}
+				}
+			}
+		}
 	}
 }
