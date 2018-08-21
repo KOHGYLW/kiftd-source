@@ -15,7 +15,10 @@ import org.springframework.context.annotation.*;
 /**
  * 
  * <h2>Web功能-MVC相关配置类</h2>
- * <p>该Spring配置类主要负责配置kiftd网页服务器的处理行为。</p>
+ * <p>
+ * 该Spring配置类主要负责配置kiftd网页服务器的处理行为。
+ * </p>
+ * 
  * @author 青阳龙野(kohgylw)
  * @version 1.0
  */
@@ -28,7 +31,7 @@ public class MVC extends ResourceHttpRequestHandler implements WebMvcConfigurer 
 		registry.addResourceHandler(new String[] { "/**" }).addResourceLocations(new String[] {
 				"file:" + ConfigureReader.instance().getPath() + File.separator + "webContext" + File.separator });
 		registry.addResourceHandler(new String[] { "/fileblocks/**" })
-				.addResourceLocations(new String[] { "file:" + ConfigureReader.instance().getFileBlockPath(),"file:"+ConfigureReader.instance().getTemporaryfilePath() });
+				.addResourceLocations(new String[] { "file:" + ConfigureReader.instance().getFileBlockPath() });
 	}
 
 	@Bean
