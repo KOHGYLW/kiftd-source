@@ -36,7 +36,7 @@ public class H2DBinitListener implements ServletContextListener {
 				state3.execute(
 						"CREATE TABLE FILE(file_id VARCHAR(128) PRIMARY KEY,file_name VARCHAR(128) NOT NULL,file_size VARCHAR(128) NOT NULL,file_parent_folder varchar(128) NOT NULL,file_creation_date varchar(128) NOT NULL,file_creator varchar(128) NOT NULL,file_path varchar(128) NOT NULL)");
 				state3.close();
-				final String fileblocks = sce.getServletContext().getRealPath("/fileblocks");
+				final String fileblocks = ConfigureReader.instance().getFileBlockPath();
 				final File fb = new File(fileblocks);
 				if (fb.exists() && fb.isDirectory()) {
 					final String[] flist = fb.list();

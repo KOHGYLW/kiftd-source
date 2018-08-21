@@ -47,6 +47,10 @@ $(function() {
  			dologin();
 		}
 	});
+	// 开启登陆模态框自动聚焦账户输入框
+	$('#loginModal').on('shown.bs.modal', function(e) {
+		$("#accountid").focus();
+	});
 	// 响应拖动上传文件
 	document.ondragover = function(e) {
 		e.preventDefault();
@@ -197,6 +201,7 @@ function showFolderView(fid) {
 
 // 开始文件视图加载动画
 function startLoading(){
+	$("#loadingcontext").text("加载中...");
 	$('#loadingModal').modal({backdrop:'static', keyboard: false}); 
 	$('#loadingModal').modal('show');
 }
@@ -1130,8 +1135,21 @@ function pdfView(fileId) {
 	window.open("homeController/pdfView.do?fileId=" + fileId);
 }
 
+//开始图片加载动画
+function startPreparePicutres(){
+	$("#loadingcontext").text("正在生成图片预览...");
+	$('#loadingModal').modal({backdrop:'static', keyboard: false}); 
+	$('#loadingModal').modal('show');
+}
+
+// 结束图片加载动画
+function endPreparePicutres(){
+	$('#loadingModal').modal('hide');
+}
+
 // 查看图片
 function showPicture(fileId) {
+	startPreparePicutres();
 	$.ajax({
 		url : "homeController/getPrePicture.ajax",
 		data : {
@@ -1140,6 +1158,7 @@ function showPicture(fileId) {
 		type : "POST",
 		dataType : "text",
 		success : function(result) {
+			endPreparePicutres();
 			if (result != "ERROR") {
 				var pvl = eval("(" + result + ")");
 				// TODO 整合viewer.js插件
@@ -1164,6 +1183,7 @@ function showPicture(fileId) {
 			}
 		},
 		error : function() {
+			endPreparePicutres();
 			alert("错误：请求失败，请刷新重试。");
 		}
 	});

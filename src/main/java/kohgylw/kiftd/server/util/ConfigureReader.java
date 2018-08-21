@@ -298,7 +298,14 @@ public class ConfigureReader {
 		}
 		return false;
 	}
-
+	
+	/**
+	 * 
+	 * <h2>验证配置并完成赋值</h2>
+	 * <p>该方法用于对配置文件进行验证并将正确的值赋予相应的属性，必须在构造器中执行本方法。</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @return int 验证结果代码
+	 */
 	private int testServerPropertiesAndEffect() {
 		Printer.instance.print("正在检查服务器配置...");
 		this.mustLogin = this.serverp.getProperty("mustLogin");
@@ -355,24 +362,27 @@ public class ConfigureReader {
 		} else {
 			this.fileSystemPath = this.FSPath;
 		}
+		if(!fileSystemPath.endsWith(File.separator)) {
+			fileSystemPath=fileSystemPath+File.separator;
+		}
 		final File fsFile = new File(this.fileSystemPath);
 		if (!fsFile.isDirectory() || !fsFile.canRead() || !fsFile.canWrite()) {
 			Printer.instance.print("错误：文件系统路径[" + this.fileSystemPath + "]无效，该路径必须指向一个具备读写权限的文件夹。");
 			return 3;
 		}
-		this.fileBlockPath = this.fileSystemPath + File.separator + "fileblocks"+File.separator;
+		this.fileBlockPath = this.fileSystemPath + "fileblocks"+File.separator;
 		final File fbFile = new File(this.fileBlockPath);
 		if (!fbFile.isDirectory() && !fbFile.mkdirs()) {
 			Printer.instance.print("错误：无法创建文件块存放区[" + this.fileBlockPath + "]。");
 			return 5;
 		}
-		this.fileNodePath = this.fileSystemPath + File.separator + "filenodes";
+		this.fileNodePath = this.fileSystemPath + "filenodes"+File.separator;
 		final File fnFile = new File(this.fileNodePath);
 		if (!fnFile.isDirectory() && !fnFile.mkdirs()) {
 			Printer.instance.print("错误：无法创建文件节点存放区[" + this.fileNodePath + "]。");
 			return 6;
 		}
-		this.TFPath = this.fileSystemPath + File.separator + "temporaryfiles";
+		this.TFPath = this.fileSystemPath + "temporaryfiles"+File.separator;
 		final File tfFile = new File(this.TFPath);
 		if (!tfFile.isDirectory() && !tfFile.mkdirs()) {
 			Printer.instance.print("错误：无法创建临时文件存放区[" + this.TFPath + "]。");

@@ -133,7 +133,15 @@ public class HomeController {
 		}
 		return response.encodeURL("/errorController/pageNotFound.do");
 	}
-
+	
+	/**
+	 * 
+	 * <h2>预览图片请求</h2>
+	 * <p>该方法用于处理预览图片请求。配合Viewer.js插件，返回指定格式的JSON数据。</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @param request HttpServletRequest 请求对象
+	 * @return String 预览图片的JSON信息
+	 */
 	@RequestMapping(value = { "/getPrePicture.ajax" }, produces = { CHARSET_BY_AJAX })
 	@ResponseBody
 	public String getPrePicture(final HttpServletRequest request) {
