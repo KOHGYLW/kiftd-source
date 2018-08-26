@@ -4,6 +4,8 @@ import kohgylw.kiftd.server.service.*;
 import org.springframework.stereotype.*;
 import javax.annotation.*;
 import kohgylw.kiftd.server.mapper.*;
+import kohgylw.kiftd.server.model.Folder;
+
 import javax.servlet.http.*;
 import kohgylw.kiftd.server.pojo.*;
 import java.util.*;
@@ -25,12 +27,23 @@ public class FolderViewServiceImpl implements FolderViewService {
 	@Override
 	public String getFolderViewToJson(final String fid, final HttpSession session, final HttpServletRequest request) {
 		final ConfigureReader cr = ConfigureReader.instance();
-		final FolderView fv = new FolderView();
-		fv.setFolder(this.fm.queryById(fid));
-		fv.setParentList(this.fu.getParentList(fid));
-		fv.setFolderList(this.fm.queryByParentId(fid));
-		fv.setFileList(this.flm.queryByParentFolderId(fid));
+		Folder vf=this.fm.queryById(fid);
 		final String account = (String) session.getAttribute("ACCOUNT");
+		//检查访问文件夹视图请求是否合法
+		if(!ConfigureReader.instance().accessFolder(vf, account)) {
+			return "notAccess";//如无访问权限则直接返回该字段，令页面回到ROOT视图。
+		}
+		final FolderView fv = new FolderView();
+		fv.setFolder(vf);
+		fv.setParentList(this.fu.getParentList(fid));
+		List<Folder> fs=new LinkedList<>();
+		for(Folder f:this.fm.queryByParentId(fid)) {
+			if(ConfigureReader.instance().accessFolder(f, account)) {
+				fs.add(f);
+			}
+		}
+		fv.setFolderList(fs);
+		fv.setFileList(this.flm.queryByParentFolderId(fid));
 		if (account != null) {
 			fv.setAccount(account);
 		}

@@ -72,7 +72,7 @@ public class LogUtil {
 					pl = pl + i.getFolderName() + "/";
 				}
 				String content = ">ACCOUNT [" + a + "]\r\n>OPERATE [Create new folder]\r\n>PATH [" + pl + "]\r\n>NAME ["
-						+ f.getFolderName() + "]";
+						+ f.getFolderName() + "]，CONSTRAINT ["+f.getFolderConstraint()+"]";
 				writeToLog("Event", content);
 			});
 			t.start();
@@ -85,7 +85,7 @@ public class LogUtil {
 	 * 写入重命名文件夹信息
 	 * </p>
 	 */
-	public void writeRenameFolderEvent(HttpServletRequest request, Folder f, String newName) {
+	public void writeRenameFolderEvent(HttpServletRequest request, Folder f, String newName,String newConstraint) {
 		if (ConfigureReader.instance().inspectLogLevel(LogLevel.Event)) {
 			String account = (String) request.getSession().getAttribute("ACCOUNT");
 			if (account == null || account.length() == 0) {
@@ -98,8 +98,8 @@ public class LogUtil {
 				for (Folder i : l) {
 					pl = pl + i.getFolderName() + "/";
 				}
-				String content = ">ACCOUNT [" + a + "]\r\n>OPERATE [Rename folder]\r\n>PATH [" + pl + "]\r\n>NAME ["
-						+ f.getFolderName() + "]->[" + newName + "]";
+				String content = ">ACCOUNT [" + a + "]\r\n>OPERATE [Edit folder]\r\n>PATH [" + pl + "]\r\n>NAME ["
+						+ f.getFolderName() + "]->[" + newName + "]，CONSTRAINT ["+f.getFolderConstraint()+"]->["+newConstraint+"]";
 				writeToLog("Event", content);
 			});
 			t.start();

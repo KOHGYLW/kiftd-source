@@ -133,11 +133,32 @@ public class HomeController {
 		}
 		return response.encodeURL("/errorController/pageNotFound.do");
 	}
-
+	
+	/**
+	 * 
+	 * <h2>预览图片请求</h2>
+	 * <p>该方法用于处理预览图片请求。配合Viewer.js插件，返回指定格式的JSON数据。</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @param request HttpServletRequest 请求对象
+	 * @return String 预览图片的JSON信息
+	 */
 	@RequestMapping(value = { "/getPrePicture.ajax" }, produces = { CHARSET_BY_AJAX })
 	@ResponseBody
 	public String getPrePicture(final HttpServletRequest request) {
 		return this.sps.getPreviewPictureJson(request);
+	}
+	
+	/**
+	 * 
+	 * <h2>获取压缩的预览图片</h2>
+	 * <p>该方法用于预览较大图片时获取其压缩版本以加快预览速度，该请求会根据预览目标的大小自动决定压缩等级。</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @param request HttpServletRequest 请求对象，其中应包含fileId指定预览图片的文件块ID。
+	 * @param response HttpServletResponse 响应对象，用于写出压缩后的数据流。
+	 */
+	@RequestMapping({"/showCondensedPicture.do"})
+	public void showCondensedPicture(final HttpServletRequest request,final HttpServletResponse response) {
+		sps.getCondensedPicture(request, response);
 	}
 
 	@RequestMapping({ "/deleteCheckedFiles.ajax" })

@@ -1,8 +1,10 @@
 package kohgylw.kiftd.server.util;
 
 import java.util.*;
+
 import kohgylw.kiftd.printer.*;
 import kohgylw.kiftd.server.enumeration.*;
+import kohgylw.kiftd.server.model.Folder;
 import kohgylw.kiftd.server.pojo.*;
 import java.io.*;
 
@@ -299,6 +301,16 @@ public class ConfigureReader {
 		return false;
 	}
 
+	/**
+	 * 
+	 * <h2>验证配置并完成赋值</h2>
+	 * <p>
+	 * 该方法用于对配置文件进行验证并将正确的值赋予相应的属性，必须在构造器中执行本方法。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @return int 验证结果代码
+	 */
 	private int testServerPropertiesAndEffect() {
 		Printer.instance.print("正在检查服务器配置...");
 		this.mustLogin = this.serverp.getProperty("mustLogin");
@@ -355,6 +367,9 @@ public class ConfigureReader {
 		} else {
 			this.fileSystemPath = this.FSPath;
 		}
+		if (!fileSystemPath.endsWith(File.separator)) {
+			fileSystemPath = fileSystemPath + File.separator;
+		}
 		final File fsFile = new File(this.fileSystemPath);
 		if (!fsFile.isDirectory() || !fsFile.canRead() || !fsFile.canWrite()) {
 			Printer.instance.print("错误：文件系统路径[" + this.fileSystemPath + "]无效，该路径必须指向一个具备读写权限的文件夹。");
@@ -366,13 +381,13 @@ public class ConfigureReader {
 			Printer.instance.print("错误：无法创建文件块存放区[" + this.fileBlockPath + "]。");
 			return 5;
 		}
-		this.fileNodePath = this.fileSystemPath + File.separator + "filenodes";
+		this.fileNodePath = this.fileSystemPath + "filenodes" + File.separator;
 		final File fnFile = new File(this.fileNodePath);
 		if (!fnFile.isDirectory() && !fnFile.mkdirs()) {
 			Printer.instance.print("错误：无法创建文件节点存放区[" + this.fileNodePath + "]。");
 			return 6;
 		}
-		this.TFPath = this.fileSystemPath + File.separator + "temporaryfiles";
+		this.TFPath = this.fileSystemPath + "temporaryfiles" + File.separator;
 		final File tfFile = new File(this.TFPath);
 		if (!tfFile.isDirectory() && !tfFile.mkdirs()) {
 			Printer.instance.print("错误：无法创建临时文件存放区[" + this.TFPath + "]。");
@@ -430,5 +445,47 @@ public class ConfigureReader {
 	 */
 	public String getFileNodePathURL() {
 		return "jdbc:h2:file:" + ConfigureReader.instance().getFileNodePath() + File.separator + "kift";
+	}
+
+	/**
+	 * 
+	 * <h2>检查某一用户是否有权限访问某一文件夹</h2>
+	 * <p>
+	 * 当访问文件夹的约束等级为“公开的”（0）时，永远返回true； 当为“仅小组”（1）时， 如果文件夹创建者不为“匿名用户”且当前有登录账户，
+	 * 则比对当前登录账户与创建者的小组是否相同或登录账户是否与创建者相同，相同返回true。其余情况均返回false；
+	 * 当为“仅创建者”（2）时，如果文件夹创建者不为“匿名用户”且与当前登录账户相同，返回true，其余情况均返回false。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @param f
+	 *            Folder 要访问的文件夹对象
+	 * @param account
+	 *            String 要访问的账户
+	 * @return boolean true允许访问，false不允许访问
+	 */
+	public boolean accessFolder(Folder f, String account) {
+		int cl = f.getFolderConstraint();
+		if (cl == 0) {
+			return true;
+		} else {
+			if (account != null) {
+				if (cl == 1) {
+					if (f.getFolderCreator().equals(account)) {
+						return true;
+					}
+					String vGroup = accountp.getProperty(account + ".group");
+					String cGroup = accountp.getProperty(f.getFolderCreator() + ".group");
+					if (vGroup != null && vGroup.equals(cGroup)) {
+						return true;
+					}
+				}
+				if (cl == 2) {
+					if (f.getFolderCreator().equals(account)) {
+						return true;
+					}
+				}
+			}
+			return false;
+		}
 	}
 }

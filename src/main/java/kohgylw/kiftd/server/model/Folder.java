@@ -7,6 +7,7 @@ public class Folder
     private String folderCreationDate;
     private String folderCreator;
     private String folderParent;
+    private int folderConstraint;
     
     public String getFolderId() {
         return this.folderId;
@@ -47,4 +48,12 @@ public class Folder
     public void setFolderParent(final String folderParent) {
         this.folderParent = folderParent;
     }
+
+	public int getFolderConstraint() {
+		return folderConstraint;
+	}
+
+	public void setFolderConstraint(int folderConstraint) {
+		this.folderConstraint = folderConstraint;
+	}
 }

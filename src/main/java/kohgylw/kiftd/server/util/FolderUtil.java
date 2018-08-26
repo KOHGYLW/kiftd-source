@@ -31,7 +31,7 @@ public class FolderUtil
     }
     
     public int deleteAllChildFolder(final HttpServletRequest request, final String folderId) {
-        final String fileblocks = request.getServletContext().getRealPath("/fileblocks");
+        final String fileblocks = ConfigureReader.instance().getFileBlockPath();
         final Thread deleteChildFolderThread = new Thread(() -> this.iterationDeleteFolder(fileblocks, folderId));
         deleteChildFolderThread.start();
         return this.fm.deleteById(folderId);

@@ -22,6 +22,7 @@ public class FolderServiceImpl implements FolderService {
 	public String newFolder(final HttpServletRequest request) {
 		final String parentId = request.getParameter("parentId");
 		final String folderName = request.getParameter("folderName");
+		final String folderConstraint = request.getParameter("folderConstraint");
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
 		if (!ConfigureReader.instance().authorized(account, AccountAuth.CREATE_NEW_FOLDER)) {
 			return "noAuthorized";
@@ -44,13 +45,33 @@ public class FolderServiceImpl implements FolderService {
 			return "folderAlreadyExist";
 		}
 		f = new Folder();
+		// 设置子文件夹约束等级，不允许子文件夹的约束等级比附文件夹低
+		int pc = parentFolder.getFolderConstraint();
+		if (folderConstraint != null) {
+			try {
+				int ifc = Integer.parseInt(folderConstraint);
+				if (ifc > 0 && account == null) {
+					return "errorParameter";
+				}
+				if (ifc < pc) {
+					return "errorParameter";
+				} else {
+					f.setFolderConstraint(ifc);
+				}
+			} catch (Exception e) {
+				// TODO: handle exception
+				return "errorParameter";
+			}
+		} else {
+			return "errorParameter";
+		}
 		f.setFolderId(UUID.randomUUID().toString());
 		f.setFolderName(folderName);
 		f.setFolderCreationDate(ServerTimeUtil.accurateToDay());
 		if (account != null) {
 			f.setFolderCreator(account);
 		} else {
-			f.setFolderCreator("\u533f\u540d\u7528\u6237");
+			f.setFolderCreator("匿名用户");
 		}
 		f.setFolderParent(parentId);
 		final int i = this.fm.insertNewFolder(f);
@@ -85,6 +106,7 @@ public class FolderServiceImpl implements FolderService {
 	public String renameFolder(final HttpServletRequest request) {
 		final String folderId = request.getParameter("folderId");
 		final String newName = request.getParameter("newName");
+		final String folderConstraint = request.getParameter("folderConstraint");
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
 		if (!ConfigureReader.instance().authorized(account, AccountAuth.RENAME_FILE_OR_FOLDER)) {
 			return "noAuthorized";
@@ -99,13 +121,64 @@ public class FolderServiceImpl implements FolderService {
 		if (folder == null) {
 			return "errorParameter";
 		}
-		final Map<String, String> map = new HashMap<String, String>();
-		map.put("folderId", folderId);
-		map.put("newName", newName);
-		if (this.fm.updateFolderNameById(map) > 0) {
-			this.lu.writeRenameFolderEvent(request, folder, newName);
-			return "renameFolderSuccess";
+		final Folder parentFolder = this.fm.queryById(folder.getFolderParent());
+		// TODO 修改文件夹约束
+		int pc = parentFolder.getFolderConstraint();
+		if (folderConstraint != null) {
+			try {
+				int ifc = Integer.parseInt(folderConstraint);
+				if (ifc > 0 && account == null) {
+					return "errorParameter";
+				}
+				if (ifc < pc) {
+					return "errorParameter";
+				} else {
+					Map<String, Object> map = new HashMap<>();
+					map.put("newConstraint", ifc);
+					map.put("folderId", folderId);
+					fm.updateFolderConstraintById(map);
+					changeChildFolderConstraint(folderId, ifc);
+					Map<String, String> map2 = new HashMap<String, String>();
+					map2.put("folderId", folderId);
+					map2.put("newName", newName);
+					this.fm.updateFolderNameById(map2);
+					this.lu.writeRenameFolderEvent(request, folder, newName, folderConstraint);
+					return "renameFolderSuccess";
+				}
+			} catch (Exception e) {
+				// TODO: handle exception
+				return "errorParameter";
+			}
+		} else {
+			return "errorParameter";
 		}
-		return "cannotRenameFolder";
 	}
+
+	/**
+	 * 
+	 * <h2>迭代修改子文件夹约束</h2>
+	 * <p>
+	 * 当某一文件夹的约束被修改时，其所有子文件夹的约束等级均不得低于其父文件夹。 例如：
+	 * 父文件夹的约束等级改为1（仅小组）时，所有约束等级为0（公开的）的子文件夹的约束等级也会提升为1， 而所有约束等级为2（仅自己）的子文件夹则不会受影响。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @param folderId
+	 *            要修改的文件夹ID
+	 * @param c
+	 *            约束等级
+	 */
+	private void changeChildFolderConstraint(String folderId, int c) {
+		List<Folder> cfs = fm.queryByParentId(folderId);
+		for (Folder cf : cfs) {
+			if (cf.getFolderConstraint() < c) {
+				Map<String, Object> map = new HashMap<String, Object>();
+				map.put("newConstraint", c);
+				map.put("folderId", cf.getFolderId());
+				fm.updateFolderConstraintById(map);
+			}
+			changeChildFolderConstraint(cf.getFolderId(), c);
+		}
+	}
+
 }

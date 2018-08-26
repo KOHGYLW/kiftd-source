@@ -16,4 +16,6 @@ public interface FolderMapper
     int deleteById(final String folderId);
     
     int updateFolderNameById(final Map<String, String> map);
+    
+    int updateFolderConstraintById(final Map<String, Object> map);
 }

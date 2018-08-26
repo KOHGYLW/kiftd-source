@@ -4,7 +4,7 @@
 
 	<groupId>kohgylw</groupId>
 	<artifactId>kiftd</artifactId>
-	<version>1.0.2-SNAPSHOT</version>
+	<version>1.0.3-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<name>kiftd</name>
@@ -80,6 +80,14 @@
 			<version>1.13</version>
 		</dependency>
 		<!-- end ZIP -->
+	
+		<!-- Thumbnailator图片压缩工具 -->
+		<dependency>
+			<groupId>net.coobird</groupId>
+			<artifactId>thumbnailator</artifactId>
+			<version>0.4.8</version>
+		</dependency>
+		<!-- end Thumbnailator -->
 
 	</dependencies>
 	<!-- end 外部资源 -->
