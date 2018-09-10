@@ -174,6 +174,14 @@ $(function() {
 			return this.indexOf(suffix, this.length - suffix.length) !== -1;
 		};
 	}
+	// 开启详细信息模态框自动显示信息内容
+	$('#folderInfoModal').on('show.bs.modal', function(e) {
+		var f=folderView.folder;
+		$("#fim_name").text(f.folderName);
+		$("#fim_creator").text(f.folderCreator);
+		$("#fim_folderCreationDate").text(f.folderCreationDate);
+		$("#fim_statistics").text("共包含 "+folderView.folderList.length+" 个文件夹， "+folderView.fileList.length+" 个文件。");
+	});
 });
 
 // 全局请求失败提示
@@ -396,12 +404,23 @@ function showParentList(folderView) {
 	var f = folderView.folder;
 	if(folderView.parentList.length>0){
 		$.each(folderView.parentList, function(n, val) {
-			$("#parentFolderList").append("<li><a onclick='entryFolder("+'"' + val.folderId +'"'+")'>"+val.folderName+"</a></li>");
+			$("#parentFolderList").append("<li><a href='javascript:void(0);' onclick='entryFolder("+'"' + val.folderId +'"'+")'>"+val.folderName+"</a></li>");
 		});
 	}else{
 		$("#parentFolderList").html("<li class='disabled'><a>无</a></li>");
 	}
-	$("#currentFolderName").text(f.folderName);
+	if(f.folderName.length>6){
+		$("#currentFolderName").text(f.folderName.substr(0,6)+"...");
+	}else{
+		$("#currentFolderName").text(f.folderName);
+	}
+	if(f.folderName=="ROOT"){
+		$("#folderIconSpan").removeClass("glyphicon-folder-close");
+		$("#folderIconSpan").addClass("glyphicon-home");
+	}else{
+		$("#folderIconSpan").removeClass("glyphicon-home");
+		$("#folderIconSpan").addClass("glyphicon-folder-close");
+	}
 }
 
 // 显示用户视图，包括文件列表、登录信息、操作权限接口等
@@ -422,9 +441,11 @@ function showAccountView(folderView) {
 						"<button class='btn btn-link rightbtn' data-toggle='modal' data-target='#loginModal'>登入<span class='glyphicon glyphicon-user' aria-hidden='true'></span></button>");
 	}
 	var authList = folderView.authList;
-	//对操作菜单进行初始化，根据权限显示可操作的按钮（并非约束）。
+	// 对操作菜单进行初始化，根据权限显示可操作的按钮（并非约束）。
 	$("#fileListDropDown li").addClass("disabled");
 	$("#fileListDropDown li a").attr("onclick","");
+	$("#fileListDropDown li a").attr("href","javascript:void(0);");
+	$("#fileListDropDown li:last").removeClass("disabled");
 	if (authList != null) {
 		if (checkAuth(authList, "C")) {
 			$("#createFolderButtonLi").removeClass("disabled");
