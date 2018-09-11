@@ -1675,36 +1675,40 @@ function doMoveFiles(){
 	});
 }
 
-var screenedFoldrView;//经过排序的文件视图
+var screenedFoldrView;// 经过排序的文件视图
 
-//执行搜索功能
+// 执行搜索功能
 function doSearchFile(){
 	startLoading();
-	var keyworld=$("#sreachKeyWordIn").val();
-	if(keyworld.length!=0){
-		var reg=new RegExp(keyworld+"+");
-		screenedFoldrView=$.extend(true, {}, originFolderView);
-		screenedFoldrView.folderList=[];
-		screenedFoldrView.fileList=[];
-		for(var i=0,j=originFolderView.folderList.length;i<j;i++){
-			if(reg.test(originFolderView.folderList[i].folderName)){
-				screenedFoldrView.folderList.push(originFolderView.folderList[i]);
+	try{
+		var keyworld=$("#sreachKeyWordIn").val();
+		if(keyworld.length!=0){
+			var reg=new RegExp(keyworld+"+");
+			screenedFoldrView=$.extend(true, {}, originFolderView);
+			screenedFoldrView.folderList=[];
+			screenedFoldrView.fileList=[];
+			for(var i=0,j=originFolderView.folderList.length;i<j;i++){
+				if(reg.test(originFolderView.folderList[i].folderName)){
+					screenedFoldrView.folderList.push(originFolderView.folderList[i]);
+				}
 			}
-		}
-		for(var i=0,j=originFolderView.fileList.length;i<j;i++){
-			if(reg.test(originFolderView.fileList[i].fileName)){
-				screenedFoldrView.fileList.push(originFolderView.fileList[i]);
+			for(var i=0,j=originFolderView.fileList.length;i<j;i++){
+				if(reg.test(originFolderView.fileList[i].fileName)){
+					screenedFoldrView.fileList.push(originFolderView.fileList[i]);
+				}
 			}
+			$("#sortByFN").removeClass();
+			$("#sortByCD").removeClass();
+			$("#sortByFS").removeClass();
+			$("#sortByCN").removeClass();
+			folderView=$.extend(true, {}, screenedFoldrView);
+			showFolderTable(folderView);
+		}else{
+			screenedFoldrView=null;
+			showOriginFolderView();
 		}
-		$("#sortByFN").removeClass();
-		$("#sortByCD").removeClass();
-		$("#sortByFS").removeClass();
-		$("#sortByCN").removeClass();
-		folderView=$.extend(true, {}, screenedFoldrView);
-		showFolderTable(folderView);
-	}else{
-		screenedFoldrView=null;
-		showOriginFolderView();
+	}catch(e){
+		alert("错误：搜索关键字有误。请在特殊符号（例如“*”）前加上“\”进行转义。");
 	}
 	endLoading();
 }
