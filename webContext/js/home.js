@@ -1708,7 +1708,7 @@ function doSearchFile(){
 			showOriginFolderView();
 		}
 	}catch(e){
-		alert("错误：搜索关键字有误。请在特殊符号（例如“*”）前加上“\”进行转义。");
+		alert("错误：搜索关键字有误。请在特殊符号（例如“*”）前加上“\\”进行转义。");
 	}
 	endLoading();
 }
