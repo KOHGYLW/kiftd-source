@@ -69,10 +69,10 @@
 								</ul>
 								<form class="navbar-form navbar-left">
 									<div class="form-group">
-										<input type="text" class="form-control"
+										<input id="sreachKeyWordIn" type="text" class="form-control"
 											placeholder="请输入文件名...">
 									</div>
-									<button type="button" class="btn btn-default">搜索</button>
+									<button type="button" class="btn btn-default" onclick="doSearchFile()">搜索</button>
 								</form>
 								<ul class="nav navbar-nav navbar-right">
 									<li id="packageDownloadBox"></li>
@@ -88,8 +88,6 @@
 											<li role="separator" class="divider"></li>
 											<li id="cutFileButtonLi"><a><span id='cutSignTx'>剪切</span></a></li>
 											<li id="deleteSeelectFileButtonLi"><a>批量删除</a></li>
-											<li role="separator" class="divider"></li>
-											<li><a data-toggle="modal" data-target="#folderInfoModal">详细信息</a></li>
 										</ul></li>
 								</ul>
 							</div>

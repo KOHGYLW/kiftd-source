@@ -231,6 +231,8 @@ function showFolderView(fid) {
 				locationpath = folderView.folder.folderId;
 				parentpath = folderView.folder.folderParent;
 				constraintLevel=folderView.folder.folderConstraint;
+				screenedFoldrView=null;
+				$("#sreachKeyWordIn").val("");
 				showParentList(folderView);
 				showAccountView(folderView);
 				showPublishTime(folderView);
@@ -445,7 +447,6 @@ function showAccountView(folderView) {
 	$("#fileListDropDown li").addClass("disabled");
 	$("#fileListDropDown li a").attr("onclick","");
 	$("#fileListDropDown li a").attr("href","javascript:void(0);");
-	$("#fileListDropDown li:last").removeClass("disabled");
 	if (authList != null) {
 		if (checkAuth(authList, "C")) {
 			$("#createFolderButtonLi").removeClass("disabled");
@@ -1597,7 +1598,11 @@ function showOriginFolderView(){
 	$("#sortByCD").removeClass();
 	$("#sortByFS").removeClass();
 	$("#sortByCN").removeClass();
-	folderView=$.extend(true, {}, originFolderView);
+	if(screenedFoldrView!=null){
+		folderView=$.extend(true, {}, screenedFoldrView);
+	}else{
+		folderView=$.extend(true, {}, originFolderView);
+	}
 	showFolderTable(folderView);
 }
 
@@ -1668,4 +1673,38 @@ function doMoveFiles(){
 			$("#dmvfbutton").attr('disabled', false);
 		}
 	});
+}
+
+var screenedFoldrView;//经过排序的文件视图
+
+//执行搜索功能
+function doSearchFile(){
+	startLoading();
+	var keyworld=$("#sreachKeyWordIn").val();
+	if(keyworld.length!=0){
+		var reg=new RegExp(keyworld+"+");
+		screenedFoldrView=$.extend(true, {}, originFolderView);
+		screenedFoldrView.folderList=[];
+		screenedFoldrView.fileList=[];
+		for(var i=0,j=originFolderView.folderList.length;i<j;i++){
+			if(reg.test(originFolderView.folderList[i].folderName)){
+				screenedFoldrView.folderList.push(originFolderView.folderList[i]);
+			}
+		}
+		for(var i=0,j=originFolderView.fileList.length;i<j;i++){
+			if(reg.test(originFolderView.fileList[i].fileName)){
+				screenedFoldrView.fileList.push(originFolderView.fileList[i]);
+			}
+		}
+		$("#sortByFN").removeClass();
+		$("#sortByCD").removeClass();
+		$("#sortByFS").removeClass();
+		$("#sortByCN").removeClass();
+		folderView=$.extend(true, {}, screenedFoldrView);
+		showFolderTable(folderView);
+	}else{
+		screenedFoldrView=null;
+		showOriginFolderView();
+	}
+	endLoading();
 }
