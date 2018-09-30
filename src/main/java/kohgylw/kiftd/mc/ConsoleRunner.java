@@ -64,7 +64,7 @@ public class ConsoleRunner {
 	private void startServer() {
 		Printer.instance.print("执行命令：启动服务器...");
 		if (ConsoleRunner.ctl.started()) {
-			Printer.instance.print("错误：服务器已经启动了。");
+			Printer.instance.print("错误：服务器已经启动了。您可以使用 -status 命令查看服务器运行状态或使用 -stop 命令停止服务器。");
 		} else if (ConsoleRunner.ctl.start()) {
 			Printer.instance.print("kiftd服务器已启动，可以正常访问了，您可以使用 -status 指令查看运行状态。");
 		} else {
@@ -93,6 +93,8 @@ public class ConsoleRunner {
 			} else {
 				Printer.instance.print("错误：无法关闭服务器，请尝试手动关闭。");
 			}
+		}else {
+			Printer.instance.print("错误：服务器尚未启动。您可以使用 -start 命令启动服务器或使用 -status 命令查看服务器运行状态。");
 		}
 	}
 
@@ -105,7 +107,7 @@ public class ConsoleRunner {
 				Printer.instance.print("错误：无法关闭服务器，您可以尝试强制关闭。");
 			}
 		} else {
-			Printer.instance.print("错误：服务器尚未启动。");
+			Printer.instance.print("错误：服务器尚未启动。您可以使用 -start 命令启动服务器或使用 -exit 命令退出应用。");
 		}
 	}
 
