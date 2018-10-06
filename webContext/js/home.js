@@ -949,50 +949,52 @@ function showfilepath() {
 
 // 检查是否能够上传
 function checkUploadFile() {
-	if(fs!=null&&fs.length>0){
-		isUpLoading=true;
-		$("#umbutton").attr('disabled', true);
-		$("#uploadFileAlert").removeClass("alert");
-		$("#uploadFileAlert").removeClass("alert-danger");
-		$("#uploadFileAlert").text("");
-		var filenames = new Array();
-		for (var i = 0; i < fs.length; i++) {
-			filenames[i] = fs[i].name.replace(/^.+?\\([^\\]+?)?$/gi, "$1");
-		}
-		var namelist = JSON.stringify(filenames);
-		
-		$.ajax({
-			type : "POST",
-			dataType : "text",
-			data : {
-				folderId : locationpath,
-				namelist : namelist
-			},
-			url : "homeController/checkUploadFile.ajax",
-			success : function(result) {
-				if (result == "mustLogin") {
-					window.location.href = "login.html";
-				} else {
-					if (result == "errorParameter") {
-						showUploadFileAlert("提示：参数不正确，无法开始上传");
-					} else if (result == "noAuthorized") {
-						showUploadFileAlert("提示：您的操作未被授权，无法开始上传");
-					} else if (result.startsWith("duplicationFileName:")) {
-						showUploadFileAlert("提示：本路径下已存在同名的文件:["
-								+ result.substring(20) + "]，无法开始上传");
-					} else if (result == "permitUpload") {
-						doupload(1);
-					} else {
-						showUploadFileAlert("提示：出现意外错误，无法开始上传");
-					}
-				}
-			},
-			error : function() {
-				showUploadFileAlert("提示：出现意外错误，无法开始上传");
+	if(isUpLoading==false){
+		if(fs!=null&&fs.length>0){
+			isUpLoading=true;
+			$("#umbutton").attr('disabled', true);
+			$("#uploadFileAlert").removeClass("alert");
+			$("#uploadFileAlert").removeClass("alert-danger");
+			$("#uploadFileAlert").text("");
+			var filenames = new Array();
+			for (var i = 0; i < fs.length; i++) {
+				filenames[i] = fs[i].name.replace(/^.+?\\([^\\]+?)?$/gi, "$1");
 			}
-		});
-	}else{
-		showUploadFileAlert("提示：您未选择任何文件，无法开始上传");
+			var namelist = JSON.stringify(filenames);
+			
+			$.ajax({
+				type : "POST",
+				dataType : "text",
+				data : {
+					folderId : locationpath,
+					namelist : namelist
+				},
+				url : "homeController/checkUploadFile.ajax",
+				success : function(result) {
+					if (result == "mustLogin") {
+						window.location.href = "login.html";
+					} else {
+						if (result == "errorParameter") {
+							showUploadFileAlert("提示：参数不正确，无法开始上传");
+						} else if (result == "noAuthorized") {
+							showUploadFileAlert("提示：您的操作未被授权，无法开始上传");
+						} else if (result.startsWith("duplicationFileName:")) {
+							showUploadFileAlert("提示：本路径下已存在同名的文件:["
+									+ result.substring(20) + "]，无法开始上传");
+						} else if (result == "permitUpload") {
+							doupload(1);
+						} else {
+							showUploadFileAlert("提示：出现意外错误，无法开始上传");
+						}
+					}
+				},
+				error : function() {
+					showUploadFileAlert("提示：出现意外错误，无法开始上传");
+				}
+			});
+		}else{
+			showUploadFileAlert("提示：您未选择任何文件，无法开始上传");
+		}
 	}
 }
 
