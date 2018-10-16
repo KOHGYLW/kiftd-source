@@ -475,8 +475,19 @@ public class ConfigureReader {
 					}
 					String vGroup = accountp.getProperty(account + ".group");
 					String cGroup = accountp.getProperty(f.getFolderCreator() + ".group");
-					if (vGroup != null && vGroup.equals(cGroup)) {
-						return true;
+					if (vGroup != null && cGroup!=null) {
+						if("*".equals(vGroup)||"*".equals(cGroup)) {
+							return true;
+						}
+						String[] vgs=vGroup.split(";");
+						String[] cgs=cGroup.split(";");
+						for(String vs:vgs) {
+							for(String cs:cgs) {
+								if(vs.equals(cs)) {
+									return true;
+								}
+							}
+						}
 					}
 				}
 				if (cl == 2) {
