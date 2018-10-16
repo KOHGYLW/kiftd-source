@@ -1,7 +1,7 @@
 ## 欢迎访问kiftd源代码资源库！
 ### Welcome to visit source of kiftd!
 
-_当前版本：v1.0.6v1-RELEASE_
+_当前版本：v1.0.7-SNAPSHOT_
 
 ### 简介
 _kiftd——一款便捷、开源、功能完善的个人&团队&小型团队网盘服务器系统。_
