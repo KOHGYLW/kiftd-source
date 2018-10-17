@@ -234,8 +234,7 @@ public class FileServiceImpl implements FileService {
 		if (zipname != null && !zipname.equals("ERROR")) {
 			final String tfPath = ConfigureReader.instance().getTemporaryfilePath();
 			final File zip = new File(tfPath, zipname);
-			String fname = URLEncoder
-					.encode("kiftd_" + ServerTimeUtil.accurateToDay() + "_\u6253\u5305\u4e0b\u8f7d.zip", "UTF-8");
+			String fname = "kiftd_" + ServerTimeUtil.accurateToDay() + "_\u6253\u5305\u4e0b\u8f7d.zip";
 			if (zip.exists()) {
 				downloadRangeFile(request, response, zip, fname);
 				zip.delete();
