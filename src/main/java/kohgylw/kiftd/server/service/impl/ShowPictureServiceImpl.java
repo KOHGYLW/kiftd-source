@@ -14,6 +14,7 @@ import kohgylw.kiftd.server.model.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.*;
 import kohgylw.kiftd.server.util.*;
 import net.coobird.thumbnailator.Thumbnails;
@@ -100,7 +101,12 @@ public class ShowPictureServiceImpl implements ShowPictureService {
 							}
 						} catch (IOException e) {
 							// TODO 自动生成的 catch 块
-							e.printStackTrace();
+							//压缩失败时，尝试以源文件进行预览
+							try {
+								Files.copy(pBlock.toPath(), response.getOutputStream());
+							} catch (IOException e1) {
+								// TODO 自动生成的 catch 块
+							}
 						}
 					}
 				}
