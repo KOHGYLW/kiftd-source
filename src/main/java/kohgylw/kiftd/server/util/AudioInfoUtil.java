@@ -46,17 +46,14 @@ public class AudioInfoUtil {
 	private void getAudioArtistAndName(final AudioInfo ai, final Node n) {
 		final File f = new File(AudioInfoUtil.fileBlocks, n.getFilePath());
 		ai.setName(this.getFileName(n.getFileName()).trim());
-		ai.setArtist("\u7fa4\u661f");
 		try (final RandomAccessFile raf = new RandomAccessFile(f, "r")) {
 			final byte[] buf = new byte[128];
 			raf.seek(raf.length() - 128L);
 			raf.read(buf);
 			if ("TAG".equalsIgnoreCase(new String(buf, 0, 3))) {
 				final String artist = this.transformCharsetEncoding(buf, 33, 30);
-				final String name = this.transformCharsetEncoding(buf, 3, 30);
-				if (artist.length() > 0 && name.length() > 0) {
+				if (artist.length() > 0) {
 					ai.setArtist(artist);
-					ai.setName(name.trim());
 				}
 			}
 			final byte[] buf2 = new byte[10];
@@ -73,14 +70,7 @@ public class AudioInfoUtil {
 					final String ftitle = new String(buf3, count, 4);
 					flength = buf3[count + 4] * 16777216 + buf3[count + 5] * 65536 + buf3[count + 6] * 256
 							+ buf3[count + 7];
-					if (ftitle.equalsIgnoreCase("TIT2")) {
-						if (flength != 0) {
-							final String name2 = this.transformCharsetEncoding(buf3, count + 11, flength - 1);
-							if (name2.length() > 0) {
-								ai.setName(name2.trim());
-							}
-						}
-					} else if (ftitle.equalsIgnoreCase("TPE1") && flength != 0) {
+					if (ftitle.equalsIgnoreCase("TPE1") && flength != 0) {
 						final String artist2 = this.transformCharsetEncoding(buf3, count + 11, flength - 1);
 						if (artist2.length() > 0) {
 							ai.setArtist(artist2);

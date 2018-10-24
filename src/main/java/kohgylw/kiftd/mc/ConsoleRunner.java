@@ -14,6 +14,7 @@ public class ConsoleRunner {
 
 	private ConsoleRunner() {
 		Printer.init(false);
+		ConsoleRunner.ctl=new KiftdCtl();
 		ConsoleRunner.commandTips = "您可以输入以下指令以控制服务器：\r\n-start 启动服务器\r\n-stop 停止服务器\r\n-exit 停止服务器并退出应用\r\n-restart 重启服务器\r\n-status 查看服务器状态";
 	}
 
@@ -33,6 +34,10 @@ public class ConsoleRunner {
 				this.startKiftdByConsole();
 				break;
 			}
+			case "-start":{
+				ConsoleRunner.ctl.start();
+				break;
+			}
 			default: {
 				Printer.instance.print("kiftd:无效的指令，使用控制台模式启动请输入参数 -console，使用UI模式启动请不传入任何参数。");
 				break;
@@ -47,7 +52,6 @@ public class ConsoleRunner {
 		final Thread t = new Thread(() -> {
 			Printer.instance.print("正在初始化服务器...");
 			if (ConfigureReader.instance().getPropertiesStatus() == 0) {
-				ConsoleRunner.ctl = new KiftdCtl();
 				this.awaiting();
 			} else {
 				Printer.instance.print("服务器参数配置错误，无法启动kiftd，请检查。");
@@ -60,7 +64,7 @@ public class ConsoleRunner {
 	private void startServer() {
 		Printer.instance.print("执行命令：启动服务器...");
 		if (ConsoleRunner.ctl.started()) {
-			Printer.instance.print("错误：服务器已经启动了。");
+			Printer.instance.print("错误：服务器已经启动了。您可以使用 -status 命令查看服务器运行状态或使用 -stop 命令停止服务器。");
 		} else if (ConsoleRunner.ctl.start()) {
 			Printer.instance.print("kiftd服务器已启动，可以正常访问了，您可以使用 -status 指令查看运行状态。");
 		} else {
@@ -89,6 +93,8 @@ public class ConsoleRunner {
 			} else {
 				Printer.instance.print("错误：无法关闭服务器，请尝试手动关闭。");
 			}
+		}else {
+			Printer.instance.print("错误：服务器尚未启动。您可以使用 -start 命令启动服务器或使用 -status 命令查看服务器运行状态。");
 		}
 	}
 
@@ -101,7 +107,7 @@ public class ConsoleRunner {
 				Printer.instance.print("错误：无法关闭服务器，您可以尝试强制关闭。");
 			}
 		} else {
-			Printer.instance.print("错误：服务器尚未启动。");
+			Printer.instance.print("错误：服务器尚未启动。您可以使用 -start 命令启动服务器或使用 -exit 命令退出应用。");
 		}
 	}
 

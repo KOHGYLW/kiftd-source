@@ -258,6 +258,8 @@ public class ServerUIModule extends KiftdDynamicWindow {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				// TODO 自动生成的方法存根
+				stop.setEnabled(false);
+				resatrt.setEnabled(false);
 				Thread t = new Thread(() -> {
 					printMessage("正在重启服务器...");
 					if (cs.close()) {
@@ -269,6 +271,7 @@ public class ServerUIModule extends KiftdDynamicWindow {
 					} else {
 						printMessage("错误：无法关闭服务器，请尝试手动关闭。");
 					}
+					updateServerStatus();
 				});
 				t.start();
 			}

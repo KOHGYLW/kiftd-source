@@ -18,7 +18,7 @@ public class UIRunner {
 		final ServerUIModule ui = ServerUIModule.getInsatnce();
 		ui.show();
 		final Thread t = new Thread(() -> {
-			KiftdCtl ctl = new KiftdCtl();
+			KiftdCtl ctl = new KiftdCtl();//服务器控制层，用于连接UI与服务器内核
 			ServerUIModule.setStartServer(() -> ctl.start());
 			ServerUIModule.setOnCloseServer(() -> ctl.stop());
 			ServerUIModule.setGetServerTime(() -> ServerTimeUtil.getServerTime());

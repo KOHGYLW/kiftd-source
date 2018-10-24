@@ -11,6 +11,16 @@ import org.springframework.boot.*;
 import org.springframework.http.*;
 import org.springframework.boot.web.server.*;
 
+
+/**
+ * 
+ * <h2>服务器控制器</h2>
+ * <p>该层连接服务器内核与用户操作界面，用于控制服务器行为。包括启动、关闭、重启等。同时，该类也为SpringBoot框架
+ * 应用入口，负责初始化SpringBoot容器。
+ * </p>
+ * @author 青阳龙野(kohgylw)
+ * @version 1.0
+ */
 @SpringBootApplication
 @Import({ MVC.class })
 public class KiftdCtl implements WebServerFactoryCustomizer<ConfigurableServletWebServerFactory> {
