@@ -93,11 +93,11 @@ public class ShowPictureServiceImpl implements ShowPictureService {
 						try {
 							int pSize=Integer.parseInt(node.getFileSize());
 							if (pSize < 3) {
-								Thumbnails.of(pBlock).scale(0.6).outputFormat("JPG").toOutputStream(response.getOutputStream());
+								Thumbnails.of(pBlock).scale(0.5).outputFormat("JPG").toOutputStream(response.getOutputStream());
 							} else if(pSize<5){
-								Thumbnails.of(pBlock).scale(0.4).outputFormat("JPG").toOutputStream(response.getOutputStream());
+								Thumbnails.of(pBlock).scale(0.3).outputFormat("JPG").toOutputStream(response.getOutputStream());
 							}else {
-								Thumbnails.of(pBlock).scale(0.4).outputQuality(0.6).outputFormat("JPG").toOutputStream(response.getOutputStream());
+								Thumbnails.of(pBlock).size(600, 600).outputFormat("JPG").toOutputStream(response.getOutputStream());
 							}
 						} catch (IOException e) {
 							// TODO 自动生成的 catch 块
