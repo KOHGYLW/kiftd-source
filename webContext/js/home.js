@@ -1320,15 +1320,16 @@ function showPicture(fileId) {
 // 从指定位置开始顺序加载图片
 
 function loadingPreImg() {
+	console.log("Pre:"+imagesPi);
 	if(imagesPi >= 0) {
 		if(pictureViewList[imagesPi].filePath.startsWith("homeController")){
 			$(imageslist).find('li').eq(imagesPi).find('img').attr('src', pictureViewList[imagesPi].filePath);
 		}else{
 			$(imageslist).find('li').eq(imagesPi).find('img').attr('src', "fileblocks/"+pictureViewList[imagesPi].filePath);
 		}
+		viewer.update();
 		$(imageslist).find('li').eq(imagesPi).find('img').get(0).onload=function() {
 			imagesPi = imagesPi - 1;
-			imagesNi = imagesNi + 1;
 			if(imagesNi < pictureViewList.length) {
 				loadingNexImg();
 			} else if(imagesPi >= 0) {
@@ -1339,15 +1340,16 @@ function loadingPreImg() {
 }
 
 function loadingNexImg() {
+	console.log("Nex:"+imagesNi);
 	if(imagesNi < pictureViewList.length) {
 		if(pictureViewList[imagesNi].filePath.startsWith("homeController")){
 			$(imageslist).find('li').eq(imagesNi).find('img').attr('src', pictureViewList[imagesNi].filePath);
 		}else{
 			$(imageslist).find('li').eq(imagesNi).find('img').attr('src', "fileblocks/"+pictureViewList[imagesNi].filePath);
 		}
+		viewer.update();
 		$(imageslist).find('li').eq(imagesNi).find('img').get(0).onload=function() {
 			imagesNi = imagesNi + 1;
-			imagesPi = imagesPi - 1;
 			if(imagesPi >= 0) {
 				loadingPreImg();
 			} else if(imagesNi < pictureViewList.length) {
