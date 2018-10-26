@@ -1327,13 +1327,13 @@ function loadingPreImg() {
 			$(imageslist).find('li').eq(imagesPi).find('img').attr('src', "fileblocks/"+pictureViewList[imagesPi].filePath);
 		}
 		imagesPi = imagesPi - 1;
-		$(imageslist).find('li').eq(imagesPi).find('img').ready(function() {
+		$(imageslist).find('li').eq(imagesPi).find('img').get(0).onload=function() {
 			if(imagesNi < pictureViewList.length) {
 				loadingNexImg();
 			} else if(imagesPi >= 0) {
 				loadingPreImg();
 			}
-		});
+		}
 	}
 }
 
@@ -1345,13 +1345,13 @@ function loadingNexImg() {
 			$(imageslist).find('li').eq(imagesNi).find('img').attr('src', "fileblocks/"+pictureViewList[imagesNi].filePath);
 		}
 		imagesNi = imagesNi + 1;
-		$(imageslist).find('li').eq(imagesNi).find('img').ready(function() {
+		$(imageslist).find('li').eq(imagesNi).find('img').get(0).onload=function() {
 			if(imagesPi >= 0) {
 				loadingPreImg();
 			} else if(imagesNi < pictureViewList.length) {
 				loadingNexImg();
 			}
-		});
+		}
 	}
 }
 
