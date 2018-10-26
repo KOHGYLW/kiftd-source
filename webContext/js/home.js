@@ -1300,6 +1300,7 @@ function showPicture(fileId) {
 				viewer = new Viewer(imageslist, {
 					hidden : function() {
 						viewer.destroy();
+						document.removeChild(imageslist);
 					}
 				});
 				viewer.view(pvl.index);
