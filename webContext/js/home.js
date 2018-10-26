@@ -1326,8 +1326,8 @@ function loadingPreImg() {
 		}else{
 			$(imageslist).find('li').eq(imagesPi).find('img').attr('src', "fileblocks/"+pictureViewList[imagesPi].filePath);
 		}
-		imagesPi = imagesPi - 1;
 		$(imageslist).find('li').eq(imagesPi).find('img').get(0).onload=function() {
+			imagesPi = imagesPi - 1;
 			if(imagesNi < pictureViewList.length) {
 				loadingNexImg();
 			} else if(imagesPi >= 0) {
@@ -1344,8 +1344,8 @@ function loadingNexImg() {
 		}else{
 			$(imageslist).find('li').eq(imagesNi).find('img').attr('src', "fileblocks/"+pictureViewList[imagesNi].filePath);
 		}
-		imagesNi = imagesNi + 1;
 		$(imageslist).find('li').eq(imagesNi).find('img').get(0).onload=function() {
+			imagesNi = imagesNi + 1;
 			if(imagesPi >= 0) {
 				loadingPreImg();
 			} else if(imagesNi < pictureViewList.length) {
