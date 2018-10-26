@@ -1328,6 +1328,7 @@ function loadingPreImg() {
 		}
 		$(imageslist).find('li').eq(imagesPi).find('img').get(0).onload=function() {
 			imagesPi = imagesPi - 1;
+			imagesNi = imagesNi + 1;
 			if(imagesNi < pictureViewList.length) {
 				loadingNexImg();
 			} else if(imagesPi >= 0) {
@@ -1346,6 +1347,7 @@ function loadingNexImg() {
 		}
 		$(imageslist).find('li').eq(imagesNi).find('img').get(0).onload=function() {
 			imagesNi = imagesNi + 1;
+			imagesPi = imagesPi - 1;
 			if(imagesPi >= 0) {
 				loadingPreImg();
 			} else if(imagesNi < pictureViewList.length) {
