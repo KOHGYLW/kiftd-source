@@ -1272,6 +1272,7 @@ var pictureViewList;
 var imageslist;
 var imagesPi;
 var imagesNi;
+var updateImagesTimer;
 
 // 查看图片
 function showPicture(fileId) {
@@ -1307,6 +1308,7 @@ function showPicture(fileId) {
 				imagesPi = pvl.index;
 				imagesNi = pvl.index + 1;
 				loadingPreImg();
+				updateImagesTimer=window.setInterval('viewer.update();', 1000);
 			} else {
 				alert("错误：无法定位要预览的文件或该操作未被授权。");
 			}
@@ -1320,40 +1322,42 @@ function showPicture(fileId) {
 // 从指定位置开始顺序加载图片
 
 function loadingPreImg() {
-	console.log("Pre:"+imagesPi);
 	if(imagesPi >= 0) {
 		if(pictureViewList[imagesPi].filePath.startsWith("homeController")){
 			$(imageslist).find('li').eq(imagesPi).find('img').attr('src', pictureViewList[imagesPi].filePath);
 		}else{
 			$(imageslist).find('li').eq(imagesPi).find('img').attr('src', "fileblocks/"+pictureViewList[imagesPi].filePath);
 		}
-		viewer.update();
 		$(imageslist).find('li').eq(imagesPi).find('img').get(0).onload=function() {
 			imagesPi = imagesPi - 1;
 			if(imagesNi < pictureViewList.length) {
 				loadingNexImg();
 			} else if(imagesPi >= 0) {
 				loadingPreImg();
+			}else{
+				window.clearInterval(updateImagesTimer);
+				viewer.update();
 			}
 		}
 	}
 }
 
 function loadingNexImg() {
-	console.log("Nex:"+imagesNi);
 	if(imagesNi < pictureViewList.length) {
 		if(pictureViewList[imagesNi].filePath.startsWith("homeController")){
 			$(imageslist).find('li').eq(imagesNi).find('img').attr('src', pictureViewList[imagesNi].filePath);
 		}else{
 			$(imageslist).find('li').eq(imagesNi).find('img').attr('src', "fileblocks/"+pictureViewList[imagesNi].filePath);
 		}
-		viewer.update();
 		$(imageslist).find('li').eq(imagesNi).find('img').get(0).onload=function() {
 			imagesNi = imagesNi + 1;
 			if(imagesPi >= 0) {
 				loadingPreImg();
 			} else if(imagesNi < pictureViewList.length) {
 				loadingNexImg();
+			}else{
+				window.clearInterval(updateImagesTimer);
+				viewer.update();
 			}
 		}
 	}
