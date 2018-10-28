@@ -1301,7 +1301,7 @@ function showPicture(fileId) {
 				viewer = new Viewer(imageslist, {
 					hidden : function() {
 						viewer.destroy();
-					}
+					},
 				});
 				viewer.view(pvl.index);
 				viewer.show();
