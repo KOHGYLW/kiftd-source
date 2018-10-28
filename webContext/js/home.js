@@ -1267,13 +1267,6 @@ function pdfView(fileId) {
 	window.open("homeController/pdfView.do?fileId=" + fileId);
 }
 
-var viewer;
-var pictureViewList;
-var imageslist;
-var imagesPi;
-var imagesNi;
-var updateImagesTimer;
-
 // 查看图片
 function showPicture(fileId) {
 	$.ajax({
@@ -1287,12 +1280,17 @@ function showPicture(fileId) {
 			if (result != "ERROR") {
 				var pvl = eval("(" + result + ")");
 				// TODO 整合viewer.js插件
-				imageslist = document.createElement("ul");
-				pictureViewList=pvl.pictureViewList;
+				var imageslist = document.createElement("ul");
+				var pictureViewList=pvl.pictureViewList;
+				var viewer;
 				$.each(pictureViewList, function(n, val) {
 					var image = new Image();
 					// 判断直接显示原图还是请求压缩流
-					image.src='css/loading.gif';
+					if(val.filePath.startsWith("homeController")){
+						image.src=val.filePath;
+					}else{
+						image.src="fileblocks/"+val.filePath;
+					}
 					image.alt = val.fileName;
 					var imagerow = document.createElement("li");
 					imagerow.appendChild(image);
@@ -1305,10 +1303,6 @@ function showPicture(fileId) {
 				});
 				viewer.view(pvl.index);
 				viewer.show();
-				imagesPi = pvl.index;
-				imagesNi = pvl.index + 1;
-				loadingPreImg();
-				updateImagesTimer=window.setInterval('viewer.update();', 1000);
 			} else {
 				alert("错误：无法定位要预览的文件或该操作未被授权。");
 			}
@@ -1317,50 +1311,6 @@ function showPicture(fileId) {
 			alert("错误：请求失败，请刷新重试。");
 		}
 	});
-}
-
-// 从指定位置开始顺序加载图片
-
-function loadingPreImg() {
-	if(imagesPi >= 0) {
-		if(pictureViewList[imagesPi].filePath.startsWith("homeController")){
-			$(imageslist).find('li').eq(imagesPi).find('img').attr('src', pictureViewList[imagesPi].filePath);
-		}else{
-			$(imageslist).find('li').eq(imagesPi).find('img').attr('src', "fileblocks/"+pictureViewList[imagesPi].filePath);
-		}
-		$(imageslist).find('li').eq(imagesPi).find('img').get(0).onload=function() {
-			imagesPi = imagesPi - 1;
-			if(imagesNi < pictureViewList.length) {
-				loadingNexImg();
-			} else if(imagesPi >= 0) {
-				loadingPreImg();
-			}else{
-				window.clearInterval(updateImagesTimer);
-				viewer.update();
-			}
-		}
-	}
-}
-
-function loadingNexImg() {
-	if(imagesNi < pictureViewList.length) {
-		if(pictureViewList[imagesNi].filePath.startsWith("homeController")){
-			$(imageslist).find('li').eq(imagesNi).find('img').attr('src', pictureViewList[imagesNi].filePath);
-		}else{
-			$(imageslist).find('li').eq(imagesNi).find('img').attr('src', "fileblocks/"+pictureViewList[imagesNi].filePath);
-		}
-		$(imageslist).find('li').eq(imagesNi).find('img').get(0).onload=function() {
-			imagesNi = imagesNi + 1;
-			if(imagesPi >= 0) {
-				loadingPreImg();
-			} else if(imagesNi < pictureViewList.length) {
-				loadingNexImg();
-			}else{
-				window.clearInterval(updateImagesTimer);
-				viewer.update();
-			}
-		}
-	}
 }
 
 // 选中某一行文件，如果使用Shift点击则为多选
