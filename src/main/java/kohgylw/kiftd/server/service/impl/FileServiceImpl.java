@@ -8,7 +8,6 @@ import kohgylw.kiftd.server.enumeration.*;
 import kohgylw.kiftd.server.model.*;
 import org.springframework.web.multipart.*;
 import javax.servlet.http.*;
-import java.net.*;
 import java.io.*;
 import kohgylw.kiftd.server.util.*;
 import java.util.*;
@@ -27,7 +26,7 @@ import com.google.gson.reflect.TypeToken;
  * @see kohgylw.kiftd.server.service.FileService
  */
 @Service
-public class FileServiceImpl implements FileService {
+public class FileServiceImpl extends RangeFileStreamWriter implements FileService {
 	@Resource
 	private NodeMapper fm;
 	@Resource
@@ -36,6 +35,8 @@ public class FileServiceImpl implements FileService {
 	private LogUtil lu;
 	@Resource
 	private Gson gson;
+	
+	private static final String CONTENT_TYPE="application/force-download";
 
 	public String checkUploadFile(final HttpServletRequest request) {
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
@@ -122,8 +123,7 @@ public class FileServiceImpl implements FileService {
 		if (file == null) {
 			return "errorParameter";
 		}
-		final String fileblocks = ConfigureReader.instance().getFileBlockPath();
-		if (!this.fbu.deleteFromFileBlocks(fileblocks, file.getFilePath())) {
+		if (!this.fbu.deleteFromFileBlocks(file)) {
 			return "cannotDeleteFile";
 		}
 		if (this.fm.deleteById(fileId) > 0) {
@@ -140,9 +140,8 @@ public class FileServiceImpl implements FileService {
 			if (fileId != null) {
 				final Node f = this.fm.queryById(fileId);
 				if (f != null) {
-					final String fileBlocks = ConfigureReader.instance().getFileBlockPath();
-					final File fo = this.fbu.getFileFromBlocks(fileBlocks, f.getFilePath());
-					downloadRangeFile(request, response, fo, f.getFileName());// 使用断点续传执行下载
+					final File fo = this.fbu.getFileFromBlocks(f);
+					writeRangeFileStream(request, response, fo, f.getFileName(),CONTENT_TYPE);// 使用断点续传执行下载
 					this.lu.writeDownloadFileEvent(request, f);
 				}
 			}
@@ -191,8 +190,7 @@ public class FileServiceImpl implements FileService {
 					if (file == null) {
 						return "errorParameter";
 					}
-					final String fileblocks = ConfigureReader.instance().getFileBlockPath();
-					if (!this.fbu.deleteFromFileBlocks(fileblocks, file.getFilePath())) {
+					if (!this.fbu.deleteFromFileBlocks(file)) {
 						return "cannotDeleteFile";
 					}
 					if (this.fm.deleteById(fileId) <= 0) {
@@ -236,7 +234,7 @@ public class FileServiceImpl implements FileService {
 			final File zip = new File(tfPath, zipname);
 			String fname = "kiftd_" + ServerTimeUtil.accurateToDay() + "_\u6253\u5305\u4e0b\u8f7d.zip";
 			if (zip.exists()) {
-				downloadRangeFile(request, response, zip, fname);
+				writeRangeFileStream(request, response, zip, fname, CONTENT_TYPE);
 				zip.delete();
 			}
 		}
@@ -313,68 +311,4 @@ public class FileServiceImpl implements FileService {
 		return "noAuthorized";
 	}
 
-	// 使用断点续传技术提供文件下载服务
-	private void downloadRangeFile(HttpServletRequest request, HttpServletResponse response, File fo, String fname) {
-		long skipLength = 0;// 下载时跳过的字节数
-		long downLength = 0;// 需要继续下载的字节数
-		boolean hasEnd = false;// 是否具备结束字节声明
-		try {
-			response.setHeader("Accept-Ranges", "bytes");// 支持断点续传声明
-			// 获取已下载字节数和需下载字节数
-			String rangeLabel = request.getHeader("Range");// 获取下载长度声明
-			if (null != rangeLabel) {
-				// 当进行断点续传时，返回响应码206
-				response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
-				// 解析下载跳过长度和继续长度
-				rangeLabel = request.getHeader("Range").replaceAll("bytes=", "");
-				if (rangeLabel.indexOf('-') == rangeLabel.length() - 1) {
-					hasEnd = false;
-					rangeLabel = rangeLabel.substring(0, rangeLabel.indexOf('-'));
-					skipLength = Long.parseLong(rangeLabel.trim());
-				} else {
-					hasEnd = true;
-					String startBytes = rangeLabel.substring(0, rangeLabel.indexOf('-'));
-					String endBytes = rangeLabel.substring(rangeLabel.indexOf('-') + 1, rangeLabel.length());
-					skipLength = Long.parseLong(startBytes.trim());
-					downLength = Long.parseLong(endBytes);
-				}
-			}
-			// 设置响应中文件块声明
-			long fileLength = fo.length();// 文件长度
-			if (0 != skipLength) {
-				String contentRange = "";
-				if (hasEnd) {
-					contentRange = new StringBuffer(rangeLabel).append("/").append(new Long(fileLength).toString())
-							.toString();
-				} else {
-					contentRange = new StringBuffer("bytes").append(new Long(skipLength).toString()).append("-")
-							.append(new Long(fileLength - 1).toString()).append("/")
-							.append(new Long(fileLength).toString()).toString();
-				}
-				response.setHeader("Content-Range", contentRange);
-			}
-			// 开始执行下载
-			response.setContentType("application/force-download");
-			response.setHeader("Content-Length", "" + fileLength);
-			response.addHeader("Content-Disposition", "attachment;fileName=" + URLEncoder.encode(fname, "UTF-8"));
-			final int buffersize = ConfigureReader.instance().getBuffSize();
-			final byte[] buffer = new byte[buffersize];
-			final RandomAccessFile raf = new RandomAccessFile(fo, "r");
-			final OutputStream os = (OutputStream) response.getOutputStream();
-			raf.seek(skipLength);// 跳过已经下载的字节数
-			if (hasEnd) {
-				while (raf.getFilePointer() < downLength) {
-					os.write(raf.read());
-				}
-			} else {
-				int index = 0;
-				while ((index = raf.read(buffer)) != -1) {
-					os.write(buffer, 0, index);
-				}
-			}
-			raf.close();
-			os.close();
-		} catch (Exception ex) {
-		}
-	}
 }

@@ -6,7 +6,6 @@ import kohgylw.kiftd.server.service.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.*;
 import javax.servlet.http.*;
-import kohgylw.kiftd.server.model.*;
 
 /**
  * 
@@ -124,22 +123,21 @@ public class HomeController {
 		return this.pvs.getPlayVideoJson(request);
 	}
 
-	@RequestMapping({ "/pdfView.do" })
-	public String pdfView(final HttpServletRequest request, final HttpServletResponse response) {
-		final Node f = this.pdvs.foundPdf(request);
-		if (f != null) {
-			return "redirect:" + response.encodeURL(
-					"/pdfview/web/viewer.html?file=" + request.getContextPath() + "/fileblocks/" + f.getFilePath());
-		}
-		return response.encodeURL("/errorController/pageNotFound.do");
+	@RequestMapping({ "/pdfView.do/{fileId}" })
+	public void pdfView(@PathVariable("fileId")String fileId,final HttpServletRequest request, final HttpServletResponse response) {
+		pdvs.getPdfAsStream(request, response, fileId);
 	}
 	
 	/**
 	 * 
 	 * <h2>预览图片请求</h2>
-	 * <p>该方法用于处理预览图片请求。配合Viewer.js插件，返回指定格式的JSON数据。</p>
+	 * <p>
+	 * 该方法用于处理预览图片请求。配合Viewer.js插件，返回指定格式的JSON数据。
+	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param request HttpServletRequest 请求对象
+	 * @param request
+	 *            HttpServletRequest 请求对象
 	 * @return String 预览图片的JSON信息
 	 */
 	@RequestMapping(value = { "/getPrePicture.ajax" }, produces = { CHARSET_BY_AJAX })
@@ -147,17 +145,22 @@ public class HomeController {
 	public String getPrePicture(final HttpServletRequest request) {
 		return this.sps.getPreviewPictureJson(request);
 	}
-	
+
 	/**
 	 * 
 	 * <h2>获取压缩的预览图片</h2>
-	 * <p>该方法用于预览较大图片时获取其压缩版本以加快预览速度，该请求会根据预览目标的大小自动决定压缩等级。</p>
+	 * <p>
+	 * 该方法用于预览较大图片时获取其压缩版本以加快预览速度，该请求会根据预览目标的大小自动决定压缩等级。
+	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param request HttpServletRequest 请求对象，其中应包含fileId指定预览图片的文件块ID。
-	 * @param response HttpServletResponse 响应对象，用于写出压缩后的数据流。
+	 * @param request
+	 *            HttpServletRequest 请求对象，其中应包含fileId指定预览图片的文件块ID。
+	 * @param response
+	 *            HttpServletResponse 响应对象，用于写出压缩后的数据流。
 	 */
-	@RequestMapping({"/showCondensedPicture.do"})
-	public void showCondensedPicture(final HttpServletRequest request,final HttpServletResponse response) {
+	@RequestMapping({ "/showCondensedPicture.do" })
+	public void showCondensedPicture(final HttpServletRequest request, final HttpServletResponse response) {
 		sps.getCondensedPicture(request, response);
 	}
 
@@ -190,8 +193,8 @@ public class HomeController {
 	public String playAudios(final HttpServletRequest request) {
 		return this.pas.getAudioInfoListByJson(request);
 	}
-	
-	@RequestMapping({"/moveCheckedFiles.ajax"})
+
+	@RequestMapping({ "/moveCheckedFiles.ajax" })
 	@ResponseBody
 	public String moveCheckedFiles(final HttpServletRequest request) {
 		return fis.doMoveFiles(request);

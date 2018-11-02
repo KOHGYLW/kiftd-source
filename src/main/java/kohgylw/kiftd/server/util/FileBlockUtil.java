@@ -14,7 +14,7 @@ import org.zeroturnaround.zip.*;
 public class FileBlockUtil {
 	@Resource
 	private NodeMapper fm;
-
+	
 	public String saveToFileBlocks(final HttpServletRequest request, final MultipartFile f) {
 		final String fileBlocks = ConfigureReader.instance().getFileBlockPath();
 		final String id = UUID.randomUUID().toString().replace("-", "");
@@ -35,13 +35,13 @@ public class FileBlockUtil {
 		return "" + mb;
 	}
 
-	public boolean deleteFromFileBlocks(final String fileblocks, final String path) {
-		final File file = new File(fileblocks, path);
+	public boolean deleteFromFileBlocks(Node f) {
+		final File file = new File(ConfigureReader.instance().getFileBlockPath(), f.getFilePath());
 		return file.exists() && file.isFile() && file.delete();
 	}
 
-	public File getFileFromBlocks(final String fileBlocks, final String path) {
-		final File file = new File(fileBlocks, path);
+	public File getFileFromBlocks(Node f) {
+		final File file = new File(ConfigureReader.instance().getFileBlockPath(), f.getFilePath());
 		if (file.exists() && file.isFile()) {
 			return file;
 		}

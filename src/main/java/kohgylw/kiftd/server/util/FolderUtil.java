@@ -48,7 +48,7 @@ public class FolderUtil
         if (files.size() > 0) {
             this.fim.deleteByParentFolderId(folderId);
             for (final Node f2 : files) {
-                this.fbu.deleteFromFileBlocks(fileblocks, f2.getFilePath());
+                this.fbu.deleteFromFileBlocks(f2);
             }
         }
         this.fm.deleteById(folderId);

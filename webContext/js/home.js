@@ -622,9 +622,13 @@ function showFolderTable(folderView) {
 						var fileRow = "<tr onclick='checkfile(" + '"'
 								+ fi.fileId + '"' + ")' id='" + fi.fileId
 								+ "' class='filerow'><td>" + fi.fileName
-								+ "</td><td>" + fi.fileCreationDate
-								+ "</td><td>" + fi.fileSize + "MB</td><td>"
-								+ fi.fileCreator + "</td><td>";
+								+ "</td><td>" + fi.fileCreationDate;
+						if(fi.fileSize=="0"){
+							fileRow=fileRow+"</td><td>>1MB</td><td>";
+						}else{
+							fileRow=fileRow+"</td><td>" + fi.fileSize + "MB</td><td>";
+						}
+						fileRow=fileRow + fi.fileCreator + "</td><td>";
 						if (aL) {
 							fileRow = fileRow
 									+ "<button onclick='showDownloadModel("
@@ -643,7 +647,7 @@ function showFolderTable(folderView) {
 										+ fi.fileId
 										+ '"'
 										+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-play'></span> 播放</button>";
-							} else if (getSuffix(fi.fileName) == "pdf") {
+							} else if (getSuffix(fi.fileName) == "pdf" ||getSuffix(fi.fileName) == "txt") {
 								fileRow = fileRow
 										+ "<button onclick='pdfView("
 										+ '"'
@@ -1264,7 +1268,7 @@ function playVideo(fileId) {
 
 // 预览PDF文档
 function pdfView(fileId) {
-	window.open("homeController/pdfView.do?fileId=" + fileId);
+	window.open("/pdfview/web/viewer.html?file=/homeController/pdfView.do/" + fileId);
 }
 
 // 查看图片
