@@ -647,7 +647,7 @@ function showFolderTable(folderView) {
 										+ fi.fileId
 										+ '"'
 										+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-play'></span> 播放</button>";
-							} else if (getSuffix(fi.fileName) == "pdf" ||getSuffix(fi.fileName) == "txt") {
+							} else if (getSuffix(fi.fileName) == "pdf") {
 								fileRow = fileRow
 										+ "<button onclick='pdfView("
 										+ '"'
