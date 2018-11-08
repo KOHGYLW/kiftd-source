@@ -631,7 +631,7 @@ function showFolderTable(folderView) {
 								+ "' class='filerow'><td>" + fi.fileName
 								+ "</td><td>" + fi.fileCreationDate;
 						if(fi.fileSize=="0"){
-							fileRow=fileRow+"</td><td>>1MB</td><td>";
+							fileRow=fileRow+"</td><td>&lt;1MB</td><td>";
 						}else{
 							fileRow=fileRow+"</td><td>" + fi.fileSize + "MB</td><td>";
 						}
