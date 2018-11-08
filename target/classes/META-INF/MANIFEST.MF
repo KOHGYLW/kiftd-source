@@ -1,6 +1,6 @@
 Manifest-Version: 1.0
 Implementation-Title: kiftd
-Implementation-Version: 1.0.7-RELEASE
+Implementation-Version: 1.0.8-SNAPSHOT
 Built-By: kohgylw
 Implementation-Vendor-Id: kohgylw
 Build-Jdk: 1.8.0_131
