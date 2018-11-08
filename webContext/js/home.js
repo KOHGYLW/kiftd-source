@@ -1351,9 +1351,9 @@ function createViewListByPage() {
 		}
 		for(var i = 0; i < viewerPageSize && i < (pvl.pictureViewList.length - (viewerPageIndex - 1) * viewerPageSize); i++) {
 			if(pvl.pictureViewList[i].filePath.startsWith("homeController")){
-				$(images).append("<li><img src='" + pvl.pictureViewList[startIndex+i].filePath + "' alt='" + pvl.pictureViewList[i].fileName + "' /></li>");
+				$(images).append("<li><img src='" + pvl.pictureViewList[startIndex+i].filePath + "' alt='" + pvl.pictureViewList[startIndex+i].fileName + "' /></li>");
 			}else{
-				$(images).append("<li><img src='fileblocks/" + pvl.pictureViewList[startIndex+i].filePath + "' alt='" + pvl.pictureViewList[i].fileName + "' /></li>");
+				$(images).append("<li><img src='fileblocks/" + pvl.pictureViewList[startIndex+i].filePath + "' alt='" + pvl.pictureViewList[startIndex+i].fileName + "' /></li>");
 			}
 		}
 		if(viewerPageIndex < viewerTotal) {
