@@ -17,7 +17,14 @@ _下列条目为kiftd开发环境的基本信息，如需对源代码进行查�
 + 项目管理框架：Maven（m2e 1.8.0 for Eclipse）,Archetype：mavem-archetype-quickstart 1.1。
 + 编码格式：UTF-8
 + 项目资源及配置：Spring Boot+MyBatis+H2 DB，详见pom.xml文档。
-+ 更详尽的说明文档将在编写完成后上传至此。
+
+入口类：kohgylw.kiftd.mc.MC
+
+### 快速开始
++ 使用Eclipse javaEE版本导入本该资源。
++ 更新项目并确保pom文件中引入的外部资源能够正确引入至本地。
++ 打开kohgylw.kiftd.mc.MC类，进行测试运行。
++ 使用Run with选项中的Maven install操作获得本资源的编译版本。
 
 ### 使用许可（下载该源代码资源即视为接受以下许可）
 kiftd从v1.0.4版本开始使用自带的许可文件进行分发。您应该先阅读该文件（获取方式：前往kiftd发行版主页下载一份kiftd发行版并在其中获得，详见 https://github.com/KOHGYLW/kiftd ），并在同意其中的所有条款后再下载该源代码。其大致内容如下：

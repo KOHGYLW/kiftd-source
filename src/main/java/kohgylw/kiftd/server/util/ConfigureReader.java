@@ -7,7 +7,23 @@ import kohgylw.kiftd.server.enumeration.*;
 import kohgylw.kiftd.server.model.Folder;
 import kohgylw.kiftd.server.pojo.*;
 import java.io.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardWatchEventKinds;
+import java.nio.file.WatchEvent;
+import java.nio.file.WatchKey;
+import java.nio.file.WatchService;
 
+/**
+ * 
+ * <h2>kiftd配置解析器</h2>
+ * <p>
+ * 该工具负责读取并解析配置文件，并将结果随时提供给kiftd服务器业务逻辑以完成相应功能（例如用户认证、权限判定、配置启动端口等）。
+ * </p>
+ * 
+ * @author 青阳龙野(kohgylw)
+ * @version 1.0
+ */
 public class ConfigureReader {
 	private static ConfigureReader cr;
 	private Properties serverp;
@@ -44,6 +60,7 @@ public class ConfigureReader {
 	public static final int CANT_CREATE_FILE_NODE_PATH = 6;
 	public static final int CANT_CREATE_TF_PATH = 7;
 	public static final int LEGAL_PROPERTIES = 0;
+	private static Thread accountPropertiesUpdateDaemonThread;
 
 	private ConfigureReader() {
 		this.propertiesStatus = -1;
@@ -70,8 +87,9 @@ public class ConfigureReader {
 			this.accountp.load(accountPropIn);
 			Printer.instance.print("配置文件载入完毕。正在检查配置...");
 			this.propertiesStatus = this.testServerPropertiesAndEffect();
-			if (this.propertiesStatus == 0) {
+			if (this.propertiesStatus == LEGAL_PROPERTIES) {
 				Printer.instance.print("准备就绪。");
+				startAccountRealTimeUpdateListener();
 			}
 		} catch (Exception e) {
 			Printer.instance.print("错误：无法加载一个或多个配置文件（位于" + this.confdir + "路径下），请尝试删除旧的配置文件并重新启动本应用或查看安装路径的权限（必须可读写）。");
@@ -475,15 +493,15 @@ public class ConfigureReader {
 					}
 					String vGroup = accountp.getProperty(account + ".group");
 					String cGroup = accountp.getProperty(f.getFolderCreator() + ".group");
-					if (vGroup != null && cGroup!=null) {
-						if("*".equals(vGroup)||"*".equals(cGroup)) {
+					if (vGroup != null && cGroup != null) {
+						if ("*".equals(vGroup) || "*".equals(cGroup)) {
 							return true;
 						}
-						String[] vgs=vGroup.split(";");
-						String[] cgs=cGroup.split(";");
-						for(String vs:vgs) {
-							for(String cs:cgs) {
-								if(vs.equals(cs)) {
+						String[] vgs = vGroup.split(";");
+						String[] cgs = cGroup.split(";");
+						for (String vs : vgs) {
+							for (String cs : cgs) {
+								if (vs.equals(cs)) {
 									return true;
 								}
 							}
@@ -499,4 +517,44 @@ public class ConfigureReader {
 			return false;
 		}
 	}
+
+	/**
+	 * 
+	 * <h2>启动账户配置文件实时更新监听</h2>
+	 * <p>
+	 * 该方法负责启动对账户配置文件account.properties的修改监听，并自动载入最新配置，设计在应用运行时执行，应用关闭自动结束。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 */
+	public void startAccountRealTimeUpdateListener() {
+		if (accountPropertiesUpdateDaemonThread == null) {
+			Path confPath = Paths.get(confdir);// 获取配置文件存放路径以对其中的变动进行监听
+			accountPropertiesUpdateDaemonThread = new Thread(() -> {
+				try {
+					while (true) {
+						WatchService ws = confPath.getFileSystem().newWatchService();
+						confPath.register(ws, StandardWatchEventKinds.ENTRY_MODIFY);
+						WatchKey wk = ws.take();
+						List<WatchEvent<?>> es = wk.pollEvents();
+						for (WatchEvent<?> we : es) {
+							if (we.kind() == StandardWatchEventKinds.ENTRY_MODIFY && ACCOUNT_PROPERTIES_FILE.equals(we.context().toString())) {
+								Printer.instance.print("正在更新账户配置信息...");
+								final File accountProp = new File(this.confdir + ACCOUNT_PROPERTIES_FILE);
+								final FileInputStream accountPropIn = new FileInputStream(accountProp);
+								this.accountp.load(accountPropIn);
+								Printer.instance.print("账户配置更新完成，已加载最新配置。");
+							}
+						}
+					}
+				} catch (Exception e) {
+					// TODO 自动生成的 catch 块
+					Printer.instance.print("错误：用户配置文件更改监听失败，该功能已失效，kiftd可能无法实时更新用户配置（重启应用可恢复该功能）。");
+				}
+			});
+			accountPropertiesUpdateDaemonThread.setDaemon(true);
+			accountPropertiesUpdateDaemonThread.start();
+		}
+	}
+
 }

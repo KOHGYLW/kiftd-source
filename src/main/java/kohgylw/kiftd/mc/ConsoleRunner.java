@@ -7,6 +7,13 @@ import java.util.Scanner;
 import kohgylw.kiftd.printer.*;
 import kohgylw.kiftd.server.util.*;
 
+/**
+ * 
+ * <h2>命令模式启动器</h2>
+ * <p>该启动器将以命令模式启动kiftd，请执行静态build()方法开启界面并初始化kiftd服务器引擎。</p>
+ * @author 青阳龙野(kohgylw)
+ * @version 1.0
+ */
 public class ConsoleRunner {
 	private static ConsoleRunner cs;
 	private static KiftdCtl ctl;
@@ -17,7 +24,15 @@ public class ConsoleRunner {
 		ConsoleRunner.ctl=new KiftdCtl();
 		ConsoleRunner.commandTips = "您可以输入以下指令以控制服务器：\r\n-start 启动服务器\r\n-stop 停止服务器\r\n-exit 停止服务器并退出应用\r\n-restart 重启服务器\r\n-status 查看服务器状态";
 	}
-
+	
+	/**
+	 * 
+	 * <h2>以命令模式运行kiftd</h2>
+	 * <p>启动命令模式操作并初始化服务器引擎，该方法将返回本启动器的唯一实例。</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @param args java.lang.String[] 启动参数
+	 * @return kohgylw.kiftd.mc.ConsoleRunner 本启动器唯一实例
+	 */
 	public static ConsoleRunner build(final String[] args) {
 		if (ConsoleRunner.cs == null) {
 			ConsoleRunner.cs = new ConsoleRunner();

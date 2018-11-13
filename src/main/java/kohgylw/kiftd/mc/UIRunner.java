@@ -9,10 +9,17 @@ import kohgylw.kiftd.server.util.ConfigureReader;
 import kohgylw.kiftd.server.util.ServerTimeUtil;
 import kohgylw.kiftd.ui.callback.*;
 
+/**
+ * 
+ * <h2>UI界面模式启动器</h2>
+ * <p>该启动器将以界面模式启动kiftd，请执行静态build()方法开启界面并初始化kiftd服务器引擎。</p>
+ * @author 青阳龙野(kohgylw)
+ * @version 1.0
+ */
 public class UIRunner {
 	
 	private static UIRunner ui;
-
+	
 	private UIRunner() {
 		Printer.init(true);
 		final ServerUIModule ui = ServerUIModule.getInsatnce();
@@ -83,7 +90,14 @@ public class UIRunner {
 		});
 		t.start();
 	}
-
+	
+	/**
+	 * 
+	 * <h2>以UI模式运行kiftd</h2>
+	 * <p>启动UI模式操作并初始化服务器引擎，该方法将返回本启动器的唯一实例。</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @return kohgylw.kiftd.mc.UIRunner 本启动器唯一实例
+	 */
 	public static UIRunner build() {
 		if (UIRunner.ui == null) {
 			UIRunner.ui = new UIRunner();
