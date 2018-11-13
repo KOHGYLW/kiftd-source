@@ -540,6 +540,7 @@ public class ConfigureReader {
 						for (WatchEvent<?> we : es) {
 							if (we.kind() == StandardWatchEventKinds.ENTRY_MODIFY && ACCOUNT_PROPERTIES_FILE.equals(we.context().toString())) {
 								Printer.instance.print("正在更新账户配置信息...");
+								this.accountp.clear();
 								final File accountProp = new File(this.confdir + ACCOUNT_PROPERTIES_FILE);
 								final FileInputStream accountPropIn = new FileInputStream(accountProp);
 								this.accountp.load(accountPropIn);
