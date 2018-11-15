@@ -227,6 +227,10 @@ $(function() {
 		$("#fim_folderCreationDate").text(f.folderCreationDate);
 		$("#fim_statistics").text("共包含 "+folderView.folderList.length+" 个文件夹， "+folderView.fileList.length+" 个文件。");
 	});
+	// 关闭下载提示模态框自动隐藏下载链接
+	$('#downloadModal').on('hidden.bs.modal', function(e) {
+		$('#downloadURLCollapse').collapse('hide');
+	});
 });
 
 // 全局请求失败提示
@@ -485,7 +489,7 @@ function showAccountView(folderView) {
 		// 说明用户未登录，显示登录按钮
 		$("#tb")
 				.append(
-						"<button class='btn btn-link rightbtn' data-toggle='modal' data-target='#loginModal'>登入<span class='glyphicon glyphicon-user' aria-hidden='true'></span></button>");
+						"<button class='btn btn-link rightbtn' data-toggle='modal' data-target='#loginModal'>登入 <span class='glyphicon glyphicon-user' aria-hidden='true'></span></button>");
 	}
 	var authList = folderView.authList;
 	// 对操作菜单进行初始化，根据权限显示可操作的按钮（并非约束）。
@@ -1108,6 +1112,7 @@ function showUploadFileAlert(txt) {
 function showDownloadModel(fileId, fileName) {
 	$("#downloadModal").modal('toggle');
 	$("#downloadFileName").text("提示：您确认要下载文件：[" + fileName + "]么？");
+	$("#downloadHrefBox").html("<a href='"+window.location.protocol+"//"+window.location.host+"/homeController/downloadFile.do?fileId="+fileId+"'>"+window.location.protocol+"//"+window.location.host+"/homeController/downloadFile.do?fileId="+fileId+"</a>");
 	$("#downloadFileBox")
 			.html(
 					"<button id='dlmbutton' type='button' class='btn btn-primary' onclick='dodownload("

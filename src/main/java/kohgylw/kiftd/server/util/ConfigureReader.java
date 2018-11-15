@@ -64,7 +64,15 @@ public class ConfigureReader {
 
 	private ConfigureReader() {
 		this.propertiesStatus = -1;
-		this.path = System.getProperty("user.dir");
+		this.path = System.getProperty("user.dir");//开发环境下
+		String classPath = System.getProperty("java.class.path");
+		if(classPath.indexOf(File.pathSeparator) < 0) {
+			File f=new File(classPath);
+			classPath=f.getAbsolutePath();
+			if(classPath.endsWith(".jar")) {
+				this.path=classPath.substring(0, classPath.lastIndexOf(File.separator));//使用环境下
+			}
+		}
 		this.DEFAULT_FILE_SYSTEM_PATH = this.path + File.separator + "filesystem" + File.separator;
 		this.confdir = this.path + File.separator + "conf" + File.separator;
 		this.serverp = new Properties();
