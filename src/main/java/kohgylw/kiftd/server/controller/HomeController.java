@@ -34,8 +34,6 @@ public class HomeController {
 	@Resource
 	private PlayVideoService pvs;
 	@Resource
-	private PdfViewService pdvs;
-	@Resource
 	private ShowPictureService sps;
 	@Resource
 	private PlayAudioService pas;
@@ -121,11 +119,6 @@ public class HomeController {
 	@ResponseBody
 	public String playVideo(final HttpServletRequest request, final HttpServletResponse response) {
 		return this.pvs.getPlayVideoJson(request);
-	}
-
-	@RequestMapping({ "/pdfView.do/{fileId}" })
-	public void pdfView(@PathVariable("fileId")String fileId,final HttpServletRequest request, final HttpServletResponse response) {
-		pdvs.getPdfAsStream(request, response, fileId);
 	}
 	
 	/**

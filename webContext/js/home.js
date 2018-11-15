@@ -662,7 +662,7 @@ function showFolderTable(folderView) {
 								fileRow = fileRow
 										+ "<button onclick='pdfView("
 										+ '"'
-										+ fi.fileId
+										+ fi.filePath
 										+ '"'
 										+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-eye-open'></span> 预览</button>";
 							} else if (getSuffix(fi.fileName) == "jpg"
@@ -1279,8 +1279,8 @@ function playVideo(fileId) {
 }
 
 // 预览PDF文档
-function pdfView(fileId) {
-	window.open("/pdfview/web/viewer.html?file=/homeController/pdfView.do/" + fileId);
+function pdfView(filePath) {
+	window.open("/pdfview/web/viewer.html?file=/fileblocks/" + filePath);
 }
 
 // 查看图片

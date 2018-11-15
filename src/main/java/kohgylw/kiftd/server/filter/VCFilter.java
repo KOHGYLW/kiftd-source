@@ -3,8 +3,10 @@ package kohgylw.kiftd.server.filter;
 import javax.servlet.annotation.*;
 import javax.servlet.*;
 import javax.servlet.http.*;
+
 import kohgylw.kiftd.server.util.*;
 import kohgylw.kiftd.server.enumeration.*;
+
 import java.io.*;
 
 /**
@@ -16,6 +18,7 @@ import java.io.*;
  */
 @WebFilter({ "/fileblocks/*"})
 public class VCFilter implements Filter {
+	
 	public void init(final FilterConfig filterConfig) throws ServletException {
 	}
 

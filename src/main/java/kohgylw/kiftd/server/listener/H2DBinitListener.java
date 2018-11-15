@@ -33,6 +33,9 @@ public class H2DBinitListener implements ServletContextListener {
 			final Statement state3 = conn.createStatement();
 			state3.execute("ALTER TABLE FOLDER ADD COLUMN IF NOT EXISTS folder_constraint INT NOT NULL DEFAULT 0");
 			state3.close();
+			final Statement state4 = conn.createStatement();
+			state4.execute("CREATE INDEX IF NOT EXISTS file_index ON FILE (file_id,file_name)");
+			state4.close();
 			conn.close();
 			Printer.instance.print("文件节点初始化完毕。");
 		} catch (Exception e) {

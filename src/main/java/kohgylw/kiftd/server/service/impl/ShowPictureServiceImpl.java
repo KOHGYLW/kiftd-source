@@ -32,7 +32,9 @@ public class ShowPictureServiceImpl implements ShowPictureService {
 	 * <p>
 	 * 该方法用于根据请求获取预览图片列表并进行封装，对于过大图片会进行压缩。
 	 * </p>
-	 * 
+	 * <pre>
+	 * “系发挽袖铺纸研墨，画得那年林间过；七重纱幕后你眼波，风流只向一人说……”
+	 * </pre>
 	 * @author 青阳龙野(kohgylw)
 	 * @param request
 	 *            HttpServletRequest 请求对象，需包含fileId字段（需预览的图片ID）。
