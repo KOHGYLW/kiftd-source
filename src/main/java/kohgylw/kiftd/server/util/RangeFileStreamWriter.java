@@ -3,6 +3,8 @@ package kohgylw.kiftd.server.util;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
@@ -49,19 +51,24 @@ public class RangeFileStreamWriter {
 	 */
 	protected void writeRangeFileStream(HttpServletRequest request, HttpServletResponse response, File fo, String fname,
 			String contentType) {
-		long fileLength = fo.length();//文件总大小
-		long startOffset = 0; //起始偏移量
-		boolean hasEnd = false;//请求区间是否存在结束标识
-		long endOffset = 0; //结束偏移量
-		long contentLength = 0; //响应体长度
-		String rangeBytes = "";//请求中的Range参数
+		long fileLength = fo.length();// 文件总大小
+		long startOffset = 0; // 起始偏移量
+		boolean hasEnd = false;// 请求区间是否存在结束标识
+		long endOffset = 0; // 结束偏移量
+		long contentLength = 0; // 响应体长度
+		String rangeBytes = "";// 请求中的Range参数
 		// 设置请求头，基于kiftd文件系统推荐使用application/octet-stream
 		response.setContentType(contentType);
 		// 设置文件信息
-		response.setHeader("Content-Disposition", "attachment; filename=\"" + fname + "\"");
-		//设置支持断点续传功能
+		try {
+			response.setHeader("Content-Disposition", "attachment; filename=" + URLEncoder.encode(fname, "UTF-8"));
+		} catch (UnsupportedEncodingException e) {
+			// TODO 自动生成的 catch 块
+			response.setHeader("Content-Disposition", "attachment; filename=" + fname);
+		}
+		// 设置支持断点续传功能
 		response.setHeader("Accept-Ranges", "bytes");
-		//针对具备断点续传性质的请求进行解析
+		// 针对具备断点续传性质的请求进行解析
 		if (request.getHeader("Range") != null && request.getHeader("Range").startsWith("bytes=")) {
 			response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
 			rangeBytes = request.getHeader("Range").replaceAll("bytes=", "");
@@ -80,12 +87,12 @@ public class RangeFileStreamWriter {
 		} else { // 从开始进行下载
 			contentLength = fileLength; // 客户端要求全文下载
 		}
-		response.setHeader("Content-Length", ""+contentLength);// 设置请求体长度
+		response.setHeader("Content-Length", "" + contentLength);// 设置请求体长度
 		if (startOffset != 0) {
 			// 设置Content-Range，格式为“bytes 起始偏移-结束偏移/文件的总大小”
 			if (!hasEnd) {
 				String contentRange = new StringBuffer("bytes ").append("" + startOffset).append("-")
-						.append("" + (fileLength - 1)).append("/").append(""+fileLength).toString();
+						.append("" + (fileLength - 1)).append("/").append("" + fileLength).toString();
 				response.setHeader("Content-Range", contentRange);
 			} else {
 				String contentRange = new StringBuffer("bytes ").append(rangeBytes).append("/").append("" + fileLength)
@@ -93,11 +100,11 @@ public class RangeFileStreamWriter {
 				response.setHeader("Content-Range", contentRange);
 			}
 		}
-		//写出缓冲
+		// 写出缓冲
 		ByteBuffer buffer = ByteBuffer.allocate(ConfigureReader.instance().getBuffSize());
-		byte[] buf=new byte[ConfigureReader.instance().getBuffSize()];
-		//NIO读取文件并写处至输出流
-		
+		byte[] buf = new byte[ConfigureReader.instance().getBuffSize()];
+		// NIO读取文件并写处至输出流
+
 		try (FileChannel fc = FileChannel.open(Paths.get(fo.getAbsolutePath()), StandardOpenOption.READ)) {
 			BufferedOutputStream out = new BufferedOutputStream(response.getOutputStream());
 			if (!hasEnd) {
@@ -106,7 +113,7 @@ public class RangeFileStreamWriter {
 				int n = 0;
 				while ((n = fc.read(buffer)) != -1) {
 					buffer.flip();
-					buffer.get(buf,0,n);
+					buffer.get(buf, 0, n);
 					out.write(buf, 0, n);
 					buffer.flip();
 				}
@@ -119,7 +126,7 @@ public class RangeFileStreamWriter {
 					n = fc.read(buffer);
 					buffer.flip();
 					readLength += n;
-					buffer.get(buf,0,n);
+					buffer.get(buf, 0, n);
 					out.write(buf, 0, n);
 					buffer.flip();
 				}
@@ -127,7 +134,7 @@ public class RangeFileStreamWriter {
 			out.flush();
 			out.close();
 		} catch (IOException ex) {
-			//针对任何IO异常忽略，传输失败不处理
+			// 针对任何IO异常忽略，传输失败不处理
 			ex.printStackTrace();
 		}
 	}
