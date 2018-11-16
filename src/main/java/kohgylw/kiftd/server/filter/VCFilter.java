@@ -27,6 +27,7 @@ public class VCFilter implements Filter {
 		final HttpServletRequest hsr = (HttpServletRequest) request;
 		final String account = (String) hsr.getSession().getAttribute("ACCOUNT");
 		if (ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES)) {
+			response.setContentType("application/octet-stream");
 			chain.doFilter(request, response);
 		} else {
 			hsr.getRequestDispatcher("/errorController/pageNotFound.do").forward(request, response);

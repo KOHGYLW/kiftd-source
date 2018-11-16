@@ -36,7 +36,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 	@Resource
 	private Gson gson;
 	
-	private static final String CONTENT_TYPE="application/force-download";
+	private static final String CONTENT_TYPE="application/octet-stream";
 
 	public String checkUploadFile(final HttpServletRequest request) {
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
