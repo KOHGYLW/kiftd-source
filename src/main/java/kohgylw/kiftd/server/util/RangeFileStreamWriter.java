@@ -75,7 +75,7 @@ public class RangeFileStreamWriter {
 				startOffset = Long.parseLong(rangeBytes.substring(0, rangeBytes.indexOf('-')).trim());
 				endOffset = Long.parseLong(rangeBytes.substring(rangeBytes.indexOf('-') + 1).trim());
 				// 具备起始偏移量与结束偏移量时，例如0-9，则响应体长度为10个字节
-				contentLength = endOffset - startOffset;
+				contentLength = endOffset - startOffset + 1;
 			}
 		} else { // 从开始进行下载
 			contentLength = fileLength; // 客户端要求全文下载
@@ -106,7 +106,7 @@ public class RangeFileStreamWriter {
 				int n = 0;
 				while ((n = fc.read(buffer)) != -1) {
 					buffer.flip();
-					buffer.get(buf);
+					buffer.get(buf,0,n);
 					out.write(buf, 0, n);
 					buffer.flip();
 				}
@@ -115,11 +115,11 @@ public class RangeFileStreamWriter {
 				fc.position(startOffset);
 				int n = 0;
 				long readLength = 0;// 写出量，用于确定结束位置
-				while (readLength <= contentLength) {
+				while (readLength < contentLength) {
 					n = fc.read(buffer);
 					buffer.flip();
 					readLength += n;
-					buffer.get(buf);
+					buffer.get(buf,0,n);
 					out.write(buf, 0, n);
 					buffer.flip();
 				}
@@ -128,6 +128,7 @@ public class RangeFileStreamWriter {
 			out.close();
 		} catch (IOException ex) {
 			//针对任何IO异常忽略，传输失败不处理
+			ex.printStackTrace();
 		}
 	}
 }
