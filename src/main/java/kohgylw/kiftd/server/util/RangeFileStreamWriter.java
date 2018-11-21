@@ -128,14 +128,13 @@ public class RangeFileStreamWriter {
 					readLength += n;
 					buffer.get(buf, 0, n);
 					out.write(buf, 0, n);
-					buffer.flip();
+					buffer.clear();
 				}
 			}
 			out.flush();
 			out.close();
 		} catch (IOException ex) {
 			// 针对任何IO异常忽略，传输失败不处理
-			ex.printStackTrace();
 		}
 	}
 }
