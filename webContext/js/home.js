@@ -195,7 +195,7 @@ $(function() {
 	}
 	// Shift+A全选文件/反选文件，Shift+N新建文件夹，Shift+U上传文件，Shift+C&V剪切粘贴，Shift+D批量删除
 	$(document).keypress(function (e) {
-		if($('.modal.shown').length==0){
+		if($('.modal.shown').length == 0 || ($('.modal.shown').length == 1 && $('.modal.shown').attr('id') == 'loadingModal')){
 			var keyCode = e.keyCode ? e.keyCode : e.which ? e.which : e.charCode;
 			if (window.event.shiftKey) {
 				switch (keyCode) {
