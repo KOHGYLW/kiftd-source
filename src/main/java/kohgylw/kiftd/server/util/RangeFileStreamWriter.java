@@ -60,11 +60,12 @@ public class RangeFileStreamWriter {
 		// 设置请求头，基于kiftd文件系统推荐使用application/octet-stream
 		response.setContentType(contentType);
 		// 设置文件信息
+		response.setCharacterEncoding("UTF-8");
 		try {
-			response.setHeader("Content-Disposition", "attachment; filename=" + URLEncoder.encode(fname, "UTF-8"));
+			response.setHeader("Content-Disposition", "attachment; filename=\"" + URLEncoder.encode(fname, "UTF-8").replaceAll("\\+", "%20").replaceAll("%28", "\\(").replaceAll("%29", "\\)").replaceAll("%3B", ";").replaceAll("%40", "@").replaceAll("%23", "\\#").replaceAll("%26", "\\&")+"\"");
 		} catch (UnsupportedEncodingException e) {
 			// TODO 自动生成的 catch 块
-			response.setHeader("Content-Disposition", "attachment; filename=" + fname);
+			response.setHeader("Content-Disposition", "attachment; filename=\"" + fname.replaceAll("\\+", "%20").replaceAll("%28", "\\(").replaceAll("%29", "\\)").replaceAll("%3B", ";").replaceAll("%40", "@").replaceAll("%23", "\\#").replaceAll("%26", "\\&")+"\"");
 		}
 		// 设置支持断点续传功能
 		response.setHeader("Accept-Ranges", "bytes");
