@@ -195,7 +195,6 @@ $(function() {
 	}
 	// Shift+A全选文件/反选文件，Shift+N新建文件夹，Shift+U上传文件，Shift+C&V剪切粘贴，Shift+D批量删除
 	$(document).keypress(function (e) {
-		console.log($('.modal.shown'));
 		if($('.modal.shown').length==0){
 			var keyCode = e.keyCode ? e.keyCode : e.which ? e.which : e.charCode;
 			if (window.event.shiftKey) {
@@ -335,11 +334,13 @@ function showFolderView(fid) {
 function startLoading(){
 	$('#loadingModal').modal({backdrop:'static', keyboard: false}); 
 	$('#loadingModal').modal('show');
+	$('#loadingModal').addClass("shown");
 }
 
 // 结束文件视图加载动画
 function endLoading(){
 	$('#loadingModal').modal('hide');
+	$('#loadingModal').removeClass("shown");
 }
 
 // 开始登陆加载动画
