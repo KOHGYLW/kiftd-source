@@ -1,12 +1,14 @@
 package kohgylw.kiftd.server.service.impl;
 
 import kohgylw.kiftd.server.service.*;
+
 import org.springframework.stereotype.*;
 import kohgylw.kiftd.server.mapper.*;
 import javax.annotation.*;
 import kohgylw.kiftd.server.enumeration.*;
 import kohgylw.kiftd.server.model.*;
 import org.springframework.web.multipart.*;
+
 import javax.servlet.http.*;
 import java.io.*;
 import kohgylw.kiftd.server.util.*;
@@ -27,6 +29,8 @@ import com.google.gson.reflect.TypeToken;
  */
 @Service
 public class FileServiceImpl extends RangeFileStreamWriter implements FileService {
+	private static final String UPLOADSUCCESS = "uploadsuccess";//上传成功标识
+	private static final String UPLOADERROR = "uploaderror";//上传失败标识
 	@Resource
 	private NodeMapper fm;
 	@Resource
@@ -35,62 +39,120 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 	private LogUtil lu;
 	@Resource
 	private Gson gson;
-	
-	private static final String CONTENT_TYPE="application/octet-stream";
 
+	private static final String CONTENT_TYPE = "application/octet-stream";
+
+	// 检查上传文件列表的实现
 	public String checkUploadFile(final HttpServletRequest request) {
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
 		final String folderId = request.getParameter("folderId");
-		final String namelist = request.getParameter("namelist");
-		final List<String> namelistObj = gson.fromJson(namelist, new TypeToken<List<String>>() {
+		final String nameList = request.getParameter("namelist");
+		// 先行权限检查
+		if (!ConfigureReader.instance().authorized(account, AccountAuth.UPLOAD_FILES)) {
+			return "noAuthorized";
+		}
+		// 获得上传文件名列表
+		final List<String> namelistObj = gson.fromJson(nameList, new TypeToken<List<String>>() {
 		}.getType());
-		for (final String filename : namelistObj) {
-			if (folderId == null || folderId.length() <= 0 || filename == null || filename.length() <= 0) {
+		final List<String> pereFileNameList = new ArrayList<>();
+		// 查找目标目录下是否存在与待上传文件同名的文件，如果有，记录在上方的列表中
+		for (final String fileName : namelistObj) {
+			if (folderId == null || folderId.length() <= 0 || fileName == null || fileName.length() <= 0) {
 				return "errorParameter";
 			}
-			if (!ConfigureReader.instance().authorized(account, AccountAuth.UPLOAD_FILES)) {
-				return "noAuthorized";
-			}
 			final List<Node> files = this.fm.queryByParentFolderId(folderId);
-			boolean duplication = false;
-			for (final Node f : files) {
-				if (f.getFileName().equals(filename)) {
-					duplication = true;
-				}
+			if (files.stream().parallel().anyMatch((n) -> n.getFileName().equals(fileName))) {
+				pereFileNameList.add(fileName);
 			}
-			if (!duplication) {
-				continue;
-			}
-			return "duplicationFileName:" + filename;
+		}
+		// 如果存在同名文件，返回同名文件的JSON数据，否则直接允许上传
+		if (pereFileNameList.size() > 0) {
+			return "duplicationFileName:" + gson.toJson(pereFileNameList);
 		}
 		return "permitUpload";
 	}
 
+	// 执行上传操作，接收文件并存入文件节点
 	public String doUploadFile(final HttpServletRequest request, final MultipartFile file) {
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
 		final String folderId = request.getParameter("folderId");
-		final String filename = file.getOriginalFilename();
-		if (folderId == null || folderId.length() <= 0 || filename == null || filename.length() <= 0) {
-			return "uploaderror";
+		String fileName = file.getOriginalFilename();
+		final String repeType = request.getParameter("repeType");
+		// 再次检查上传文件名与目标目录ID
+		if (folderId == null || folderId.length() <= 0 || fileName == null || fileName.length() <= 0) {
+			return UPLOADERROR;
 		}
+		// 再次检查权限
 		if (!ConfigureReader.instance().authorized(account, AccountAuth.UPLOAD_FILES)) {
-			return "uploaderror";
+			return UPLOADERROR;
 		}
+		// 检查是否存在同名文件。不存在：直接存入新节点；存在：检查repeType代表的上传类型：覆盖、跳过、保留两者。
 		final List<Node> files = this.fm.queryByParentFolderId(folderId);
-		boolean duplication = false;
-		for (final Node f : files) {
-			if (f.getFileName().equals(filename)) {
-				duplication = true;
+		final List<String> fileNames = Arrays
+				.asList(files.stream().parallel().map((t) -> t.getFileName()).toArray(String[]::new));
+		if (fileNames.contains(fileName)) {
+			// 针对存在同名文件的操作
+			if (repeType != null) {
+				switch (repeType) {
+				// 跳过则忽略上传请求并直接返回上传成功（跳过不应上传）
+				case "skip":
+					return UPLOADSUCCESS;
+				// 覆盖则找到已存在文件节点的File并将新内容写入其中，同时更新原节点信息（除了文件名、父目录和ID之外的全部信息）
+				case "cover":
+					for (Node f : files) {
+						if (f.getFileName().equals(fileName)) {
+							File file2 = fbu.getFileFromBlocks(f);
+							try {
+								file.transferTo(file2);
+								f.setFileSize(fbu.getFileSize(file));
+								f.setFileCreationDate(ServerTimeUtil.accurateToDay());
+								if (account != null) {
+									f.setFileCreator(account);
+								} else {
+									f.setFileCreator("\u533f\u540d\u7528\u6237");
+								}
+								if(fm.update(f) > 0) {
+									this.lu.writeUploadFileEvent(request, f);
+									return UPLOADSUCCESS;
+								}else {
+									return UPLOADERROR;
+								}
+							} catch (Exception e) {
+								// TODO 自动生成的 catch 块
+								return UPLOADERROR;
+							}
+						}
+					}
+					return UPLOADERROR;
+				//保留两者，使用型如“xxxxx (n).xx”的形式命名新文件。其中n为计数，例如已经存在2个文件，则新文件的n记为2
+				case "both":
+					int i = 1;
+					//计算n的取值
+					String newName = fileName.substring(0, fileName.lastIndexOf(".")) + " (" + i + ")"
+							+ fileName.substring(fileName.lastIndexOf("."));
+					while (fileNames.contains(newName)) {
+						i++;
+						newName = fileName.substring(0, fileName.lastIndexOf(".")) + " (" + i + ")"
+								+ fileName.substring(fileName.lastIndexOf("."));
+					}
+					//设置新文件名为标号形式
+					fileName = newName;
+					break;
+				default:
+					//其他声明，容错，暂无效果
+					return UPLOADERROR;
+				}
+			} else {
+				//如果既有重复文件、同时又没声明如何操作，则直接上传失败。
+				return UPLOADERROR;
 			}
 		}
-		if (duplication) {
-			return "uploaderror";
-		}
+		//将文件存入节点并获取其存入生成路径，型如“UUID.block”形式。
 		final String path = this.fbu.saveToFileBlocks(request, file);
-		final String fsize = this.fbu.getFileSize(file);
 		if (path.equals("ERROR")) {
-			return "uploaderror";
+			return UPLOADERROR;
 		}
+		final String fsize = this.fbu.getFileSize(file);
 		final Node f2 = new Node();
 		f2.setFileId(UUID.randomUUID().toString());
 		if (account != null) {
@@ -99,15 +161,15 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 			f2.setFileCreator("\u533f\u540d\u7528\u6237");
 		}
 		f2.setFileCreationDate(ServerTimeUtil.accurateToDay());
-		f2.setFileName(filename);
+		f2.setFileName(fileName);
 		f2.setFileParentFolder(folderId);
 		f2.setFilePath(path);
 		f2.setFileSize(fsize);
 		if (this.fm.insert(f2) > 0) {
 			this.lu.writeUploadFileEvent(request, f2);
-			return "uploadsuccess";
+			return UPLOADSUCCESS;
 		}
-		return "uploaderror";
+		return UPLOADERROR;
 	}
 
 	public String deleteFile(final HttpServletRequest request) {
@@ -141,7 +203,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 				final Node f = this.fm.queryById(fileId);
 				if (f != null) {
 					final File fo = this.fbu.getFileFromBlocks(f);
-					writeRangeFileStream(request, response, fo, f.getFileName(),CONTENT_TYPE);// 使用断点续传执行下载
+					writeRangeFileStream(request, response, fo, f.getFileName(), CONTENT_TYPE);// 使用断点续传执行下载
 					this.lu.writeDownloadFileEvent(request, f);
 				}
 			}

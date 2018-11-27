@@ -15,6 +15,15 @@ public class FileBlockUtil {
 	@Resource
 	private NodeMapper fm;
 	
+	/**
+	 * 
+	 * <h2>将上传文件存入文件节点</h2>
+	 * <p>将一个MultipartFile类型的文件对象存入节点，并返回保存的路径。路径为“UUID.block”形式。</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @param request HttpServletRequest 请求对象
+	 * @param f MultipartFile 上传文件对象
+	 * @return String 随机生成的保存路径，如果保存失败则返回“ERROR”
+	 */
 	public String saveToFileBlocks(final HttpServletRequest request, final MultipartFile f) {
 		final String fileBlocks = ConfigureReader.instance().getFileBlockPath();
 		final String id = UUID.randomUUID().toString().replace("-", "");

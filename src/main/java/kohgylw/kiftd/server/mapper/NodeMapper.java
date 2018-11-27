@@ -9,6 +9,8 @@ public interface NodeMapper
     
     int insert(final Node f);
     
+    int update(final Node f);
+    
     int deleteByParentFolderId(final String pfid);
     
     int deleteById(final String fileId);
