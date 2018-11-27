@@ -1,7 +1,7 @@
 ## 欢迎访问kiftd源代码资源库！
 ### Welcome to visit source of kiftd!
 
-_当前版本：v1.0.8-SNAPSHOT_
+_当前版本：v1.0.9-RELEASE_
 
 ### 简介
 _kiftd——一款便捷、开源、功能完善的个人&团队&小型团队网盘服务器系统。_
@@ -21,8 +21,8 @@ _下列条目为kiftd开发环境的基本信息，如需对源代码进行查�
 入口类：kohgylw.kiftd.mc.MC
 
 ### 快速开始
-+ 使用Eclipse javaEE版本导入本该资源。
-+ 更新项目并确保pom文件中引入的外部资源能够正确引入至本地。
++ 使用Eclipse(javaEE)以项目方式导入本资源文件夹，并设置构建路径中的JDK版本。
++ 使用Maven更新项目，并确保pom文件中引入的所有外部资源能够正确引入至本地。
 + 打开kohgylw.kiftd.mc.MC类，进行测试运行。
 + 使用Run with选项中的Maven install操作获得本资源的编译版本。
 
