@@ -26,7 +26,14 @@ import org.springframework.boot.web.server.*;
 public class KiftdCtl implements WebServerFactoryCustomizer<ConfigurableServletWebServerFactory> {
 	private static ApplicationContext context;
 	private static boolean run;
-
+	
+	/**
+	 * 
+	 * <h2>启动服务器</h2>
+	 * <p>该方法将启动SpringBoot服务器引擎并返回启动结果。该过程较为耗时，为了不阻塞主线程，请在额外线程中执行该方法。</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @return boolean 启动结果
+	 */
 	public boolean start() {
 		Printer.instance.print("正在启动服务器...");
 		final String[] args = new String[0];
@@ -49,7 +56,14 @@ public class KiftdCtl implements WebServerFactoryCustomizer<ConfigurableServletW
 		Printer.instance.print("服务器正在运行中。");
 		return true;
 	}
-
+	
+	/**
+	 * 
+	 * <h2>停止服务器</h2>
+	 * <p>该方法将关闭服务器引擎并清理缓存文件。该方法较为耗时。</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @return boolean 关闭结果
+	 */
 	public boolean stop() {
 		Printer.instance.print("正在关闭服务器...");
 		if (KiftdCtl.context != null) {
@@ -65,7 +79,10 @@ public class KiftdCtl implements WebServerFactoryCustomizer<ConfigurableServletW
 		Printer.instance.print("服务器未启动。");
 		return true;
 	}
-
+	
+	/**
+	 * SpringBoot框架设置全局错误页面，无需调用
+	 */
 	public void customize(final ConfigurableServletWebServerFactory factory) {
 		factory.setPort(ConfigureReader.instance().getPort());
 		factory.addErrorPages(
@@ -73,7 +90,14 @@ public class KiftdCtl implements WebServerFactoryCustomizer<ConfigurableServletW
 		factory.addErrorPages(new ErrorPage[] {
 				new ErrorPage(HttpStatus.INTERNAL_SERVER_ERROR, "/errorController/pageNotFound.do") });
 	}
-
+	
+	/**
+	 * 
+	 * <h2>获取服务器运行状态</h2>
+	 * <p>该方法返回服务器引擎的运行状态，该状态由内置属性记录，且唯一。</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @return boolean 服务器是否启动
+	 */
 	public boolean started() {
 		return KiftdCtl.run;
 	}

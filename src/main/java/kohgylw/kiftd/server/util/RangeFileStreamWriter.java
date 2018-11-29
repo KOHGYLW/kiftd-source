@@ -29,7 +29,7 @@ public class RangeFileStreamWriter {
 	 * 
 	 * <h2>使用断点续传技术提供输出流</h2>
 	 * <p>
-	 * 处理带有断点续传参数的下载请求，并提供输出流写出。请传入相应的参数并执行该方法以开始断点传输。
+	 * 处理普通的或带有断点续传参数的下载请求，并按照请求方式提供相应的输出流写出。请传入相应的参数并执行该方法以开始传输。
 	 * </p>
 	 * 
 	 * <pre>
@@ -116,7 +116,7 @@ public class RangeFileStreamWriter {
 					buffer.flip();
 					buffer.get(buf, 0, n);
 					out.write(buf, 0, n);
-					buffer.flip();
+					buffer.clear();
 				}
 			} else {
 				// 有结束偏移量时，将其从起始偏移量开始写至指定偏移量结束。
