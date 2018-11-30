@@ -102,6 +102,7 @@ $(function() {
 	$('#uploadFileModal').on('hidden.bs.modal', function(e) {
 		if(isUpLoading){
 			$('#operationMenuBox').attr("data-placement", "top");
+			$('#operationMenuBox').attr("data-trigger", "focus");
 			$('#operationMenuBox').attr("data-title", "上传中");
 			$('#operationMenuBox').attr("data-content", "您可以重新打开上传窗口查看上传进度。");
 			$('#operationMenuBox').popover();
