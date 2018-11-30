@@ -98,6 +98,24 @@ $(function() {
 	$('#newFolderModal').on('shown.bs.modal', function(e) {
 		$("#foldername").focus();
 	});
+	//关闭上传模态框时自动提示如何查看上传进度
+	$('#uploadFileModal').on('hidden.bs.modal', function(e) {
+		if(isUpLoading){
+			$('#operationMenuBox').attr("data-placement", "top");
+			$('#operationMenuBox').attr("data-title", "上传中");
+			$('#operationMenuBox').attr("data-content", "您可以重新打开上传窗口查看上传进度。");
+			$('#operationMenuBox').popover();
+			$('#operationMenuBox').popover('show');
+		    //2秒后消失提示框
+		    var closeUploadTips = setTimeout(
+		        function () {
+		        		$('#operationMenuBox').attr("data-title", "");
+					$('#operationMenuBox').attr("data-content", "");
+					$('#operationMenuBox').popover('destroy');
+		        }, 2000
+		    );
+		}
+	});
 	// 开启编辑文件夹框自动初始化状态
 	$('#renameFolderModal').on('show.bs.modal', function(e) {
 		$("#newfolderalert").removeClass("alert");
