@@ -11,6 +11,8 @@ import org.springframework.web.multipart.*;
 
 import javax.servlet.http.*;
 import java.io.*;
+import java.nio.charset.Charset;
+
 import kohgylw.kiftd.server.util.*;
 import java.util.*;
 import com.google.gson.*;
@@ -63,7 +65,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 				return ERROR_PARAMETER;
 			}
 			final List<Node> files = this.fm.queryByParentFolderId(folderId);
-			if (files.stream().parallel().anyMatch((n) -> n.getFileName().equals(fileName))) {
+			if (files.stream().parallel().anyMatch((n) -> n.getFileName().equals(new String(fileName.getBytes(Charset.forName("UTF-8")),Charset.forName("UTF-8"))))) {
 				pereFileNameList.add(fileName);
 			}
 		}
@@ -78,7 +80,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 	public String doUploadFile(final HttpServletRequest request, final MultipartFile file) {
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
 		final String folderId = request.getParameter("folderId");
-		String fileName = file.getOriginalFilename();
+		String fileName = new String(file.getOriginalFilename().getBytes(Charset.forName("UTF-8")),Charset.forName("UTF-8"));
 		final String repeType = request.getParameter("repeType");
 		// 再次检查上传文件名与目标目录ID
 		if (folderId == null || folderId.length() <= 0 || fileName == null || fileName.length() <= 0) {
