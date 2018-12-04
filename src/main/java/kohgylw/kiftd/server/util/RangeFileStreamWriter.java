@@ -8,11 +8,8 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
-import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.springframework.stereotype.Component;
 
 /**
  * 
@@ -24,12 +21,8 @@ import org.springframework.stereotype.Component;
  * @author 青阳龙野(kohgylw)
  * @version 1.0
  */
-@Component
 public class RangeFileStreamWriter {
 	
-	@Resource
-	public FileBlockUtil fbu;
-
 	/**
 	 * 
 	 * <h2>使用断点续传技术提供输出流</h2>
@@ -66,7 +59,7 @@ public class RangeFileStreamWriter {
 		response.setContentType(contentType);
 		// 设置文件信息
 		response.setCharacterEncoding("UTF-8");
-		response.setHeader("Content-Disposition", "attachment; filename=\"" + fbu.getFileNameByUTF8(fname)+"\"");
+		response.setHeader("Content-Disposition", "attachment; filename=\"" + EncodeUtil.getFileNameByUTF8(fname)+"\"");
 		// 设置支持断点续传功能
 		response.setHeader("Accept-Ranges", "bytes");
 		// 针对具备断点续传性质的请求进行解析

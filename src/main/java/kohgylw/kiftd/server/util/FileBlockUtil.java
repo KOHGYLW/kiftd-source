@@ -6,8 +6,6 @@ import javax.annotation.*;
 import javax.servlet.http.*;
 import org.springframework.web.multipart.*;
 import java.io.*;
-import java.net.URLEncoder;
-
 import kohgylw.kiftd.server.model.*;
 import java.util.*;
 import org.zeroturnaround.zip.*;
@@ -90,7 +88,7 @@ public class FileBlockUtil {
 			for (int i = 0; i < idList.size(); ++i) {
 				final Node node = this.fm.queryById(idList.get(i));
 				if (node != null) {
-					zs[i] = (ZipEntrySource) new FileSource(getFileNameByUTF8(node.getFileName()),
+					zs[i] = (ZipEntrySource) new FileSource(node.getFileName(),
 							new File(fileBlocks, node.getFilePath()));
 				}
 			}
@@ -99,23 +97,6 @@ public class FileBlockUtil {
 		} catch (Exception e) {
 			e.printStackTrace();
 			return null;
-		}
-	}
-	
-	/**
-	 * 
-	 * <h2>文件名转码</h2>
-	 * <p>将文件名转码为UTF-8并确保特殊字符能够正确显示，建议在提供给用户文件之前对文件名进行本转码操作。</p>
-	 * @author 青阳龙野(kohgylw)
-	 * @param name java.lang.String 原始文件名
-	 * @return java.lang.String 转码后的文件名
-	 */
-	public String getFileNameByUTF8(String name) {
-		try {
-			return URLEncoder.encode(name, "UTF-8").replaceAll("\\+", "%20").replaceAll("%28", "\\(").replaceAll("%29", "\\)").replaceAll("%3B", ";").replaceAll("%40", "@").replaceAll("%23", "\\#").replaceAll("%26", "\\&");
-		} catch (UnsupportedEncodingException e) {
-			// TODO 自动生成的 catch 块
-			return name.replaceAll("\\+", "%20").replaceAll("%28", "\\(").replaceAll("%29", "\\)").replaceAll("%3B", ";").replaceAll("%40", "@").replaceAll("%23", "\\#").replaceAll("%26", "\\&");
 		}
 	}
 }

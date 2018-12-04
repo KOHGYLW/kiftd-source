@@ -39,6 +39,8 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 	private LogUtil lu;
 	@Resource
 	private Gson gson;
+	@Resource
+	private FileBlockUtil fbu;
 
 	private static final String CONTENT_TYPE = "application/octet-stream";
 
