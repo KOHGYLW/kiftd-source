@@ -96,7 +96,7 @@ public class FolderServiceImpl implements FolderService {
 			return "errorParameter";
 		}
 		final List<Folder> l = this.fu.getParentList(folderId);
-		if (this.fu.deleteAllChildFolder(request, folderId) > 0) {
+		if (this.fu.deleteAllChildFolder(folderId) > 0) {
 			this.lu.writeDeleteFolderEvent(request, folder, l);
 			return "deleteFolderSuccess";
 		}

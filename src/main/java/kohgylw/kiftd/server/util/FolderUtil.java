@@ -3,7 +3,6 @@ package kohgylw.kiftd.server.util;
 import org.springframework.stereotype.*;
 import javax.annotation.*;
 import kohgylw.kiftd.server.mapper.*;
-import javax.servlet.http.*;
 import kohgylw.kiftd.server.model.*;
 import java.util.*;
 
@@ -30,7 +29,7 @@ public class FolderUtil
         return folderList;
     }
     
-    public int deleteAllChildFolder(final HttpServletRequest request, final String folderId) {
+    public int deleteAllChildFolder(final String folderId) {
         final String fileblocks = ConfigureReader.instance().getFileBlockPath();
         final Thread deleteChildFolderThread = new Thread(() -> this.iterationDeleteFolder(fileblocks, folderId));
         deleteChildFolderThread.start();
