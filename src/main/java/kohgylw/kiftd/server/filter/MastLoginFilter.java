@@ -4,9 +4,13 @@ import javax.servlet.annotation.*;
 import javax.servlet.*;
 import kohgylw.kiftd.server.util.*;
 import javax.servlet.http.*;
+
+import org.springframework.core.annotation.Order;
+
 import java.io.*;
 
 @WebFilter
+@Order(1)
 public class MastLoginFilter implements Filter
 {
     public void init(final FilterConfig filterConfig) throws ServletException {

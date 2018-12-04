@@ -36,8 +36,6 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 	@Resource
 	private NodeMapper fm;
 	@Resource
-	private FileBlockUtil fbu;
-	@Resource
 	private LogUtil lu;
 	@Resource
 	private Gson gson;

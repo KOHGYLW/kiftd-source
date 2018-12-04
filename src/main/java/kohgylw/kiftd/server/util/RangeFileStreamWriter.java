@@ -3,15 +3,16 @@ package kohgylw.kiftd.server.util;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.stereotype.Component;
 
 /**
  * 
@@ -23,7 +24,11 @@ import javax.servlet.http.HttpServletResponse;
  * @author 青阳龙野(kohgylw)
  * @version 1.0
  */
+@Component
 public class RangeFileStreamWriter {
+	
+	@Resource
+	public FileBlockUtil fbu;
 
 	/**
 	 * 
@@ -61,12 +66,7 @@ public class RangeFileStreamWriter {
 		response.setContentType(contentType);
 		// 设置文件信息
 		response.setCharacterEncoding("UTF-8");
-		try {
-			response.setHeader("Content-Disposition", "attachment; filename=\"" + URLEncoder.encode(fname, "UTF-8").replaceAll("\\+", "%20").replaceAll("%28", "\\(").replaceAll("%29", "\\)").replaceAll("%3B", ";").replaceAll("%40", "@").replaceAll("%23", "\\#").replaceAll("%26", "\\&")+"\"");
-		} catch (UnsupportedEncodingException e) {
-			// TODO 自动生成的 catch 块
-			response.setHeader("Content-Disposition", "attachment; filename=\"" + fname.replaceAll("\\+", "%20").replaceAll("%28", "\\(").replaceAll("%29", "\\)").replaceAll("%3B", ";").replaceAll("%40", "@").replaceAll("%23", "\\#").replaceAll("%26", "\\&")+"\"");
-		}
+		response.setHeader("Content-Disposition", "attachment; filename=\"" + fbu.getFileNameByUTF8(fname)+"\"");
 		// 设置支持断点续传功能
 		response.setHeader("Accept-Ranges", "bytes");
 		// 针对具备断点续传性质的请求进行解析

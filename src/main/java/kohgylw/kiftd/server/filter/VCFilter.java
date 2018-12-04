@@ -4,6 +4,8 @@ import javax.servlet.annotation.*;
 import javax.servlet.*;
 import javax.servlet.http.*;
 
+import org.springframework.core.annotation.Order;
+
 import kohgylw.kiftd.server.util.*;
 import kohgylw.kiftd.server.enumeration.*;
 
@@ -17,6 +19,7 @@ import java.io.*;
  * @version 1.0
  */
 @WebFilter({ "/fileblocks/*"})
+@Order(2)
 public class VCFilter implements Filter {
 	
 	public void init(final FilterConfig filterConfig) throws ServletException {
