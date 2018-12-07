@@ -27,6 +27,13 @@ import org.springframework.context.annotation.*;
 @ServletComponentScan({ "kohgylw.kiftd.server.listener", "kohgylw.kiftd.server.filter" })
 @Import({ DataAccess.class })
 public class MVC extends ResourceHttpRequestHandler implements WebMvcConfigurer {
+	
+	@Override
+	public void configureDefaultServletHandling(DefaultServletHandlerConfigurer configurer) {
+		// TODO 自动生成的方法存根
+		configurer.enable();
+	}
+	
 	public void addResourceHandlers(final ResourceHandlerRegistry registry) {
 		registry.addResourceHandler(new String[] { "/**" }).addResourceLocations(new String[] {
 				"file:" + ConfigureReader.instance().getPath() + File.separator + "webContext" + File.separator });

@@ -3,11 +3,7 @@ package kohgylw.kiftd.server.util;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
-
+import java.io.RandomAccessFile;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -15,7 +11,8 @@ import javax.servlet.http.HttpServletResponse;
  * 
  * <h2>断点式文件输出流写出工具</h2>
  * <p>
- * 该工具负责处理断点下载请求并以相应规则写出文件流（java NIO）。需要提供断点续传服务，请继承该类并调用writeRangeFileStream方法。
+ * 该工具负责处理断点下载请求并以相应规则写出文件流。需要提供断点续传服务，请继承该类并调用writeRangeFileStream方法，
+ * 该操作已换回较为简单的RandomAccessFile实现（效率与NIO相近，更节省内存）。
  * </p>
  * 
  * @author 青阳龙野(kohgylw)
@@ -84,45 +81,37 @@ public class RangeFileStreamWriter {
 		response.setHeader("Content-Length", "" + contentLength);// 设置请求体长度
 		if (startOffset != 0) {
 			// 设置Content-Range，格式为“bytes 起始偏移-结束偏移/文件的总大小”
+			String contentRange;
 			if (!hasEnd) {
-				String contentRange = new StringBuffer("bytes ").append("" + startOffset).append("-")
+				contentRange = new StringBuffer("bytes ").append("" + startOffset).append("-")
 						.append("" + (fileLength - 1)).append("/").append("" + fileLength).toString();
 				response.setHeader("Content-Range", contentRange);
 			} else {
-				String contentRange = new StringBuffer("bytes ").append(rangeBytes).append("/").append("" + fileLength)
+				contentRange = new StringBuffer("bytes ").append(rangeBytes).append("/").append("" + fileLength)
 						.toString();
-				response.setHeader("Content-Range", contentRange);
 			}
+			response.setHeader("Content-Range", contentRange);
 		}
 		// 写出缓冲
-		ByteBuffer buffer = ByteBuffer.allocate(ConfigureReader.instance().getBuffSize());
 		byte[] buf = new byte[ConfigureReader.instance().getBuffSize()];
-		// NIO读取文件并写处至输出流
-
-		try (FileChannel fc = FileChannel.open(Paths.get(fo.getAbsolutePath()), StandardOpenOption.READ)) {
+		// 读取文件并写处至输出流
+		try (RandomAccessFile raf=new RandomAccessFile(fo, "r")) {
 			BufferedOutputStream out = new BufferedOutputStream(response.getOutputStream());
+			raf.seek(startOffset);
 			if (!hasEnd) {
 				// 无结束偏移量时，将其从起始偏移量开始写到文件整体结束，如果从头开始下载，起始偏移量为0
-				fc.position(startOffset);
 				int n = 0;
-				while ((n = fc.read(buffer)) != -1) {
-					buffer.flip();
-					buffer.get(buf, 0, n);
+				while ((n = raf.read(buf)) != -1) {
 					out.write(buf, 0, n);
-					buffer.clear();
 				}
 			} else {
 				// 有结束偏移量时，将其从起始偏移量开始写至指定偏移量结束。
-				fc.position(startOffset);
 				int n = 0;
 				long readLength = 0;// 写出量，用于确定结束位置
 				while (readLength < contentLength) {
-					n = fc.read(buffer);
-					buffer.flip();
+					n = raf.read(buf);
 					readLength += n;
-					buffer.get(buf, 0, n);
 					out.write(buf, 0, n);
-					buffer.clear();
 				}
 			}
 			out.flush();
