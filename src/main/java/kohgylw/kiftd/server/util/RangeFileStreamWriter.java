@@ -28,7 +28,7 @@ public class RangeFileStreamWriter {
 	 * </p>
 	 * 
 	 * <pre>
-	 * “愿将年岁雕琢，拂去一方萧索”
+	 * “愿将年岁雕琢，拂去一方萧索”——《归去谣》
 	 * </pre>
 	 * 
 	 * @author 青阳龙野(kohgylw)
