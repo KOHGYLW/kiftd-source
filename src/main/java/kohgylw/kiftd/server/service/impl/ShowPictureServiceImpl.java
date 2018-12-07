@@ -33,7 +33,7 @@ public class ShowPictureServiceImpl implements ShowPictureService {
 	 * 该方法用于根据请求获取预览图片列表并进行封装，对于过大图片会进行压缩。
 	 * </p>
 	 * <pre>
-	 * “系发挽袖铺纸研墨，画得那年林间过；七重纱幕后你眼波，风流只向一人说……”
+	 * “系发挽袖铺纸研墨，画得那年林间过；七重纱幕后你眼波，风流只向一人说”——《春风一顾》
 	 * </pre>
 	 * @author 青阳龙野(kohgylw)
 	 * @param request

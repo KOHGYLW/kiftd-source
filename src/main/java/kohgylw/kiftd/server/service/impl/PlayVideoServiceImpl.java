@@ -42,7 +42,7 @@ public class PlayVideoServiceImpl implements PlayVideoService
      * <h2>解析播放视频文件</h2>
      * <p>根据视频文件的ID查询视频文件节点并返回节点JSON信息，以便发起播放请求。</p>
      * <pre>
-     * “从此用我双眼，替你看这世界；云万里、山千叠、天尽头、城不夜……”——《风起天阑》
+     * “从此用我双眼，替你看这世界；云万里、山千叠、天尽头、城不夜”——《风起天阑》
      * </pre>
      * @author kohgylw
      * @param request javax.servlet.http.HttpServletRequest 请求对象
