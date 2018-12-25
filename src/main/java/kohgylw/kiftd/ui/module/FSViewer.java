@@ -72,6 +72,7 @@ public class FSViewer extends KiftdDynamicWindow {
 		window.setResizable(true);
 		Container c = window.getContentPane();
 		JToolBar toolBar = new JToolBar();
+		toolBar.setFloatable(false);
 		// TODO 自动生成的 catch 块
 		homeBtn = new JButton("根目录[/Root]");
 		backToParentFolder = new JButton("上一级[^]");
