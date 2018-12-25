@@ -312,7 +312,7 @@ public class FSViewer extends KiftdDynamicWindow {
 
 			}
 		};
-		filesTable.setDropTarget(new DropTarget(filesTable, DnDConstants.ACTION_COPY_OR_MOVE, dtl));
+		window.setDropTarget(new DropTarget(window, DnDConstants.ACTION_COPY_OR_MOVE, dtl));
 		c.add(mianPane);
 		modifyComponentSize(window);
 	}
