@@ -2,6 +2,7 @@ package kohgylw.kiftd.ui.module;
 
 import javax.imageio.*;
 import java.io.*;
+import java.sql.SQLException;
 import java.awt.event.*;
 import javax.swing.border.*;
 import java.awt.*;
@@ -9,6 +10,8 @@ import javax.swing.event.*;
 import javax.swing.*;
 import java.text.*;
 import java.util.*;
+
+import kohgylw.kiftd.printer.Printer;
 import kohgylw.kiftd.ui.callback.*;
 
 public class ServerUIModule extends KiftdDynamicWindow {
@@ -19,6 +22,7 @@ public class ServerUIModule extends KiftdDynamicWindow {
 	private static JTextArea output;
 	private static ServerUIModule instance;
 	private static SettingWindow sw;
+	private static FSViewer fsv;
 	private static OnCloseServer cs;
 	private static OnStartServer ss;
 	private static GetServerStatus st;
@@ -27,6 +31,7 @@ public class ServerUIModule extends KiftdDynamicWindow {
 	private static JButton stop;
 	private static JButton resatrt;
 	private static JButton setting;
+	private static JButton fileIOUtil;
 	private static JButton exit;
 	private static JLabel serverStatusLab;
 	private static JLabel portStatusLab;
@@ -47,6 +52,7 @@ public class ServerUIModule extends KiftdDynamicWindow {
 	 * 窗口原始高度
 	 */
 	private final int OriginSize_Height = 550;
+	private static MenuItem filesViewer;
 
 	private ServerUIModule() {
 		setUIFont();
@@ -68,6 +74,7 @@ public class ServerUIModule extends KiftdDynamicWindow {
 								.setToolTip("青阳网络文件系统-kiftd");
 				final PopupMenu pMenu = new PopupMenu();
 				final MenuItem exit = new MenuItem("退出(Exit)");
+				filesViewer = new MenuItem("文件...(Files)");
 				final MenuItem show = new MenuItem("显示主窗口(Show)");
 				exit.addActionListener(new ActionListener() {
 
@@ -76,6 +83,23 @@ public class ServerUIModule extends KiftdDynamicWindow {
 						// TODO 自动生成的方法存根
 						exit();
 					}
+				});
+				filesViewer.addActionListener((e) -> {
+					filesViewer.setEnabled(false);
+					fileIOUtil.setEnabled(false);
+					Thread t = new Thread(() -> {
+						try {
+							ServerUIModule.fsv = FSViewer.getInstance();
+							fsv.show();
+						} catch (SQLException e1) {
+							// TODO 自动生成的 catch 块
+							JOptionPane.showMessageDialog(window, "错误：无法打开文件，文件系统可能已损坏，您可以尝试重启应用。", "错误",
+									JOptionPane.ERROR_MESSAGE);
+						}
+						filesViewer.setEnabled(true);
+						fileIOUtil.setEnabled(true);
+					});
+					t.start();
 				});
 				show.addActionListener(new ActionListener() {
 
@@ -87,6 +111,7 @@ public class ServerUIModule extends KiftdDynamicWindow {
 				});
 				pMenu.add(exit);
 				pMenu.addSeparator();
+				pMenu.add(filesViewer);
 				pMenu.add(show);
 				ServerUIModule.trayIcon.setPopupMenu(pMenu);
 				ServerUIModule.tray.add(ServerUIModule.trayIcon);
@@ -133,10 +158,11 @@ public class ServerUIModule extends KiftdDynamicWindow {
 		bufferStatus.add(ServerUIModule.bufferSizeLab = new JLabel("--"));
 		statusBox.add(bufferStatus);
 		ServerUIModule.window.add(statusBox);
-		final JPanel buttonBox = new JPanel(new GridLayout(5, 1));
+		final JPanel buttonBox = new JPanel(new GridLayout(6, 1));
 		buttonBox.add(ServerUIModule.start = new JButton("开启(Start)>>"));
 		buttonBox.add(ServerUIModule.stop = new JButton("关闭(Stop)||"));
 		buttonBox.add(ServerUIModule.resatrt = new JButton("重启(Restart)~>"));
+		buttonBox.add(ServerUIModule.fileIOUtil = new JButton("文件(Files)[*]"));
 		buttonBox.add(ServerUIModule.setting = new JButton("设置(Setting)[/]"));
 		buttonBox.add(ServerUIModule.exit = new JButton("退出(Exit)[X]"));
 		ServerUIModule.window.add(buttonBox);
@@ -197,6 +223,8 @@ public class ServerUIModule extends KiftdDynamicWindow {
 				// TODO 自动生成的方法存根
 				start.setEnabled(false);
 				setting.setEnabled(false);
+				fileIOUtil.setEnabled(false);
+				filesViewer.setEnabled(false);
 				printMessage("启动服务器...");
 				if (ss != null) {
 					serverStatusLab.setText(S_STARTING);
@@ -225,6 +253,8 @@ public class ServerUIModule extends KiftdDynamicWindow {
 				// TODO 自动生成的方法存根
 				stop.setEnabled(false);
 				resatrt.setEnabled(false);
+				fileIOUtil.setEnabled(false);
+				filesViewer.setEnabled(false);
 				printMessage("关闭服务器...");
 				Thread t = new Thread(() -> {
 					if (cs != null) {
@@ -250,6 +280,8 @@ public class ServerUIModule extends KiftdDynamicWindow {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				// TODO 自动生成的方法存根
+				fileIOUtil.setEnabled(false);
+				filesViewer.setEnabled(false);
 				exit();
 			}
 		});
@@ -260,6 +292,8 @@ public class ServerUIModule extends KiftdDynamicWindow {
 				// TODO 自动生成的方法存根
 				stop.setEnabled(false);
 				resatrt.setEnabled(false);
+				fileIOUtil.setEnabled(false);
+				filesViewer.setEnabled(false);
 				Thread t = new Thread(() -> {
 					printMessage("正在重启服务器...");
 					if (cs.close()) {
@@ -276,16 +310,32 @@ public class ServerUIModule extends KiftdDynamicWindow {
 				t.start();
 			}
 		});
-		ServerUIModule.sw = SettingWindow.getInstance();
 		ServerUIModule.setting.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				// TODO 自动生成的方法存根
+				ServerUIModule.sw = SettingWindow.getInstance();
 				Thread t = new Thread(() -> {
 					sw.show();
 				});
 				t.start();
 			}
+		});
+		ServerUIModule.fileIOUtil.addActionListener((e) -> {
+			ServerUIModule.fileIOUtil.setEnabled(false);
+			ServerUIModule.filesViewer.setEnabled(false);
+			Thread t = new Thread(() -> {
+				try {
+					ServerUIModule.fsv = FSViewer.getInstance();
+					fsv.show();
+				} catch (SQLException e1) {
+					// TODO 自动生成的 catch 块
+					Printer.instance.print("错误：无法读取文件，文件系统可能已经损坏，您可以尝试重启应用。");
+				}
+				ServerUIModule.fileIOUtil.setEnabled(true);
+				ServerUIModule.filesViewer.setEnabled(true);
+			});
+			t.start();
 		});
 		modifyComponentSize(ServerUIModule.window);
 	}
@@ -330,6 +380,8 @@ public class ServerUIModule extends KiftdDynamicWindow {
 					ServerUIModule.resatrt.setEnabled(false);
 					ServerUIModule.setting.setEnabled(true);
 				}
+				fileIOUtil.setEnabled(true);
+				filesViewer.setEnabled(true);
 				ServerUIModule.portStatusLab.setText(ServerUIModule.st.getPort() + "");
 				switch (st.getLogLevel()) {
 				case Event: {

@@ -56,7 +56,7 @@ public class RangeFileStreamWriter {
 		response.setContentType(contentType);
 		// 设置文件信息
 		response.setCharacterEncoding("UTF-8");
-		response.setHeader("Content-Disposition", "attachment; filename=\"" + EncodeUtil.getFileNameByUTF8(fname)+"\"");
+		response.setHeader("Content-Disposition", "attachment; filename=\"" + EncodeUtil.getFileNameByUTF8(fname)+"\"; filename*=utf-8''"+EncodeUtil.getFileNameByUTF8(fname));
 		// 设置支持断点续传功能
 		response.setHeader("Accept-Ranges", "bytes");
 		// 针对具备断点续传性质的请求进行解析

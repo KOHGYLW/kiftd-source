@@ -45,7 +45,7 @@ public class FolderServiceImpl implements FolderService {
 			return "folderAlreadyExist";
 		}
 		f = new Folder();
-		// 设置子文件夹约束等级，不允许子文件夹的约束等级比附文件夹低
+		// 设置子文件夹约束等级，不允许子文件夹的约束等级比父文件夹低
 		int pc = parentFolder.getFolderConstraint();
 		if (folderConstraint != null) {
 			try {
