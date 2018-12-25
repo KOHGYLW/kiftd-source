@@ -10,6 +10,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -82,7 +83,6 @@ public class FileSystemManager {
 			updateFolderById = c.prepareStatement(
 					"UPDATE FOLDER SET folder_name= ? , folder_creation_date = ? , folder_creator = ? , folder_parent = ? , folder_constraint = ? WHERE folder_id = ?");
 		} catch (SQLException e) {
-			// TODO 自动生成的 catch 块
 			Printer.instance.print("错误：出现未知错误，文件系统解析失败，无法浏览文件。");
 		}
 	}
@@ -140,14 +140,14 @@ public class FileSystemManager {
 	 * @param filesId
 	 *            java.lang.String[] 要删除的文件ID
 	 * @return boolean 删除结果
-	 * @throws SQLException 
+	 * @throws SQLException
 	 */
 	public boolean delete(String[] foldersId, String[] filesId) throws SQLException {
-		gono=true;
-		for(int i=0;i<filesId.length&&gono;i++) {
+		gono = true;
+		for (int i = 0; i < filesId.length && gono; i++) {
 			deleteFile(filesId[i]);
 		}
-		for(int i=0;i<foldersId.length&&gono;i++) {
+		for (int i = 0; i < foldersId.length && gono; i++) {
 			deleteFolder(foldersId[i]);
 		}
 		return gono;
@@ -166,14 +166,21 @@ public class FileSystemManager {
 	 * @param filesId
 	 *            java.lang.String[] 要导出的文件ID
 	 * @param path
-	 *            java.lang.String 导出目标路径，必须是文件夹
+	 *            java.io.File 要导出的目标路径，必须是个文件夹
 	 * @param type
 	 *            java.lang.String 导出操作类型：“COVER”覆盖或“BOTH”保留两者，其他情况默认为“COVER”
 	 * @return boolean 是否全部导出成功
+	 * @throws Exception
 	 */
-	public boolean exportTo(String[] foldersId, String[] filesId, String path, String type) {
-
-		return false;
+	public boolean exportTo(String[] foldersId, String[] nodesId, File path, String type) throws Exception {
+		gono = true;
+		for (int i = 0; i < nodesId.length && gono; i++) {
+			exportNode(nodesId[i], path, type);
+		}
+		for (int i = 0; i < foldersId.length && gono; i++) {
+			exportFolder(foldersId[i], path, type);
+		}
+		return gono;
 	}
 
 	/**
@@ -204,6 +211,49 @@ public class FileSystemManager {
 			}
 		}
 		return result;
+	}
+
+	/**
+	 * 
+	 * <h2>检查指定路径下是否存在与文件系统中同名的文件或文件夹</h2>
+	 * <p>
+	 * 该方法被设计为导出功能的前置，您应该在用户导出前先进行本检查以确定是否应该让用户选择导出方式。
+	 * 如果返回值为0则可以直接导出，否则应选择覆盖或是保留两者或是取消。注意：该方法会阻塞线程。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @param foldersId
+	 *            java.lang.String[] 要导出的文件夹ID
+	 * @param filesId
+	 *            java.lang.String[] 要导出的文件ID
+	 * @param java.io.File
+	 *            path 要检查的目标路径
+	 * @return int 存在同名文件（或文件夹）的数量，当被检查的路径下不存在同名文件（或文件夹）时返回0
+	 * @throws SQLException
+	 */
+	public int hasExistsFilesOrFolders(String[] foldersId, String[] filesId, File path) throws SQLException {
+		if (path.isDirectory()) {
+			int c = 0;
+			List<Folder> folders = new ArrayList<>();
+			List<Node> nodes = new ArrayList<>();
+			for (String fid : foldersId) {
+				folders.add(selectFolderById(fid));
+			}
+			for (String nid : filesId) {
+				nodes.add(selectNodeById(nid));
+			}
+			for (File f : path.listFiles()) {
+				if (f.isDirectory()
+						&& folders.parallelStream().anyMatch((e) -> e.getFolderName().equals(f.getName()))) {
+					c++;
+				} else if (nodes.parallelStream().anyMatch((e) -> e.getFileName().equals(f.getName()))) {
+					c++;
+				}
+			}
+			return c;
+		} else {
+			throw new IllegalArgumentException();
+		}
 	}
 
 	/**
@@ -268,12 +318,12 @@ public class FileSystemManager {
 		}
 		return null;
 	}
-	
-	//根据ID查询文件节点对象，无符合对象则返回null
+
+	// 根据ID查询文件节点对象，无符合对象则返回null
 	private Node selectNodeById(String nodeId) throws SQLException {
 		selectNodeById.setString(1, nodeId);
-		ResultSet r=selectNodeById.executeQuery();
-		if(r.next()) {
+		ResultSet r = selectNodeById.executeQuery();
+		if (r.next()) {
 			return resultSetAccessNode(r);
 		}
 		return null;
@@ -437,7 +487,7 @@ public class FileSystemManager {
 					return;
 				}
 			}
-			per=50;
+			per = 50;
 			if (folder == null) {
 				folder = new Folder();
 				String nFolderId = UUID.randomUUID().toString();
@@ -470,15 +520,15 @@ public class FileSystemManager {
 			throw new IllegalArgumentException();
 		}
 	}
-	
-	//删除一个文件节点
+
+	// 删除一个文件节点
 	private int deleteNodeById(String nodeId) throws SQLException {
 		deleteNodeById.setString(1, nodeId);
 		deleteNodeById.execute();
 		return deleteNodeById.getUpdateCount();
 	}
-	
-	//删除一个文件夹
+
+	// 删除一个文件夹
 	private int deleteFolderById(String folderId) throws SQLException {
 		deleteFolderById.setString(1, folderId);
 		deleteFolderById.execute();
@@ -509,51 +559,141 @@ public class FileSystemManager {
 		updateFolderById.execute();
 		return updateFolderById.getUpdateCount();
 	}
-	
-	//删除一个文件夹
+
+	// 删除一个文件夹
 	private void deleteFolder(String folderId) throws SQLException {
-		Folder f=selectFolderById(folderId);
-		List<Node> nodes=selectNodesByFolderId(folderId);
-		int size=nodes.size();
-		//删除该文件夹内的所有文件
-		for(int i=0;i<size&&gono;i++) {
+		Folder f = selectFolderById(folderId);
+		List<Node> nodes = selectNodesByFolderId(folderId);
+		int size = nodes.size();
+		// 删除该文件夹内的所有文件
+		for (int i = 0; i < size && gono; i++) {
 			deleteFile(nodes.get(i).getFileId());
 		}
-		List<Folder> folders=getFoldersByParentId(folderId);
-		size=folders.size();
-		//迭代删除该文件夹内的所有文件夹
-		for(int i=0;i<size&&gono;i++) {
+		List<Folder> folders = getFoldersByParentId(folderId);
+		size = folders.size();
+		// 迭代删除该文件夹内的所有文件夹
+		for (int i = 0; i < size && gono; i++) {
 			deleteFolder(folders.get(i).getFolderId());
 		}
-		per=50;
-		message="正在删除文件夹："+f.getFolderName();
-		//删除自己的数据
-		if(deleteFolderById(folderId)>0) {
-			per=100;
+		per = 50;
+		message = "正在删除文件夹：" + f.getFolderName();
+		// 删除自己的数据
+		if (deleteFolderById(folderId) > 0) {
+			per = 100;
 			return;
 		}
 		throw new SQLException();
 	}
-	
-	//删除一个文件
+
+	// 删除一个文件
 	private void deleteFile(String nodeId) throws SQLException {
-		Node n=selectNodeById(nodeId);
-		per=50;
-		message="正在删除文件："+n.getFileName();
-		if(n!=null) {
-			//删除文件节点对应的数据块
-			if(new File(ConfigureReader.instance().getFileBlockPath(),n.getFilePath()).delete()) {
-				per=80;
-				//删除节点信息
-				if(deleteNodeById(nodeId)>0) {
-					per=100;
+		Node n = selectNodeById(nodeId);
+		per = 50;
+		message = "正在删除文件：" + n.getFileName();
+		if (n != null) {
+			// 删除文件节点对应的数据块
+			if (new File(ConfigureReader.instance().getFileBlockPath(), n.getFilePath()).delete()) {
+				per = 80;
+				// 删除节点信息
+				if (deleteNodeById(nodeId) > 0) {
+					per = 100;
 					return;
 				}
 			}
 		}
 		throw new SQLException();
 	}
-	
+
+	// 导出一个文件节点
+	private void exportNode(String nodeId, File path, String type) throws Exception {
+		Node node = selectNodeById(nodeId);
+		File target = null;
+		if (node != null && path != null && path.isDirectory()) {
+			per = 0;
+			message = "正在导出文件：" + node.getFileName();
+			if (Arrays.stream(path.listFiles()).parallel().filter((e) -> e.isFile())
+					.anyMatch((f) -> f.getName().equals(node.getFileName()))) {
+				switch (type) {
+				case BOTH:
+					target = Arrays.stream(path.listFiles()).parallel().filter((e) -> e.isFile())
+							.filter((e) -> e.getName().equals(node.getFileName())).findFirst().get();
+					break;
+				case COVER:
+					target = new File(path, FileNodeUtil.getNewNodeName(node, path));
+					target.createNewFile();
+					break;
+				default:
+					return;
+				}
+			}
+			if (target == null) {
+				target = new File(path, node.getFileName());
+				target.createNewFile();
+			}
+			File block = new File(ConfigureReader.instance().getFileBlockPath(), node.getFilePath());
+			long size = block.length();
+			try (FileInputStream in = new FileInputStream(block); FileOutputStream out = new FileOutputStream(target)) {
+				FileChannel fci = in.getChannel();
+				FileChannel fco = out.getChannel();
+				ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
+				int length = 0;
+				long finishLength = 0;
+				while ((length = fci.read(buffer)) != -1 && gono) {
+					buffer.flip();
+					fco.write(buffer, length);
+					buffer.clear();
+					finishLength += length;
+					per = (int) (((double) finishLength / (double) size) * 100);
+				}
+				return;
+			}
+		}
+		throw new IllegalArgumentException();
+	}
+
+	// 导出一个文件夹
+	private void exportFolder(String folderId, File path, String type) throws Exception {
+		Folder folder = selectFolderById(folderId);
+		File target = null;
+		per = 0;
+		message = "正在导出文件夹：" + folder.getFolderName();
+		if (folder != null && path != null && path.isDirectory()) {
+			if (Arrays.stream(path.listFiles()).parallel().filter((e) -> e.isDirectory())
+					.anyMatch((f) -> f.getName().equals(folder.getFolderName()))) {
+				switch (type) {
+				case COVER:
+					target = Arrays.stream(path.listFiles()).parallel().filter((e) -> e.isDirectory())
+							.filter((e) -> e.getName().equals(folder.getFolderName())).findFirst().get();
+					break;
+				case BOTH:
+					target = new File(path, FileNodeUtil.getNewFolderName(folder, path));
+					target.mkdir();
+					break;
+
+				default:
+					return;
+				}
+			}
+			if (target == null) {
+				target = new File(path, folder.getFolderName());
+				target.mkdir();
+			}
+			per = 100;
+			List<Node> nodes = selectNodesByFolderId(folderId);
+			List<Folder> folders = getFoldersByParentId(folderId);
+			int size = 0;
+			int i = 0;
+			for (i = 0, size = nodes.size(); i < size && gono; i++) {
+				exportNode(nodes.get(i).getFileId(), target, type);
+			}
+			for (i = 0, size = folders.size(); i < size && gono; i++) {
+				exportFolder(folders.get(i).getFolderId(), target, type);
+			}
+			return;
+		}
+		throw new IllegalArgumentException();
+	}
+
 	/**
 	 * 
 	 * <h2>立即终止当前操作</h2>

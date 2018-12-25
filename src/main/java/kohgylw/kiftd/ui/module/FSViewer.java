@@ -149,15 +149,78 @@ public class FSViewer extends KiftdDynamicWindow {
 		});
 		exportBtn.addActionListener((e) -> {
 			exportBtn.setEnabled(false);
+			deleteBtn.setEnabled(false);
 			JFileChooser exportChooer = new JFileChooser();
-			exportChooer.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+			exportChooer.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 			if (exportChooer.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
-				System.out.println("要导出的文件为：" + exportChooer.getSelectedFile().getAbsolutePath());
+				worker.execute(() -> {
+					File path = exportChooer.getSelectedFile();
+					int[] selected = filesTable.getSelectedRows();
+					List<String> selectedNodes = new ArrayList<>();
+					List<String> selectedFolders = new ArrayList<>();
+					int borderIndex = currentView.getFolders().size();
+					for (int i : selected) {
+						if (i < borderIndex) {
+							selectedFolders.add(currentView.getFolders().get(i).getFolderId());
+						} else {
+							selectedNodes.add(currentView.getFiles().get(i - borderIndex).getFileId());
+						}
+					}
+					String[] folders = selectedFolders.toArray(new String[0]);
+					String[] nodes = selectedNodes.toArray(new String[0]);
+					int exi = 0;
+					try {
+						exi = FileSystemManager.getInstance().hasExistsFilesOrFolders(folders, nodes, path);
+					} catch (SQLException e2) {
+						JOptionPane.showMessageDialog(window, "出现意外错误，无法导出文件，请刷新或重启应用后重试。", "错误",
+								JOptionPane.ERROR_MESSAGE);
+						deleteBtn.setEnabled(true);
+						exportBtn.setEnabled(true);
+						return;
+					}
+					String type = null;
+					if (exi > 0) {
+						switch (JOptionPane.showConfirmDialog(window,
+								"该路径存在" + exi + "个同名文件或文件夹，您希望覆盖它们么？（“是”覆盖，“否”保留两者，“取消”终止导入）", "导入",
+								JOptionPane.YES_NO_CANCEL_OPTION)) {
+						case 0:
+							type = FileSystemManager.COVER;
+							break;
+						case 1:
+							type = FileSystemManager.BOTH;
+							break;
+						case 2:
+							type = "CANCEL";
+							deleteBtn.setEnabled(true);
+							exportBtn.setEnabled(true);
+							return;
+						default:
+							type = "CANCEL";
+							return;
+						}
+					}
+					FSProgressDialog fsd = FSProgressDialog.getNewInstance();
+					Thread deleteListenerDialog = new Thread(() -> {
+						fsd.show();
+					});
+					deleteListenerDialog.start();
+					try {
+						FileSystemManager.getInstance().exportTo(folders, nodes, path, type);
+						fsd.close();
+					} catch (Exception e1) {
+						// TODO 自动生成的 catch 块
+						fsd.close();
+						JOptionPane.showMessageDialog(window, "导出文件时失败，该操作已被中断，未能全部导出。", "错误",
+								JOptionPane.ERROR_MESSAGE);
+					}
+					refresh();
+				});
 			}
 			exportBtn.setEnabled(true);
 		});
 		deleteBtn.addActionListener((e) -> {
 			deleteBtn.setEnabled(false);
+			exportBtn.setEnabled(false);
 			if (JOptionPane.showConfirmDialog(window, "确认要删除这些文件么？警告：该操作无法恢复。", "删除",
 					JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
 				worker.execute(() -> {
@@ -181,37 +244,27 @@ public class FSViewer extends KiftdDynamicWindow {
 						FileSystemManager.getInstance().delete(selectedFolders.toArray(new String[0]),
 								selectedNodes.toArray(new String[0]));
 						fsd.close();
-						deleteBtn.setEnabled(true);
-						try {
-							getFolderView(currentView.getCurrent().getFolderId());
-						} catch (Exception e1) {
-							// TODO 自动生成的 catch 块
-							JOptionPane.showMessageDialog(window, "无法刷新文件列表，您可以尝试手动刷新。", "错误",
-									JOptionPane.ERROR_MESSAGE);
-						}
 					} catch (SQLException e1) {
 						// TODO 自动生成的 catch 块
 						fsd.close();
 						JOptionPane.showMessageDialog(window, "删除文件时失败，该操作已被中断，未能全部删除。", "错误",
 								JOptionPane.ERROR_MESSAGE);
 					}
+					refresh();
 				});
-			}else {
+			} else {
 				deleteBtn.setEnabled(true);
+				exportBtn.setEnabled(true);
 			}
 		});
 		refreshBtn.addActionListener((e) -> {
 			refreshBtn.setEnabled(false);
 			homeBtn.setEnabled(false);
 			backToParentFolder.setEnabled(false);
+			importBtn.setEnabled(false);
+			exportBtn.setEnabled(false);
 			worker.execute(() -> {
-				try {
-					getFolderView(currentView.getCurrent().getFolderId());
-				} catch (Exception e1) {
-					// TODO 自动生成的 catch 块
-					homeBtn.setEnabled(true);
-					backToParentFolder.setEnabled(true);
-				}
+				refresh();
 				refreshBtn.setEnabled(true);
 			});
 		});
@@ -317,6 +370,21 @@ public class FSViewer extends KiftdDynamicWindow {
 		c.add(mianPane);
 		modifyComponentSize(window);
 	}
+	
+	//刷新文件列表
+	private void refresh() {
+		try {
+			getFolderView(currentView.getCurrent().getFolderId());
+			if(!currentView.getCurrent().getFolderId().equals("root")) {
+				homeBtn.setEnabled(true);
+				backToParentFolder.setEnabled(true);
+			}
+		} catch (Exception e1) {
+			// TODO 自动生成的 catch 块
+			JOptionPane.showMessageDialog(window, "无法刷新文件列表，请重试。", "错误",
+					JOptionPane.ERROR_MESSAGE);
+		}
+	}
 
 	/**
 	 * 
@@ -333,6 +401,8 @@ public class FSViewer extends KiftdDynamicWindow {
 		try {
 			if (currentView == null) {
 				getFolderView("root");
+			}else {
+				refresh();
 			}
 			window.setVisible(true);
 		} catch (Exception e) {
@@ -379,54 +449,50 @@ public class FSViewer extends KiftdDynamicWindow {
 
 	// 执行导入任务
 	private void doImport(File[] files) {
+		int exi = 0;
+		String folderId = currentView.getCurrent().getFolderId();
 		try {
-			String folderId = currentView.getCurrent().getFolderId();
-			int exi = FileSystemManager.getInstance().hasExistsFilesOrFolders(files, folderId);
-			String type = null;
-			if (exi > 0) {
-				switch (JOptionPane.showConfirmDialog(window,
-						"该路径存在" + exi + "个同名文件或文件夹，您希望覆盖它们么？（“是”覆盖，“否”保留两者，“取消”终止导入）", "导入",
-						JOptionPane.YES_NO_CANCEL_OPTION)) {
-				case 0:
-					type = FileSystemManager.COVER;
-					break;
-				case 1:
-					type = FileSystemManager.BOTH;
-					break;
-				case 2:
-					type = "CANCEL";
-					break;
-
-				default:
-					type = "CANCEL";
-					break;
-				}
-			}
-			if (!"CANCEL".equals(type)) {
-				// 打开进度提示会话框
-				FSProgressDialog fsd = FSProgressDialog.getNewInstance();
-				Thread importListenerDialog = new Thread(() -> {
-					fsd.show();
-				});
-				importListenerDialog.start();
-				try {
-					FileSystemManager.getInstance().importFrom(files, folderId, type);
-				} catch (Exception e1) {
-					// TODO 自动生成的 catch 块
-					JOptionPane.showMessageDialog(window, "导入文件时失败，该操作已被中断，未能全部导入。", "错误", JOptionPane.ERROR_MESSAGE);
-				}
-				fsd.close();
-			}
+			exi = FileSystemManager.getInstance().hasExistsFilesOrFolders(files, folderId);
 		} catch (SQLException e1) {
 			// TODO 自动生成的 catch 块
-			JOptionPane.showMessageDialog(window, "出现意外错误，无法导入文件。", "错误", JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(window, "出现意外错误，无法导入文件，请刷新或重启应用后重试。", "错误", JOptionPane.ERROR_MESSAGE);
+			return;
 		}
-		try {
-			getFolderView(currentView.getCurrent().getFolderId());
-		} catch (Exception e1) {
-			// TODO 自动生成的 catch 块
-			JOptionPane.showMessageDialog(window, "无法刷新文件列表，您可以尝试手动刷新。", "错误", JOptionPane.ERROR_MESSAGE);
+		String type = null;
+		if (exi > 0) {
+			switch (JOptionPane.showConfirmDialog(window, "该路径存在" + exi + "个同名文件或文件夹，您希望覆盖它们么？（“是”覆盖，“否”保留两者，“取消”终止导入）",
+					"导入", JOptionPane.YES_NO_CANCEL_OPTION)) {
+			case 0:
+				type = FileSystemManager.COVER;
+				break;
+			case 1:
+				type = FileSystemManager.BOTH;
+				break;
+			case 2:
+				type = "CANCEL";
+				break;
+
+			default:
+				type = "CANCEL";
+				break;
+			}
 		}
+		if (!"CANCEL".equals(type)) {
+			// 打开进度提示会话框
+			FSProgressDialog fsd = FSProgressDialog.getNewInstance();
+			Thread importListenerDialog = new Thread(() -> {
+				fsd.show();
+			});
+			importListenerDialog.start();
+			try {
+				FileSystemManager.getInstance().importFrom(files, folderId, type);
+			} catch (Exception e1) {
+				// TODO 自动生成的 catch 块
+				JOptionPane.showMessageDialog(window, "导入文件时失败，该操作已被中断，未能全部导入。", "错误", JOptionPane.ERROR_MESSAGE);
+			}
+			fsd.close();
+		}
+		refresh();
 	}
 
 }

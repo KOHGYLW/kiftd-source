@@ -1,5 +1,6 @@
 package kohgylw.kiftd.server.util;
 
+import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -137,6 +138,53 @@ public class FileNodeUtil {
 		while (fileNames.contains(newName)) {
 			i++;
 			newName = originalName + " " + i;
+		}
+		return newName;
+	}
+	
+	/**
+	 * 
+	 * <h2>生成不与已存在文件夹同名的、带计数的新文件夹名</h2>
+	 * <p>功能与得到新文件名类似，当文件夹列表中存在“doc”文件夹时，传入“doc”则返回“doc 2”，以此类推。</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @param folder kohgylw.kiftd.server.model.Folder 原始文件夹
+	 * @param parentfolder java.io.File 要检查的文件夹
+	 * @return java.lang.String 新文件夹名
+	 */
+	public static String getNewFolderName(Folder folder,File parentfolder) {
+		int i = 0;
+		List<String> fileNames = Arrays
+				.asList(Arrays.stream(parentfolder.listFiles()).parallel().filter((e)->e.isDirectory()).map((t) -> t.getName()).toArray(String[]::new));
+		String newName = folder.getFolderName();
+		while (fileNames.contains(newName)) {
+			i++;
+			newName = folder.getFolderName() + " " + i;
+		}
+		return newName;
+	}
+	
+	/**
+	 * 
+	 * <h2>生成不与已存在文件同名的、带计数的新文件名</h2>
+	 * <p>
+	 * 针对需要保留两个文件至一个路径下的行为，可使用该方法生成新文件名，其格式为“{原文件名} (计数).{后缀}”的格式。
+	 * 例如，某路径下已存在“test1.txt”，再传入一个“test1.txt”时，会返回“test1 (1).txt”，继续传入“test1 (1).txt”
+	 * 则返回“test1 (2).txt”，以此类推。当文件列表中不含同名文件时，返回原始文件名。
+	 * </p>
+	 * @author 青阳龙野(kohgylw)
+	 * @param n kohgylw.kiftd.server.model.Node 要重命名的文件节点
+	 * @param folder java.io.File 要检查的本地文件夹
+	 * @return java.lang.String 新文件名
+	 */
+	public static String getNewNodeName(Node n,File folder) {
+		int i = 0;
+		List<String> fileNames = Arrays
+				.asList(Arrays.stream(folder.listFiles()).parallel().filter((e)->e.isFile()).map((t) -> t.getName()).toArray(String[]::new));
+		String newName = n.getFileName();
+		while (fileNames.contains(newName)) {
+			i++;
+			newName = n.getFileName().substring(0, n.getFileName().lastIndexOf(".")) + " (" + i + ")"
+					+ n.getFileName().substring(n.getFileName().lastIndexOf("."));
 		}
 		return newName;
 	}

@@ -49,18 +49,18 @@ public class FilesTable extends JTable {
 				public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
 					// TODO 自动生成的方法存根
 				}
-				
+
 				@Override
 				public void removeTableModelListener(TableModelListener l) {
 					// TODO 自动生成的方法存根
 				}
-				
+
 				@Override
 				public boolean isCellEditable(int rowIndex, int columnIndex) {
 					// TODO 自动生成的方法存根
 					return false;
 				}
-				
+
 				@Override
 				public Object getValueAt(int rowIndex, int columnIndex) {
 					// TODO 自动生成的方法存根
@@ -80,31 +80,31 @@ public class FilesTable extends JTable {
 						return "--";
 					}
 				}
-				
+
 				@Override
 				public int getRowCount() {
 					// TODO 自动生成的方法存根
 					return folders.size() + files.size();
 				}
-				
+
 				@Override
 				public String getColumnName(int columnIndex) {
 					// TODO 自动生成的方法存根
 					return columns[columnIndex];
 				}
-				
+
 				@Override
 				public int getColumnCount() {
 					// TODO 自动生成的方法存根
 					return columns.length;
 				}
-				
+
 				@Override
 				public Class<?> getColumnClass(int columnIndex) {
 					// TODO 自动生成的方法存根
 					return Object.class;
 				}
-				
+
 				@Override
 				public void addTableModelListener(TableModelListener l) {
 					// TODO 自动生成的方法存根
@@ -143,7 +143,7 @@ public class FilesTable extends JTable {
 				// TODO 自动生成的方法存根
 				if (value instanceof String && ((String) value).equals("0")) {
 					setText((String) "<1");
-				}else {
+				} else {
 					setText((String) value);
 				}
 			}
@@ -173,5 +173,4 @@ public class FilesTable extends JTable {
 		}
 		return null;
 	}
-
 }
