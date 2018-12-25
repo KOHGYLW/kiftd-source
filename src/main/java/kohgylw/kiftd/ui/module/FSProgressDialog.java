@@ -16,7 +16,7 @@ import kohgylw.kiftd.util.file_system_manager.FileSystemManager;
 
 public class FSProgressDialog extends KiftdDynamicWindow {
 
-	private static JDialog window;//窗体
+	private JDialog window;//窗体
 	private static JLabel message;//显示的文本信息
 	private static JProgressBar pBar;//进度条
 	private static JButton cancel;//取消按钮
@@ -24,11 +24,11 @@ public class FSProgressDialog extends KiftdDynamicWindow {
 
 	private FSProgressDialog() {
 		setUIFont();//自动设置字体大小
-		(FSProgressDialog.window = new JDialog(FSViewer.window, "执行中...")).setModal(true);
-		FSProgressDialog.window.setSize(380, 100);
-		FSProgressDialog.window.setLocation(200, 200);
-		FSProgressDialog.window.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
-		FSProgressDialog.window.addWindowListener(new WindowListener() {
+		(window = new JDialog(FSViewer.window, "执行中...")).setModal(true);
+		window.setSize(380, 100);
+		window.setLocation(200, 200);
+		window.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+		window.addWindowListener(new WindowListener() {
 			@Override
 			public void windowOpened(WindowEvent e) {
 				// TODO 自动生成的方法存根
@@ -65,8 +65,8 @@ public class FSProgressDialog extends KiftdDynamicWindow {
 				// TODO 自动生成的方法存根
 			}
 		});
-		FSProgressDialog.window.setResizable(false);
-		FSProgressDialog.window.setLayout(new BoxLayout(FSProgressDialog.window.getContentPane(), 3));
+		window.setResizable(false);
+		window.setLayout(new BoxLayout(window.getContentPane(), 3));
 		JPanel messageBox = new JPanel(new FlowLayout(FlowLayout.LEFT));
 		message = new JLabel("请稍候...");
 		messageBox.add(message);
@@ -103,10 +103,10 @@ public class FSProgressDialog extends KiftdDynamicWindow {
 				pBar.setValue(FileSystemManager.per);
 				message.setText(FileSystemManager.message);
 			}
-			FSProgressDialog.window.dispose();
+			window.dispose();
 		});
 		lt.start();
-		FSProgressDialog.window.setVisible(true);//必须先开启监听，否则将阻塞线程
+		window.setVisible(true);//必须先开启监听，否则将阻塞线程
 	}
 	
 	/**
@@ -121,9 +121,9 @@ public class FSProgressDialog extends KiftdDynamicWindow {
 	
 	//终止当前操作
 	private void canncel() {
-		if(JOptionPane.showConfirmDialog(FSProgressDialog.window, "操作仍在进行中，确认要立即终止？", "警告", JOptionPane.YES_NO_OPTION)==0) {
+		if(JOptionPane.showConfirmDialog(window, "操作仍在进行中，确认要立即终止？", "警告", JOptionPane.YES_NO_OPTION)==0) {
 			FileSystemManager.getInstance().cannel();
-			FSProgressDialog.window.dispose();
+			window.dispose();
 		}
 	}
 	
