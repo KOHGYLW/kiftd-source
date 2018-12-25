@@ -122,6 +122,7 @@ public class FSViewer extends KiftdDynamicWindow {
 			backToParentFolder.setEnabled(false);
 			refreshBtn.setEnabled(false);
 			homeBtn.setEnabled(false);
+			importBtn.setEnabled(false);
 			worker.execute(() -> {
 				try {
 					getFolderView(currentView.getCurrent().getFolderParent());
@@ -131,6 +132,7 @@ public class FSViewer extends KiftdDynamicWindow {
 					homeBtn.setEnabled(true);
 				}
 				refreshBtn.setEnabled(true);
+				importBtn.setEnabled(true);
 			});
 		});
 		importBtn.addActionListener((e) -> {
@@ -265,7 +267,6 @@ public class FSViewer extends KiftdDynamicWindow {
 			exportBtn.setEnabled(false);
 			worker.execute(() -> {
 				refresh();
-				refreshBtn.setEnabled(true);
 			});
 		});
 		// 生成文件列表
@@ -375,15 +376,17 @@ public class FSViewer extends KiftdDynamicWindow {
 	private void refresh() {
 		try {
 			getFolderView(currentView.getCurrent().getFolderId());
-			if(!currentView.getCurrent().getFolderId().equals("root")) {
-				homeBtn.setEnabled(true);
-				backToParentFolder.setEnabled(true);
-			}
 		} catch (Exception e1) {
 			// TODO 自动生成的 catch 块
 			JOptionPane.showMessageDialog(window, "无法刷新文件列表，请重试。", "错误",
 					JOptionPane.ERROR_MESSAGE);
 		}
+		if(!currentView.getCurrent().getFolderId().equals("root")) {
+			homeBtn.setEnabled(true);
+			backToParentFolder.setEnabled(true);
+		}
+		importBtn.setEnabled(true);
+		refreshBtn.setEnabled(true);
 	}
 
 	/**
