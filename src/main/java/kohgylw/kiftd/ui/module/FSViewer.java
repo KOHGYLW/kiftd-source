@@ -4,7 +4,6 @@ import java.awt.BorderLayout;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.datatransfer.DataFlavor;
-import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.dnd.DnDConstants;
 import java.awt.dnd.DropTarget;
 import java.awt.dnd.DropTargetDragEvent;
@@ -14,7 +13,6 @@ import java.awt.dnd.DropTargetListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.io.File;
-import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -285,17 +283,13 @@ public class FSViewer extends KiftdDynamicWindow {
 						@SuppressWarnings("unchecked")
 						List<File> files = (List<File>) dropTarget;
 						importBtn.setEnabled(false);
+						dtde.dropComplete(true);
 						worker.execute(() -> {
 							doImport(files.toArray(new File[0]));
+							importBtn.setEnabled(true);
 						});
-						dtde.dropComplete(true);
-						importBtn.setEnabled(true);
-					} catch (UnsupportedFlavorException e) {
+					} catch (Exception e) {
 						// TODO 自动生成的 catch 块
-						e.printStackTrace();
-					} catch (IOException e) {
-						// TODO 自动生成的 catch 块
-						e.printStackTrace();
 					}
 				}
 			}

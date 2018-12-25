@@ -123,6 +123,7 @@ public class FSProgressDialog extends KiftdDynamicWindow {
 	private void canncel() {
 		if(JOptionPane.showConfirmDialog(FSProgressDialog.window, "操作仍在进行中，确认要立即终止？", "警告", JOptionPane.YES_NO_OPTION)==0) {
 			FileSystemManager.getInstance().cannel();
+			FSProgressDialog.window.dispose();
 		}
 	}
 	
