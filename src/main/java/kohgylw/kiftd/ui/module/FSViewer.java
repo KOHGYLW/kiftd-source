@@ -102,59 +102,48 @@ public class FSViewer extends KiftdDynamicWindow {
 		c.add(toolBar, BorderLayout.NORTH);
 		// 各个工具栏按钮的功能实现
 		homeBtn.addActionListener((e) -> {
-			homeBtn.setEnabled(false);
-			refreshBtn.setEnabled(false);
-			backToParentFolder.setEnabled(false);
-			importBtn.setEnabled(false);
+			disableAllButtons();
 			worker.execute(() -> {
 				try {
 					getFolderView("root");
 				} catch (Exception e1) {
 					// TODO 自动生成的 catch 块
-					homeBtn.setEnabled(true);
-					backToParentFolder.setEnabled(true);
+					JOptionPane.showMessageDialog(window, "出现意外错误：无法读取文件列表，请重试或重启应用。", "错误", JOptionPane.ERROR_MESSAGE);
 				}
-				refreshBtn.setEnabled(true);
-				importBtn.setEnabled(true);
+				enableAllButtons();
 			});
 		});
 		backToParentFolder.addActionListener((e) -> {
-			backToParentFolder.setEnabled(false);
-			refreshBtn.setEnabled(false);
-			homeBtn.setEnabled(false);
-			importBtn.setEnabled(false);
+			disableAllButtons();
 			worker.execute(() -> {
 				try {
 					getFolderView(currentView.getCurrent().getFolderParent());
 				} catch (Exception e1) {
 					// TODO 自动生成的 catch 块
-					backToParentFolder.setEnabled(true);
-					homeBtn.setEnabled(true);
+					JOptionPane.showMessageDialog(window, "出现意外错误：无法读取文件列表，请重试或重启应用。", "错误", JOptionPane.ERROR_MESSAGE);
 				}
-				refreshBtn.setEnabled(true);
-				importBtn.setEnabled(true);
+				enableAllButtons();
 			});
 		});
 		importBtn.addActionListener((e) -> {
-			importBtn.setEnabled(false);
+			disableAllButtons();
 			JFileChooser importChooer = new JFileChooser();
 			importChooer.setMultiSelectionEnabled(true);
 			importChooer.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
 			if (importChooer.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
 				worker.execute(() -> {
 					doImport(importChooer.getSelectedFiles());
-					importBtn.setEnabled(true);
+					enableAllButtons();
 				});
 			} else {
-				importBtn.setEnabled(true);
+				enableAllButtons();
 			}
 		});
 		exportBtn.addActionListener((e) -> {
-			exportBtn.setEnabled(false);
-			deleteBtn.setEnabled(false);
 			JFileChooser exportChooer = new JFileChooser();
 			exportChooer.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 			if (exportChooer.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+				disableAllButtons();
 				worker.execute(() -> {
 					File path = exportChooer.getSelectedFile();
 					int[] selected = filesTable.getSelectedRows();
@@ -176,8 +165,7 @@ public class FSViewer extends KiftdDynamicWindow {
 					} catch (SQLException e2) {
 						JOptionPane.showMessageDialog(window, "出现意外错误，无法导出文件，请刷新或重启应用后重试。", "错误",
 								JOptionPane.ERROR_MESSAGE);
-						deleteBtn.setEnabled(true);
-						exportBtn.setEnabled(true);
+						enableAllButtons();
 						return;
 					}
 					String type = null;
@@ -192,12 +180,10 @@ public class FSViewer extends KiftdDynamicWindow {
 							type = FileSystemManager.BOTH;
 							break;
 						case 2:
-							type = "CANCEL";
-							deleteBtn.setEnabled(true);
-							exportBtn.setEnabled(true);
-							return;
+
 						default:
 							type = "CANCEL";
+							enableAllButtons();
 							return;
 						}
 					}
@@ -216,16 +202,15 @@ public class FSViewer extends KiftdDynamicWindow {
 								JOptionPane.ERROR_MESSAGE);
 					}
 					refresh();
+					enableAllButtons();
 				});
 			}
-			exportBtn.setEnabled(true);
 		});
 		deleteBtn.addActionListener((e) -> {
-			deleteBtn.setEnabled(false);
-			exportBtn.setEnabled(false);
-			if (JOptionPane.showConfirmDialog(window, "确认要删除这些文件么？警告：该操作无法恢复。", "删除",
-					JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
-				worker.execute(() -> {
+			disableAllButtons();
+			worker.execute(() -> {
+				if (JOptionPane.showConfirmDialog(window, "确认要删除这些文件么？警告：该操作无法恢复。", "删除",
+						JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
 					int[] selected = filesTable.getSelectedRows();
 					List<String> selectedNodes = new ArrayList<>();
 					List<String> selectedFolders = new ArrayList<>();
@@ -253,20 +238,15 @@ public class FSViewer extends KiftdDynamicWindow {
 								JOptionPane.ERROR_MESSAGE);
 					}
 					refresh();
-				});
-			} else {
-				deleteBtn.setEnabled(true);
-				exportBtn.setEnabled(true);
-			}
+				}
+				enableAllButtons();
+			});
 		});
 		refreshBtn.addActionListener((e) -> {
-			refreshBtn.setEnabled(false);
-			homeBtn.setEnabled(false);
-			backToParentFolder.setEnabled(false);
-			importBtn.setEnabled(false);
-			exportBtn.setEnabled(false);
+			disableAllButtons();
 			worker.execute(() -> {
 				refresh();
+				enableAllButtons();
 			});
 		});
 		// 生成文件列表
@@ -307,16 +287,18 @@ public class FSViewer extends KiftdDynamicWindow {
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				// TODO 自动生成的方法存根
-				Folder f = filesTable.getDoubleClickFolder(e);
-				if (f != null) {
-					worker.execute(() -> {
+				disableAllButtons();
+				worker.execute(() -> {
+					Folder f = filesTable.getDoubleClickFolder(e);
+					if (f != null) {
 						try {
 							getFolderView(f.getFolderId());
 						} catch (Exception e1) {
 							// TODO 自动生成的 catch 块
 						}
-					});
-				}
+					}
+					enableAllButtons();
+				});
 			}
 		});
 		// 文件列表的拖拽监听
@@ -337,11 +319,11 @@ public class FSViewer extends KiftdDynamicWindow {
 						Object dropTarget = dtde.getTransferable().getTransferData(DataFlavor.javaFileListFlavor);
 						@SuppressWarnings("unchecked")
 						List<File> files = (List<File>) dropTarget;
-						importBtn.setEnabled(false);
 						dtde.dropComplete(true);
 						worker.execute(() -> {
+							disableAllButtons();
 							doImport(files.toArray(new File[0]));
-							importBtn.setEnabled(true);
+							enableAllButtons();
 						});
 					} catch (Exception e) {
 						// TODO 自动生成的 catch 块
@@ -371,22 +353,15 @@ public class FSViewer extends KiftdDynamicWindow {
 		c.add(mianPane);
 		modifyComponentSize(window);
 	}
-	
-	//刷新文件列表
+
+	// 刷新文件列表
 	private void refresh() {
 		try {
 			getFolderView(currentView.getCurrent().getFolderId());
 		} catch (Exception e1) {
 			// TODO 自动生成的 catch 块
-			JOptionPane.showMessageDialog(window, "无法刷新文件列表，请重试。", "错误",
-					JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(window, "无法刷新文件列表，请重试。", "错误", JOptionPane.ERROR_MESSAGE);
 		}
-		if(!currentView.getCurrent().getFolderId().equals("root")) {
-			homeBtn.setEnabled(true);
-			backToParentFolder.setEnabled(true);
-		}
-		importBtn.setEnabled(true);
-		refreshBtn.setEnabled(true);
 	}
 
 	/**
@@ -400,13 +375,15 @@ public class FSViewer extends KiftdDynamicWindow {
 	 * @author 青阳龙野(kohgylw)
 	 */
 	public void show() {
+		disableAllButtons();
 		FileNodeUtil.initNodeTableToDataBase();
 		try {
 			if (currentView == null) {
 				getFolderView("root");
-			}else {
+			} else {
 				refresh();
 			}
+			enableAllButtons();
 			window.setVisible(true);
 		} catch (Exception e) {
 			// TODO 自动生成的 catch 块
@@ -422,14 +399,6 @@ public class FSViewer extends KiftdDynamicWindow {
 			window.setTitle("kiftd-" + currentView.getCurrent().getFolderName());
 		} catch (Exception e) {
 			throw e;
-		} finally {
-			if (currentView != null && "null".equals(currentView.getCurrent().getFolderParent())) {
-				backToParentFolder.setEnabled(false);
-				homeBtn.setEnabled(false);
-			} else {
-				backToParentFolder.setEnabled(true);
-				homeBtn.setEnabled(true);
-			}
 		}
 	}
 
@@ -472,30 +441,53 @@ public class FSViewer extends KiftdDynamicWindow {
 				type = FileSystemManager.BOTH;
 				break;
 			case 2:
-				type = "CANCEL";
-				break;
 
 			default:
 				type = "CANCEL";
-				break;
+				return;
 			}
 		}
-		if (!"CANCEL".equals(type)) {
-			// 打开进度提示会话框
-			FSProgressDialog fsd = FSProgressDialog.getNewInstance();
-			Thread importListenerDialog = new Thread(() -> {
-				fsd.show();
-			});
-			importListenerDialog.start();
-			try {
-				FileSystemManager.getInstance().importFrom(files, folderId, type);
-			} catch (Exception e1) {
-				// TODO 自动生成的 catch 块
-				JOptionPane.showMessageDialog(window, "导入文件时失败，该操作已被中断，未能全部导入。", "错误", JOptionPane.ERROR_MESSAGE);
-			}
-			fsd.close();
+		// 打开进度提示会话框
+		FSProgressDialog fsd = FSProgressDialog.getNewInstance();
+		Thread importListenerDialog = new Thread(() -> {
+			fsd.show();
+		});
+		importListenerDialog.start();
+		try {
+			FileSystemManager.getInstance().importFrom(files, folderId, type);
+		} catch (Exception e1) {
+			// TODO 自动生成的 catch 块
+			JOptionPane.showMessageDialog(window, "导入文件时失败，该操作已被中断，未能全部导入。", "错误", JOptionPane.ERROR_MESSAGE);
 		}
+		fsd.close();
 		refresh();
+	}
+
+	// 锁定全部按钮避免重复操作
+	private void disableAllButtons() {
+		homeBtn.setEnabled(false);
+		backToParentFolder.setEnabled(false);
+		importBtn.setEnabled(false);
+		exportBtn.setEnabled(false);
+		deleteBtn.setEnabled(false);
+		refreshBtn.setEnabled(false);
+	}
+
+	// 解锁可用按钮
+	private void enableAllButtons() {
+		// 针对一些常规按钮的解锁
+		refreshBtn.setEnabled(true);
+		importBtn.setEnabled(true);
+		// 针对“导出”和“删除”两个按钮的解锁
+		if (filesTable.getSelectedRows().length > 0) {
+			exportBtn.setEnabled(true);
+			deleteBtn.setEnabled(true);
+		}
+		// 针对“上一级”和“根目录”按钮的解锁
+		if (currentView != null && !"null".equals(currentView.getCurrent().getFolderParent())) {
+			backToParentFolder.setEnabled(true);
+			homeBtn.setEnabled(true);
+		}
 	}
 
 }

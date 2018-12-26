@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.Charset;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -204,9 +205,9 @@ public class FileSystemManager {
 		List<Folder> folders = getFoldersByParentId(folderId);
 		List<Node> nodes = selectNodesByFolderId(folderId);
 		for (File f : files) {
-			if (f.isDirectory() && folders.parallelStream().anyMatch((e) -> e.getFolderName().equals(f.getName()))) {
+			if (f.isDirectory() && folders.parallelStream().anyMatch((e) -> e.getFolderName().equals(new String(f.getName().getBytes(Charset.forName("UTF-8")),Charset.forName("UTF-8"))))) {
 				result++;
-			} else if (nodes.parallelStream().anyMatch((e) -> e.getFileName().equals(f.getName()))) {
+			} else if (nodes.parallelStream().anyMatch((e) -> e.getFileName().equals(new String(f.getName().getBytes(Charset.forName("UTF-8")),Charset.forName("UTF-8"))))) {
 				result++;
 			}
 		}
@@ -243,10 +244,10 @@ public class FileSystemManager {
 				nodes.add(selectNodeById(nid));
 			}
 			for (File f : path.listFiles()) {
-				if (f.isDirectory()
-						&& folders.parallelStream().anyMatch((e) -> e.getFolderName().equals(f.getName()))) {
+				if (f.isDirectory() && folders.parallelStream()
+						.anyMatch((e) -> e.getFolderName().equals(new String(f.getName().getBytes(Charset.forName("UTF-8")),Charset.forName("UTF-8"))))) {
 					c++;
-				} else if (nodes.parallelStream().anyMatch((e) -> e.getFileName().equals(f.getName()))) {
+				} else if (nodes.parallelStream().anyMatch((e) -> e.getFileName().equals(new String(f.getName().getBytes(Charset.forName("UTF-8")),Charset.forName("UTF-8"))))) {
 					c++;
 				}
 			}
@@ -393,15 +394,16 @@ public class FileSystemManager {
 	// 将一个本地文件导入到文件系统中，注意，导入的必须是文件而不是文件夹
 	private void importFileInto(File f, String folderId, String type) throws Exception {
 		if (f.isFile()) {
+			String name = new String(f.getName().getBytes("UTF-8"), "UTF-8");
+			String newName = name;
 			per = 0;
-			message = "正在导入文件：" + f.getName();
+			message = "正在导入文件：" + name;
 			List<Node> nodes = selectNodesByFolderId(folderId);
 			Node node = null;
 			File target;
-			String name = f.getName();
 			long size = f.length();
 			String fileBlocks = ConfigureReader.instance().getFileBlockPath();
-			if (nodes.parallelStream().anyMatch((e) -> e.getFileName().equals(f.getName()))) {
+			if (nodes.parallelStream().anyMatch((e) -> e.getFileName().equals(name))) {
 				switch (type) {
 				case COVER:
 					// 覆盖
@@ -416,7 +418,7 @@ public class FileSystemManager {
 					break;
 				case BOTH:
 					// 保留两者（计数命名）
-					name = FileNodeUtil.getNewNodeName(name, nodes);
+					newName = FileNodeUtil.getNewNodeName(name, nodes);
 					break;
 				default:
 					per = 100;
@@ -426,7 +428,7 @@ public class FileSystemManager {
 			// 处理文件节点，有则用，没有则创建一个
 			if (node == null) {
 				node = new Node();
-				node.setFileName(name);
+				node.setFileName(newName);
 				node.setFileId(UUID.randomUUID().toString());
 				node.setFileParentFolder(folderId);
 				String id = UUID.randomUUID().toString().replace("-", "");
@@ -467,20 +469,20 @@ public class FileSystemManager {
 	// 将一个本地文件夹导入至文件系统，必须是文件夹而不是文件。它会自动将其中的文件和文件夹也一并导入。
 	private void importFolderInto(File f, String folderId, String type) throws Exception {
 		if (f.isDirectory()) {
+			String name = new String(f.getName().getBytes("UTF-8"), "UTF-8");
+			String newName = name;
 			per = 0;
-			message = "正在导入文件夹：" + f.getName();
+			message = "正在导入文件夹：" + name;
 			Folder parent = selectFolderById(folderId);
 			List<Folder> folders = getFoldersByParentId(folderId);
 			Folder folder = null;
-			String name = f.getName();
-			if (folders.parallelStream().anyMatch((e) -> e.getFolderName().equals(f.getName()))) {
+			if (folders.parallelStream().anyMatch((e) -> e.getFolderName().equals(name))) {
 				switch (type) {
 				case COVER:
-					folder = folders.parallelStream().filter((e) -> e.getFolderName().equals(f.getName())).findFirst()
-							.get();
+					folder = folders.parallelStream().filter((e) -> e.getFolderName().equals(name)).findFirst().get();
 					break;
 				case BOTH:
-					name = FileNodeUtil.getNewFolderName(name, folders);
+					newName = FileNodeUtil.getNewFolderName(name, folders);
 					break;
 				default:
 
@@ -492,7 +494,7 @@ public class FileSystemManager {
 				folder = new Folder();
 				String nFolderId = UUID.randomUUID().toString();
 				folder.setFolderId(nFolderId);
-				folder.setFolderName(name);
+				folder.setFolderName(newName);
 				folder.setFolderConstraint(parent.getFolderConstraint());
 				folder.setFolderParent(folderId);
 				folder.setFolderCreator("SYS_IN");
@@ -612,14 +614,15 @@ public class FileSystemManager {
 			per = 0;
 			message = "正在导出文件：" + node.getFileName();
 			if (Arrays.stream(path.listFiles()).parallel().filter((e) -> e.isFile())
-					.anyMatch((f) -> f.getName().equals(node.getFileName()))) {
+					.anyMatch((f) -> new String(f.getName().getBytes()).equals(node.getFileName()))) {
 				switch (type) {
 				case BOTH:
 					target = Arrays.stream(path.listFiles()).parallel().filter((e) -> e.isFile())
-							.filter((e) -> e.getName().equals(node.getFileName())).findFirst().get();
+							.filter((e) -> new String(e.getName().getBytes()).equals(node.getFileName())).findFirst()
+							.get();
 					break;
 				case COVER:
-					target = new File(path, FileNodeUtil.getNewNodeName(node, path));
+					target = new File(path, new String(FileNodeUtil.getNewNodeName(node, path).getBytes()));
 					target.createNewFile();
 					break;
 				default:
@@ -627,7 +630,7 @@ public class FileSystemManager {
 				}
 			}
 			if (target == null) {
-				target = new File(path, node.getFileName());
+				target = new File(path, new String(node.getFileName().getBytes()));
 				target.createNewFile();
 			}
 			File block = new File(ConfigureReader.instance().getFileBlockPath(), node.getFilePath());
@@ -659,14 +662,15 @@ public class FileSystemManager {
 		message = "正在导出文件夹：" + folder.getFolderName();
 		if (folder != null && path != null && path.isDirectory()) {
 			if (Arrays.stream(path.listFiles()).parallel().filter((e) -> e.isDirectory())
-					.anyMatch((f) -> f.getName().equals(folder.getFolderName()))) {
+					.anyMatch((f) -> new String(f.getName().getBytes()).equals(folder.getFolderName()))) {
 				switch (type) {
 				case COVER:
 					target = Arrays.stream(path.listFiles()).parallel().filter((e) -> e.isDirectory())
-							.filter((e) -> e.getName().equals(folder.getFolderName())).findFirst().get();
+							.filter((e) -> new String(e.getName().getBytes()).equals(folder.getFolderName()))
+							.findFirst().get();
 					break;
 				case BOTH:
-					target = new File(path, FileNodeUtil.getNewFolderName(folder, path));
+					target = new File(path, new String(FileNodeUtil.getNewFolderName(folder, path).getBytes()));
 					target.mkdir();
 					break;
 
@@ -675,7 +679,7 @@ public class FileSystemManager {
 				}
 			}
 			if (target == null) {
-				target = new File(path, folder.getFolderName());
+				target = new File(path, new String(folder.getFolderName().getBytes()));
 				target.mkdir();
 			}
 			per = 100;

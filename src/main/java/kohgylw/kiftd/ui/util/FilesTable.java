@@ -3,8 +3,8 @@ package kohgylw.kiftd.ui.util;
 import java.awt.Color;
 import java.awt.event.MouseEvent;
 import java.util.List;
-
 import javax.swing.JTable;
+import javax.swing.SwingUtilities;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableModel;
@@ -43,79 +43,91 @@ public class FilesTable extends JTable {
 	}
 
 	public void updateValues(List<Folder> folders, List<Node> files) {
-		try {
-			setModel(new TableModel() {
-				@Override
-				public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
-					// TODO 自动生成的方法存根
-				}
+		Runnable doUpdate = new Runnable() {
+			@Override
+			public void run() {
+				// TODO 自动生成的方法存根
+				try {
+					setModel(new TableModel() {
+						@Override
+						public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
+							// TODO 自动生成的方法存根
+						}
 
-				@Override
-				public void removeTableModelListener(TableModelListener l) {
-					// TODO 自动生成的方法存根
-				}
+						@Override
+						public void removeTableModelListener(TableModelListener l) {
+							// TODO 自动生成的方法存根
+						}
 
-				@Override
-				public boolean isCellEditable(int rowIndex, int columnIndex) {
-					// TODO 自动生成的方法存根
-					return false;
-				}
+						@Override
+						public boolean isCellEditable(int rowIndex, int columnIndex) {
+							// TODO 自动生成的方法存根
+							return false;
+						}
 
-				@Override
-				public Object getValueAt(int rowIndex, int columnIndex) {
-					// TODO 自动生成的方法存根
-					switch (columnIndex) {
-					case 0:
-						return rowIndex < folders.size() ? "/" + folders.get(rowIndex).getFolderName()
-								: files.get(rowIndex - folders.size()).getFileName();
-					case 1:
-						return rowIndex < folders.size() ? folders.get(rowIndex).getFolderCreationDate()
-								: files.get(rowIndex - folders.size()).getFileCreationDate();
-					case 2:
-						return rowIndex < folders.size() ? "--" : files.get(rowIndex - folders.size()).getFileSize();
-					case 3:
-						return rowIndex < folders.size() ? folders.get(rowIndex).getFolderCreator()
-								: files.get(rowIndex - folders.size()).getFileCreator();
-					default:
-						return "--";
-					}
-				}
+						@Override
+						public Object getValueAt(int rowIndex, int columnIndex) {
+							// TODO 自动生成的方法存根
+							switch (columnIndex) {
+							case 0:
+								return rowIndex < folders.size() ? "/" + folders.get(rowIndex).getFolderName()
+										: files.get(rowIndex - folders.size()).getFileName();
+							case 1:
+								return rowIndex < folders.size() ? folders.get(rowIndex).getFolderCreationDate()
+										: files.get(rowIndex - folders.size()).getFileCreationDate();
+							case 2:
+								return rowIndex < folders.size() ? "--"
+										: files.get(rowIndex - folders.size()).getFileSize();
+							case 3:
+								return rowIndex < folders.size() ? folders.get(rowIndex).getFolderCreator()
+										: files.get(rowIndex - folders.size()).getFileCreator();
+							default:
+								return "--";
+							}
+						}
 
-				@Override
-				public int getRowCount() {
-					// TODO 自动生成的方法存根
-					return folders.size() + files.size();
-				}
+						@Override
+						public int getRowCount() {
+							// TODO 自动生成的方法存根
+							return folders.size() + files.size();
+						}
 
-				@Override
-				public String getColumnName(int columnIndex) {
-					// TODO 自动生成的方法存根
-					return columns[columnIndex];
-				}
+						@Override
+						public String getColumnName(int columnIndex) {
+							// TODO 自动生成的方法存根
+							return columns[columnIndex];
+						}
 
-				@Override
-				public int getColumnCount() {
-					// TODO 自动生成的方法存根
-					return columns.length;
-				}
+						@Override
+						public int getColumnCount() {
+							// TODO 自动生成的方法存根
+							return columns.length;
+						}
 
-				@Override
-				public Class<?> getColumnClass(int columnIndex) {
-					// TODO 自动生成的方法存根
-					return Object.class;
-				}
+						@Override
+						public Class<?> getColumnClass(int columnIndex) {
+							// TODO 自动生成的方法存根
+							return Object.class;
+						}
 
-				@Override
-				public void addTableModelListener(TableModelListener l) {
-					// TODO 自动生成的方法存根
+						@Override
+						public void addTableModelListener(TableModelListener l) {
+							// TODO 自动生成的方法存根
+						}
+					});
+					setRowFontColor();
+					validate();
+					FilesTable.folders = folders;
+				} catch (Exception e) {
+					// TODO: handle exception
 				}
-			});
-			setRowFontColor();
-			validate();
-			FilesTable.folders = folders;
-		} catch (Exception e) {
-			// TODO: handle exception
-		}
+			}
+		};
+		//避免操作过快导致的异常
+		Thread t = new Thread(()->{
+			SwingUtilities.invokeLater(doUpdate);
+		});
+		t.start();
 	}
 
 	private void setRowFontColor() {
