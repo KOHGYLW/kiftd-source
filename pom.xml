@@ -73,6 +73,15 @@
 		</dependency>
 		<!-- end hsm整合 -->
 
+		<!-- MySQL 自定义连接数据库 -->
+		<!-- https://mvnrepository.com/artifact/mysql/mysql-connector-java -->
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<version>8.0.13</version>
+		</dependency>
+		<!-- end MySQL -->
+
 		<!-- ZIP 压缩工具 -->
 		<!-- https://mvnrepository.com/artifact/org.zeroturnaround/zt-zip -->
 		<dependency>

@@ -44,12 +44,12 @@ public class FileNodeUtil {
 		Printer.instance.print("初始化文件节点...");
 		try {
 			if (conn == null) {
-				Class.forName("org.h2.Driver");
+				Class.forName(ConfigureReader.instance().getFileNodePathDriver()).newInstance();
 			}
 			String newUrl = ConfigureReader.instance().getFileNodePathURL();
 			// 判断当前位置是否初始化文件节点
 			if (url == null || !url.equals(newUrl)) {
-				conn = DriverManager.getConnection(newUrl, "root", "301537gY");
+				conn = DriverManager.getConnection(newUrl, ConfigureReader.instance().getFileNodePathUserName(), ConfigureReader.instance().getFileNodePathPassWord());
 				url = newUrl;
 				final Statement state1 = conn.createStatement();
 				state1.execute(
@@ -67,17 +67,20 @@ public class FileNodeUtil {
 				state2.execute(
 						"CREATE TABLE IF NOT EXISTS FILE(file_id VARCHAR(128) PRIMARY KEY,file_name VARCHAR(128) NOT NULL,file_size VARCHAR(128) NOT NULL,file_parent_folder varchar(128) NOT NULL,file_creation_date varchar(128) NOT NULL,file_creator varchar(128) NOT NULL,file_path varchar(128) NOT NULL)");
 				state2.close();
-				final Statement state3 = conn.createStatement();
-				state3.execute("ALTER TABLE FOLDER ADD COLUMN IF NOT EXISTS folder_constraint INT NOT NULL DEFAULT 0");
-				state3.close();
+				//为了匹配之前的版本而设计的兼容性字段设置，后续可能会删除
+				if(!ConfigureReader.instance().useMySQL()) {
+					final Statement state3 = conn.createStatement();
+					state3.execute("ALTER TABLE FOLDER ADD COLUMN IF NOT EXISTS folder_constraint INT NOT NULL DEFAULT 0");
+					state3.close();
+				}
 				final Statement state4 = conn.createStatement();
 				state4.execute("CREATE INDEX IF NOT EXISTS file_index ON FILE (file_id,file_name)");
 				state4.close();
 			}
 			Printer.instance.print("文件节点初始化完毕。");
 		} catch (Exception e) {
-			Printer.instance.print("错误：文件节点初始化失败。");
 			Printer.instance.print(e.getMessage());
+			Printer.instance.print("错误：文件节点初始化失败。");
 		}
 	}
 

@@ -13,6 +13,8 @@ import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
+import java.sql.Connection;
+import java.sql.DriverManager;
 
 /**
  * 
@@ -40,6 +42,10 @@ public class ConfigureReader {
 	private String fileBlockPath;
 	private String fileNodePath;
 	private String TFPath;
+	private String dbURL;
+	private String dbDriver;
+	private String dbUser;
+	private String dbPwd;
 	private final String ACCOUNT_PROPERTIES_FILE = "account.properties";
 	private final String SERVER_PROPERTIES_FILE = "server.properties";
 	private final int DEFAULT_BUFFER_SIZE = 1048576;
@@ -59,18 +65,19 @@ public class ConfigureReader {
 	public static final int CANT_CREATE_FILE_BLOCK_PATH = 5;
 	public static final int CANT_CREATE_FILE_NODE_PATH = 6;
 	public static final int CANT_CREATE_TF_PATH = 7;
+	public static final int CANT_CONNECT_DB = 8;
 	public static final int LEGAL_PROPERTIES = 0;
 	private static Thread accountPropertiesUpdateDaemonThread;
 
 	private ConfigureReader() {
 		this.propertiesStatus = -1;
-		this.path = System.getProperty("user.dir");//开发环境下
+		this.path = System.getProperty("user.dir");// 开发环境下
 		String classPath = System.getProperty("java.class.path");
-		if(classPath.indexOf(File.pathSeparator) < 0) {
-			File f=new File(classPath);
-			classPath=f.getAbsolutePath();
-			if(classPath.endsWith(".jar")) {
-				this.path=classPath.substring(0, classPath.lastIndexOf(File.separator));//使用环境下
+		if (classPath.indexOf(File.pathSeparator) < 0) {
+			File f = new File(classPath);
+			classPath = f.getAbsolutePath();
+			if (classPath.endsWith(".jar")) {
+				this.path = classPath.substring(0, classPath.lastIndexOf(File.separator));// 使用环境下
 			}
 		}
 		this.DEFAULT_FILE_SYSTEM_PATH = this.path + File.separator + "filesystem" + File.separator;
@@ -419,6 +426,28 @@ public class ConfigureReader {
 			Printer.instance.print("错误：无法创建临时文件存放区[" + this.TFPath + "]。");
 			return 7;
 		}
+		if ("true".equals(serverp.getProperty("mysql.enable"))) {
+			dbDriver = "com.mysql.cj.jdbc.Driver";
+			dbURL = "jdbc:mysql://" + serverp.getProperty("mysql.url", "127.0.0.1/kift")
+					+ "?useUnicode=true&characterEncoding=utf8";
+			dbUser = serverp.getProperty("mysql.user", "root");
+			dbPwd = serverp.getProperty("mysql.password", "");
+			try {
+				Class.forName(dbDriver).newInstance();
+				Connection testConn = DriverManager.getConnection(dbURL, dbUser, dbPwd);
+				testConn.close();
+			} catch (Exception e) {
+				// TODO 自动生成的 catch 块
+				Printer.instance.print(
+						"错误：无法连接至自定义数据库：" + dbURL + "（user=" + dbUser + ",password=" + dbPwd + "），请确重新配置MySQL数据库相关项。");
+				return 8;
+			}
+		} else {
+			dbDriver = "org.h2.Driver";
+			dbURL = "jdbc:h2:file:" + fileNodePath + File.separator + "kift";
+			dbUser = "root";
+			dbPwd = "301537gY";
+		}
 		Printer.instance.print("检查完毕。");
 		return 0;
 	}
@@ -431,6 +460,12 @@ public class ConfigureReader {
 		dsp.setProperty("log", DEFAULT_LOG_LEVEL);
 		dsp.setProperty("FS.path", DEFAULT_FILE_SYSTEM_PATH_SETTING);
 		dsp.setProperty("buff.size", DEFAULT_BUFFER_SIZE + "");
+		if ("true".equals(serverp.getProperty("mysql.enable"))) {
+			dsp.setProperty("mysql.enable", "false");
+			dsp.setProperty("mysql.url", serverp==null?"127.0.0.1/kift":serverp.getProperty("mysql.url","127.0.0.1/kift"));
+			dsp.setProperty("mysql.user", dbUser == null ? "root" : dbUser);
+			dsp.setProperty("mysql.password", dbPwd == null ? "" : dbPwd);
+		}
 		try {
 			dsp.store(new FileOutputStream(this.confdir + SERVER_PROPERTIES_FILE),
 					"<This is the default kiftd server setting file. >");
@@ -461,16 +496,73 @@ public class ConfigureReader {
 
 	/**
 	 * 
-	 * <h2>获取文件节点数据库链接位置</h2>
+	 * <h2>检查是否开启了mysql数据库</h2>
 	 * <p>
-	 * 该位置为存储文件系统的数据库的链接位置，其表示为一个文件路径。
+	 * 用于检查是否使用自定义的外部MySQL数据库。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @return boolean 是否使用了外部MySQL数据库
+	 */
+	public boolean useMySQL() {
+		return serverp==null?false:"true".equals(serverp.getProperty("mysql.enable"));
+	}
+
+	/**
+	 * 
+	 * <h2>获取文件节点数据库链接URL</h2>
+	 * <p>
+	 * 该位置为存储文件系统的数据库的链接URL，如果使用内嵌数据库则表示为一个文件路径；
+	 * 如果定义了MySQL数据库位置，则使用用户自定义URL，该数据库必须使用UTF-8编码集。
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
 	 * @return String 用于数据源或jdbc进行连接的文件节点数据库URL地址
 	 */
 	public String getFileNodePathURL() {
-		return "jdbc:h2:file:" + ConfigureReader.instance().getFileNodePath() + File.separator + "kift";
+		return dbURL;
+	}
+
+	/**
+	 * 
+	 * <h2>获取文件节点数据库链接驱动类型</h2>
+	 * <p>
+	 * 如设定使用MySQL，则使用外置MySQL-connector 8.0，否则使用默认内置数据库驱动。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @return java.lang,String 数据库驱动类型
+	 */
+	public String getFileNodePathDriver() {
+		return dbDriver;
+	}
+	
+	/**
+	 * 
+	 * <h2>获取文件节点数据库链接用户名</h2>
+	 * <p>
+	 * 如设定使用MySQL，则使用用户自定义用户名，否则使用默认内置数据库用户名。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @return java.lang,String 数据库用户名
+	 */
+	public String getFileNodePathUserName() {
+		return dbUser;
+	}
+
+	/**
+	 * 
+	 * <h2>获取文件节点数据库链接密码</h2>
+	 * <p>
+	 * 如设定使用MySQL，则使用用户自定义密码，否则使用默认内置数据库密码。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @return java.lang,String 数据库密码
+	 */
+	public String getFileNodePathPassWord() {
+		return dbPwd;
 	}
 
 	/**
@@ -490,8 +582,8 @@ public class ConfigureReader {
 	 * @return boolean true允许访问，false不允许访问
 	 */
 	public boolean accessFolder(Folder f, String account) {
-		if(f==null) {
-			return false;//访问不存在的文件夹肯定是没权限
+		if (f == null) {
+			return false;// 访问不存在的文件夹肯定是没权限
 		}
 		int cl = f.getFolderConstraint();
 		if (cl == 0) {
@@ -549,7 +641,8 @@ public class ConfigureReader {
 						WatchKey wk = ws.take();
 						List<WatchEvent<?>> es = wk.pollEvents();
 						for (WatchEvent<?> we : es) {
-							if (we.kind() == StandardWatchEventKinds.ENTRY_MODIFY && ACCOUNT_PROPERTIES_FILE.equals(we.context().toString())) {
+							if (we.kind() == StandardWatchEventKinds.ENTRY_MODIFY
+									&& ACCOUNT_PROPERTIES_FILE.equals(we.context().toString())) {
 								Printer.instance.print("正在更新账户配置信息...");
 								this.accountp.clear();
 								final File accountProp = new File(this.confdir + ACCOUNT_PROPERTIES_FILE);
