@@ -25,6 +25,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JToolBar;
+import javax.swing.SwingUtilities;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
@@ -321,9 +322,17 @@ public class FSViewer extends KiftdDynamicWindow {
 						List<File> files = (List<File>) dropTarget;
 						dtde.dropComplete(true);
 						worker.execute(() -> {
-							disableAllButtons();
-							doImport(files.toArray(new File[0]));
-							enableAllButtons();
+							Runnable doImportThread=new Runnable() {
+								@Override
+								public void run() {
+									// TODO 自动生成的方法存根
+									disableAllButtons();
+									doImport(files.toArray(new File[0]));
+									enableAllButtons();
+								}
+								
+							};
+							SwingUtilities.invokeLater(doImportThread);
 						});
 					} catch (Exception e) {
 						// TODO 自动生成的 catch 块

@@ -213,8 +213,16 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 					if (request.getHeader("Range") == null) {
 						this.lu.writeDownloadFileEvent(request, f);
 					}
+					return;
 				}
 			}
+		}
+		try {
+			// 处理无法下载的资源
+			response.sendError(404);
+		} catch (IOException e) {
+			// TODO 自动生成的 catch 块
+			
 		}
 	}
 
