@@ -234,7 +234,7 @@ public class FileSystemManager {
 	 * @return int 存在同名文件（或文件夹）的数量，当被检查的路径下不存在同名文件（或文件夹）时返回0
 	 * @throws SQLException
 	 */
-	public int hasExistsFilesOrFolders(String[] foldersId, String[] filesId, File path) throws SQLException {
+	public int hasExistsFilesOrFolders(String[] foldersId, String[] filesId, File path) throws Exception {
 		if (path.isDirectory()) {
 			int c = 0;
 			List<Folder> folders = new ArrayList<>();
