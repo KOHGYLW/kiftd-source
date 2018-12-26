@@ -205,9 +205,11 @@ public class FileSystemManager {
 		List<Folder> folders = getFoldersByParentId(folderId);
 		List<Node> nodes = selectNodesByFolderId(folderId);
 		for (File f : files) {
-			if (f.isDirectory() && folders.parallelStream().anyMatch((e) -> e.getFolderName().equals(new String(f.getName().getBytes(Charset.forName("UTF-8")),Charset.forName("UTF-8"))))) {
+			if (f.isDirectory() && folders.parallelStream().anyMatch((e) -> e.getFolderName()
+					.equals(new String(f.getName().getBytes(Charset.forName("UTF-8")), Charset.forName("UTF-8"))))) {
 				result++;
-			} else if (nodes.parallelStream().anyMatch((e) -> e.getFileName().equals(new String(f.getName().getBytes(Charset.forName("UTF-8")),Charset.forName("UTF-8"))))) {
+			} else if (nodes.parallelStream().anyMatch((e) -> e.getFileName()
+					.equals(new String(f.getName().getBytes(Charset.forName("UTF-8")), Charset.forName("UTF-8"))))) {
 				result++;
 			}
 		}
@@ -244,10 +246,11 @@ public class FileSystemManager {
 				nodes.add(selectNodeById(nid));
 			}
 			for (File f : path.listFiles()) {
-				if (f.isDirectory() && folders.parallelStream()
-						.anyMatch((e) -> e.getFolderName().equals(new String(f.getName().getBytes(Charset.forName("UTF-8")),Charset.forName("UTF-8"))))) {
+				if (f.isDirectory() && folders.parallelStream().anyMatch((e) -> e.getFolderName().equals(
+						new String(f.getName().getBytes(Charset.forName("UTF-8")), Charset.forName("UTF-8"))))) {
 					c++;
-				} else if (nodes.parallelStream().anyMatch((e) -> e.getFileName().equals(new String(f.getName().getBytes(Charset.forName("UTF-8")),Charset.forName("UTF-8"))))) {
+				} else if (nodes.parallelStream().anyMatch((e) -> e.getFileName().equals(
+						new String(f.getName().getBytes(Charset.forName("UTF-8")), Charset.forName("UTF-8"))))) {
 					c++;
 				}
 			}
@@ -446,24 +449,27 @@ public class FileSystemManager {
 			} else {
 				target = new File(fileBlocks, node.getFilePath());
 			}
-			try (FileOutputStream fileOutputStream = new FileOutputStream(target);
-					FileInputStream fileInputStream = new FileInputStream(f)) {
-				FileChannel block = fileOutputStream.getChannel();
-				FileChannel channel = fileInputStream.getChannel();
-				ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
-				int length = 0;
-				long finishLength = 0;
-				while ((length = channel.read(buffer)) != -1 && gono) {
-					buffer.flip();
-					block.write(buffer, length);
-					buffer.clear();
-					finishLength += length;
-					per = (int) (((double) finishLength / (double) size) * 100);
-				}
+			FileOutputStream fileOutputStream = new FileOutputStream(target);
+			FileInputStream fileInputStream = new FileInputStream(f);
+			FileChannel out = fileOutputStream.getChannel();
+			FileChannel in = fileInputStream.getChannel();
+			ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
+			int length = 0;
+			long finishLength = 0;
+			while ((length = in.read(buffer)) != -1 && gono) {
+				buffer.flip();
+				out.write(buffer);
+				buffer.clear();
+				finishLength += length;
+				per = (int) (((double) finishLength / (double) size) * 100);
 			}
-		} else {
-			throw new IllegalArgumentException();
+			in.close();
+			out.close();
+			fileInputStream.close();
+			fileOutputStream.close();
+			return;
 		}
+		throw new IllegalArgumentException();
 	}
 
 	// 将一个本地文件夹导入至文件系统，必须是文件夹而不是文件。它会自动将其中的文件和文件夹也一并导入。
@@ -635,21 +641,25 @@ public class FileSystemManager {
 			}
 			File block = new File(ConfigureReader.instance().getFileBlockPath(), node.getFilePath());
 			long size = block.length();
-			try (FileInputStream in = new FileInputStream(block); FileOutputStream out = new FileOutputStream(target)) {
-				FileChannel fci = in.getChannel();
-				FileChannel fco = out.getChannel();
-				ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
-				int length = 0;
-				long finishLength = 0;
-				while ((length = fci.read(buffer)) != -1 && gono) {
-					buffer.flip();
-					fco.write(buffer, length);
-					buffer.clear();
-					finishLength += length;
-					per = (int) (((double) finishLength / (double) size) * 100);
-				}
-				return;
+			FileInputStream in = new FileInputStream(block);
+			FileOutputStream out = new FileOutputStream(target);
+			FileChannel fci = in.getChannel();
+			FileChannel fco = out.getChannel();
+			ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
+			int length = 0;
+			long finishLength = 0;
+			while ((length = fci.read(buffer)) != -1 && gono) {
+				buffer.flip();
+				fco.write(buffer);
+				buffer.clear();
+				finishLength += length;
+				per = (int) (((double) finishLength / (double) size) * 100);
 			}
+			fci.close();
+			fco.close();
+			in.close();
+			out.close();
+			return;
 		}
 		throw new IllegalArgumentException();
 	}

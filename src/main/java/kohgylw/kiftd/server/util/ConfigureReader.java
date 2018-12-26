@@ -490,6 +490,9 @@ public class ConfigureReader {
 	 * @return boolean true允许访问，false不允许访问
 	 */
 	public boolean accessFolder(Folder f, String account) {
+		if(f==null) {
+			return false;//访问不存在的文件夹肯定是没权限
+		}
 		int cl = f.getFolderConstraint();
 		if (cl == 0) {
 			return true;
