@@ -73,9 +73,21 @@ public class FileNodeUtil {
 					state3.execute("ALTER TABLE FOLDER ADD COLUMN IF NOT EXISTS folder_constraint INT NOT NULL DEFAULT 0");
 					state3.close();
 				}
-				final Statement state4 = conn.createStatement();
-				state4.execute("CREATE INDEX IF NOT EXISTS file_index ON FILE (file_id,file_name)");
-				state4.close();
+				//为数据库生成索引，此处分为MySQL和H2两种操作
+				if(ConfigureReader.instance().useMySQL()) {
+					final Statement state4 = conn.createStatement();
+					ResultSet indexCount=state4.executeQuery("SHOW INDEX FROM FILE WHERE Key_name = 'file_index'");
+					if(!indexCount.next()) {
+						final Statement state41 = conn.createStatement();
+						state41.execute("CREATE INDEX file_index ON FILE (file_id,file_name)");
+						state41.close();
+					}
+					state4.close();
+				}else {
+					final Statement state4 = conn.createStatement();
+					state4.execute("CREATE INDEX IF NOT EXISTS file_index ON FILE (file_id,file_name)");
+					state4.close();
+				}
 			}
 			Printer.instance.print("文件节点初始化完毕。");
 		} catch (Exception e) {
