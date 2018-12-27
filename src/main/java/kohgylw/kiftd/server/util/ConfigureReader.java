@@ -430,6 +430,11 @@ public class ConfigureReader {
 			dbDriver = "com.mysql.cj.jdbc.Driver";
 			dbURL = "jdbc:mysql://" + serverp.getProperty("mysql.url", "127.0.0.1/kift")
 					+ "?useUnicode=true&characterEncoding=utf8";
+			if(dbURL.indexOf("/")<=0||dbURL.substring(dbURL.indexOf("/")).length()==1) {
+				Printer.instance.print(
+						"错误：自定义数据库的URL中必须指定数据库名称。");
+				return 8;
+			}
 			dbUser = serverp.getProperty("mysql.user", "root");
 			dbPwd = serverp.getProperty("mysql.password", "");
 			try {
