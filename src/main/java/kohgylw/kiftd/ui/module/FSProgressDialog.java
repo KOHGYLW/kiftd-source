@@ -25,7 +25,7 @@ public class FSProgressDialog extends KiftdDynamicWindow {
 	private FSProgressDialog() {
 		setUIFont();//自动设置字体大小
 		(window = new JDialog(FSViewer.window, "执行中...")).setModal(true);
-		window.setSize(380, 100);
+		window.setSize(380, 120);
 		window.setLocation(200, 200);
 		window.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
 		window.addWindowListener(new WindowListener() {

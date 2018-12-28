@@ -67,7 +67,7 @@ public class FSViewer extends KiftdDynamicWindow {
 		setUIFont();
 		worker = Executors.newSingleThreadExecutor();
 		window = new JDialog(ServerUIModule.window, "kiftd-ROOT");
-		window.setSize(700, 400);
+		window.setSize(750, 450);
 		window.setDefaultCloseOperation(1);
 		window.setLocation(150, 150);
 		window.setResizable(true);
@@ -81,16 +81,16 @@ public class FSViewer extends KiftdDynamicWindow {
 		exportBtn = new JButton("导出[->]");
 		deleteBtn = new JButton("删除[X]");
 		refreshBtn = new JButton("刷新[*]");
-		homeBtn.setPreferredSize(new Dimension((int) (100 * proportion), (int) (34 * proportion)));
+		homeBtn.setPreferredSize(new Dimension((int) (110 * proportion), (int) (35 * proportion)));
 		homeBtn.setEnabled(false);
-		backToParentFolder.setPreferredSize(new Dimension((int) (100 * proportion), (int) (34 * proportion)));
+		backToParentFolder.setPreferredSize(new Dimension((int) (110 * proportion), (int) (35 * proportion)));
 		backToParentFolder.setEnabled(false);
-		importBtn.setPreferredSize(new Dimension((int) (110 * proportion), (int) (34 * proportion)));
-		exportBtn.setPreferredSize(new Dimension((int) (110 * proportion), (int) (34 * proportion)));
+		importBtn.setPreferredSize(new Dimension((int) (110 * proportion), (int) (35 * proportion)));
+		exportBtn.setPreferredSize(new Dimension((int) (110 * proportion), (int) (35 * proportion)));
 		exportBtn.setEnabled(false);
-		deleteBtn.setPreferredSize(new Dimension((int) (105 * proportion), (int) (34 * proportion)));
+		deleteBtn.setPreferredSize(new Dimension((int) (105 * proportion), (int) (35 * proportion)));
 		deleteBtn.setEnabled(false);
-		refreshBtn.setPreferredSize(new Dimension((int) (105 * proportion), (int) (34 * proportion)));
+		refreshBtn.setPreferredSize(new Dimension((int) (105 * proportion), (int) (35 * proportion)));
 		toolBar.add(homeBtn);
 		toolBar.add(backToParentFolder);
 		toolBar.addSeparator();
@@ -164,8 +164,7 @@ public class FSViewer extends KiftdDynamicWindow {
 					try {
 						exi = FileSystemManager.getInstance().hasExistsFilesOrFolders(folders, nodes, path);
 					} catch (Exception e2) {
-						JOptionPane.showMessageDialog(window, "出现意外错误，无法导出文件，请重试。", "错误",
-								JOptionPane.ERROR_MESSAGE);
+						JOptionPane.showMessageDialog(window, "出现意外错误，无法导出文件，请重试。", "错误", JOptionPane.ERROR_MESSAGE);
 						refresh();
 						enableAllButtons();
 						return;
@@ -210,40 +209,49 @@ public class FSViewer extends KiftdDynamicWindow {
 		});
 		deleteBtn.addActionListener((e) -> {
 			disableAllButtons();
-			worker.execute(() -> {
-				if (JOptionPane.showConfirmDialog(window, "确认要删除这些文件么？警告：该操作无法恢复。", "删除",
-						JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
-					int[] selected = filesTable.getSelectedRows();
-					List<String> selectedNodes = new ArrayList<>();
-					List<String> selectedFolders = new ArrayList<>();
-					int borderIndex = currentView.getFolders().size();
-					for (int i : selected) {
-						if (i < borderIndex) {
-							selectedFolders.add(currentView.getFolders().get(i).getFolderId());
-						} else {
-							selectedNodes.add(currentView.getFiles().get(i - borderIndex).getFileId());
+			if (JOptionPane.showConfirmDialog(window, "确认要删除这些文件么？警告：该操作无法恢复。", "删除",
+					JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+				int[] selected = filesTable.getSelectedRows();
+				worker.execute(() -> {
+					Runnable doDeleteThread = new Runnable() {
+						@Override
+						public void run() {
+							// TODO 自动生成的方法存根
+							List<String> selectedNodes = new ArrayList<>();
+							List<String> selectedFolders = new ArrayList<>();
+							int borderIndex = currentView.getFolders().size();
+							for (int i : selected) {
+								if (i < borderIndex) {
+									selectedFolders.add(currentView.getFolders().get(i).getFolderId());
+								} else {
+									selectedNodes.add(currentView.getFiles().get(i - borderIndex).getFileId());
+								}
+							}
+							FSProgressDialog fsd = FSProgressDialog.getNewInstance();
+							Thread deleteListenerDialog = new Thread(() -> {
+								fsd.show();
+							});
+							deleteListenerDialog.start();
+							try {
+								FileSystemManager.getInstance().delete(selectedFolders.toArray(new String[0]),
+										selectedNodes.toArray(new String[0]));
+								fsd.close();
+							} catch (SQLException e1) {
+								// TODO 自动生成的 catch 块
+								fsd.close();
+								JOptionPane.showMessageDialog(window, "删除文件时失败，该操作已被中断，未能全部删除。", "错误",
+										JOptionPane.ERROR_MESSAGE);
+								refresh();
+							}
+							refresh();
+							enableAllButtons();
 						}
-					}
-					FSProgressDialog fsd = FSProgressDialog.getNewInstance();
-					Thread deleteListenerDialog = new Thread(() -> {
-						fsd.show();
-					});
-					deleteListenerDialog.start();
-					try {
-						FileSystemManager.getInstance().delete(selectedFolders.toArray(new String[0]),
-								selectedNodes.toArray(new String[0]));
-						fsd.close();
-					} catch (SQLException e1) {
-						// TODO 自动生成的 catch 块
-						fsd.close();
-						JOptionPane.showMessageDialog(window, "删除文件时失败，该操作已被中断，未能全部删除。", "错误",
-								JOptionPane.ERROR_MESSAGE);
-						refresh();
-					}
-					refresh();
-				}
+					};
+					SwingUtilities.invokeLater(doDeleteThread);
+				});
+			} else {
 				enableAllButtons();
-			});
+			}
 		});
 		refreshBtn.addActionListener((e) -> {
 			disableAllButtons();
@@ -338,7 +346,7 @@ public class FSViewer extends KiftdDynamicWindow {
 						});
 					} catch (Exception e) {
 						// TODO 自动生成的 catch 块
-						worker.execute(()->{
+						worker.execute(() -> {
 							Runnable refreshThread = new Runnable() {
 								@Override
 								public void run() {
@@ -417,11 +425,11 @@ public class FSViewer extends KiftdDynamicWindow {
 	private void getFolderView(String folderId) throws Exception {
 		try {
 			currentView = FileSystemManager.getInstance().getFolderView(folderId);
-			if(currentView!=null && currentView.getCurrent()!=null) {
+			if (currentView != null && currentView.getCurrent() != null) {
 				filesTable.updateValues(currentView.getFolders(), currentView.getFiles());
 				window.setTitle("kiftd-" + currentView.getCurrent().getFolderName());
-			}else {
-				//浏览一个不存在的文件夹时自动返回根目录
+			} else {
+				// 浏览一个不存在的文件夹时自动返回根目录
 				getFolderView("root");
 			}
 		} catch (Exception e) {
