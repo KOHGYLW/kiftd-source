@@ -51,7 +51,7 @@ public class ServerUIModule extends KiftdDynamicWindow {
 	/**
 	 * 窗口原始高度
 	 */
-	private final int OriginSize_Height = 560;
+	private final int OriginSize_Height = 570;
 	private static MenuItem filesViewer;
 
 	private ServerUIModule() {
