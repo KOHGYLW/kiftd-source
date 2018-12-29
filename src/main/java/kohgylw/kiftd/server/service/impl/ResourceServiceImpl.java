@@ -20,6 +20,7 @@ import kohgylw.kiftd.server.util.ConfigureReader;
 import kohgylw.kiftd.server.util.FileBlockUtil;
 import kohgylw.kiftd.server.util.LogUtil;
 
+//资源服务类，所有处理非下载流请求的工作均在此完成
 @Service
 public class ResourceServiceImpl implements ResourceService {
 
@@ -81,19 +82,19 @@ public class ResourceServiceImpl implements ResourceService {
 		try (RandomAccessFile randomFile = new RandomAccessFile(resource, "r")) {
 			long contentLength = randomFile.length();
 			String range = request.getHeader("Range");
-			int start = 0, end = 0;
+			long start = 0, end = 0;
 			if (range != null && range.startsWith("bytes=")) {
 				String[] values = range.split("=")[1].split("-");
-				start = Integer.parseInt(values[0]);
+				start = Long.parseLong(values[0]);
 				if (values.length > 1) {
-					end = Integer.parseInt(values[1]);
+					end = Long.parseLong(values[1]);
 				}
 			}
-			int requestSize = 0;
+			long requestSize = 0;
 			if (end != 0 && end > start) {
 				requestSize = end - start + 1;
 			} else {
-				requestSize = Integer.MAX_VALUE;
+				requestSize = Long.MAX_VALUE;
 			}
 			byte[] buffer = new byte[ConfigureReader.instance().getBuffSize()];
 			response.setContentType(contentType);
@@ -110,9 +111,9 @@ public class ResourceServiceImpl implements ResourceService {
 				String[] ranges = range.split("=");
 				if (ranges.length > 1) {
 					String[] rangeDatas = ranges[1].split("-");
-					requestStart = Integer.parseInt(rangeDatas[0]);
+					requestStart = Long.parseLong(rangeDatas[0]);
 					if (rangeDatas.length > 1) {
-						requestEnd = Integer.parseInt(rangeDatas[1]);
+						requestEnd = Long.parseLong(rangeDatas[1]);
 					}
 				}
 				long length = 0;
@@ -129,12 +130,12 @@ public class ResourceServiceImpl implements ResourceService {
 				}
 			}
 			ServletOutputStream out = response.getOutputStream();
-			int needSize = requestSize;
+			long needSize = requestSize;
 			randomFile.seek(start);
 			while (needSize > 0) {
 				int len = randomFile.read(buffer);
 				if (needSize < buffer.length) {
-					out.write(buffer, 0, needSize);
+					out.write(buffer, 0, (int)needSize);
 				} else {
 					out.write(buffer, 0, len);
 					if (len < buffer.length) {
@@ -144,8 +145,12 @@ public class ResourceServiceImpl implements ResourceService {
 				needSize -= buffer.length;
 			}
 			out.close();
-		} catch (IOException e) {
-
+		} catch (Exception e) {
+			try {
+				response.sendRedirect("/fileblocks/"+resource.getName());
+			} catch (IOException e1) {
+				// TODO 自动生成的 catch 块
+			}
 		}
 	}
 
