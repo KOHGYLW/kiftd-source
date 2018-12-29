@@ -43,6 +43,11 @@ public class KiftdDynamicWindow {
 	 * 选出较小的比例，作为显示窗口的比例
 	 */
 	protected double proportion = proportionW > proportionH ? proportionH : proportionW;
+	
+	/**
+	 * 动态调整文件选择框的体积
+	 */
+	protected Dimension fileChooerSize = new Dimension((int)(570*proportion), (int)(370*proportion));
 
 	/**
 	 * 

@@ -93,7 +93,7 @@ public class FolderServiceImpl implements FolderService {
 		}
 		final Folder folder = this.fm.queryById(folderId);
 		if (folder == null) {
-			return "errorParameter";
+			return "deleteFolderSuccess";
 		}
 		final List<Folder> l = this.fu.getParentList(folderId);
 		if (this.fu.deleteAllChildFolder(folderId) > 0) {

@@ -25,7 +25,8 @@ public class AudioInfoUtil {
 			final String suffix = n.getFileName().substring(n.getFileName().lastIndexOf(".") + 1);
 			if (suffix.equalsIgnoreCase("mp3") || suffix.equalsIgnoreCase("ogg") || suffix.equalsIgnoreCase("wav")) {
 				final AudioInfo ai = new AudioInfo();
-				ai.setUrl("fileblocks/" + n.getFilePath());
+				ai.setUrl("resourceController/getResource.do?fid=" + n.getFileId());
+				System.out.println(ai.getUrl());
 				ai.setLrc(DEFAULT_LRC);
 				ai.setArtist(ERROR_ARTIST);
 				ai.setCover(DEFAULT_COVER);

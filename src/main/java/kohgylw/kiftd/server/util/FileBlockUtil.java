@@ -7,19 +7,29 @@ import org.springframework.web.multipart.*;
 import java.io.*;
 import kohgylw.kiftd.server.model.*;
 import java.util.*;
+import java.util.zip.ZipEntry;
+
 import org.zeroturnaround.zip.*;
 
 @Component
 public class FileBlockUtil {
 	@Resource
 	private NodeMapper fm;
+	@Resource
+	private FolderMapper flm;
 	
+	private final String fileBlocks = ConfigureReader.instance().getFileBlockPath();
+
 	/**
 	 * 
 	 * <h2>将上传文件存入文件节点</h2>
-	 * <p>将一个MultipartFile类型的文件对象存入节点，并返回保存的路径。路径为“UUID.block”形式。</p>
+	 * <p>
+	 * 将一个MultipartFile类型的文件对象存入节点，并返回保存的路径。路径为“UUID.block”形式。
+	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param f MultipartFile 上传文件对象
+	 * @param f
+	 *            MultipartFile 上传文件对象
 	 * @return String 随机生成的保存路径，如果保存失败则返回“ERROR”
 	 */
 	public String saveToFileBlocks(final MultipartFile f) {
@@ -78,23 +88,63 @@ public class FileBlockUtil {
 		checkThread.start();
 	}
 
-	public String createZip(final List<String> idList, final String tfPath, final String fileBlocks) {
+	public String createZip(final List<String> idList, final List<String> fidList, String account) {
 		final String zipname = "tf_" + UUID.randomUUID().toString() + ".zip";
-		final File f = new File(tfPath, zipname);
+		final String tempPath = ConfigureReader.instance().getTemporaryfilePath();
+		final File f = new File(tempPath, zipname);
 		try {
-			final ZipEntrySource[] zs = new ZipEntrySource[idList.size()];
+			final List<ZipEntrySource> zs = new ArrayList<>();
+			for(String fid:fidList) {
+				addFoldersToZipEntrySourceArray(fid, zs, account, "");
+			}
 			for (int i = 0; i < idList.size(); ++i) {
 				final Node node = this.fm.queryById(idList.get(i));
 				if (node != null) {
-					zs[i] = (ZipEntrySource) new FileSource(node.getFileName(),
-							new File(fileBlocks, node.getFilePath()));
+					zs.add((ZipEntrySource) new FileSource(node.getFileName(),
+							new File(fileBlocks, node.getFilePath())));
 				}
 			}
-			ZipUtil.pack(zs, f);
+			ZipUtil.pack(zs.toArray(new ZipEntrySource[0]), f);
 			return zipname;
 		} catch (Exception e) {
 			e.printStackTrace();
 			return null;
+		}
+	}
+	
+	//迭代生成ZIP文件夹单元，将一个文件夹内的文件和文件夹也进行打包
+	private void addFoldersToZipEntrySourceArray(String fid, List<ZipEntrySource> zs, String account,String parentPath) {
+		Folder f = flm.queryById(fid);
+		if(f!=null && ConfigureReader.instance().accessFolder(f, account)) {
+			String thisPath=parentPath+f.getFolderName()+"/";
+			zs.add(new ZipEntrySource() {
+				
+				@Override
+				public String getPath() {
+					// TODO 自动生成的方法存根
+					return thisPath;
+				}
+				
+				@Override
+				public InputStream getInputStream() throws IOException {
+					// TODO 自动生成的方法存根
+					return null;
+				}
+				
+				@Override
+				public ZipEntry getEntry() {
+					// TODO 自动生成的方法存根
+					return new ZipEntry(thisPath);
+				}
+			});
+			String[] folders=flm.queryByParentId(fid).parallelStream().map((e)->e.getFolderId()).toArray(String[]::new);
+			for(String cf:folders) {
+				addFoldersToZipEntrySourceArray(cf, zs, account, thisPath);
+			}
+			List<Node> nodes=fm.queryByParentFolderId(fid);
+			for(Node n:nodes) {
+				zs.add(new FileSource(thisPath+n.getFileName(), new File(fileBlocks, n.getFilePath())));
+			}
 		}
 	}
 }

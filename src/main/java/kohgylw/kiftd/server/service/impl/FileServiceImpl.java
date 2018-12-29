@@ -38,11 +38,15 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 	@Resource
 	private NodeMapper fm;
 	@Resource
+	private FolderMapper flm;
+	@Resource
 	private LogUtil lu;
 	@Resource
 	private Gson gson;
 	@Resource
 	private FileBlockUtil fbu;
+	@Resource
+	private FolderUtil fu;
 
 	private static final String CONTENT_TYPE = "application/octet-stream";
 
@@ -258,9 +262,10 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		return "cannotRenameFile";
 	}
 
-	// 删除所有选中文件，计划将删除单个文件并入此功能
+	// 删除所有选中文件和文件夹
 	public String deleteCheckedFiles(final HttpServletRequest request) {
 		final String strIdList = request.getParameter("strIdList");
+		final String strFidList = request.getParameter("strFidList");
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
 		// 权限检查
 		if (ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER)) {
@@ -275,7 +280,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 					}
 					final Node file = this.fm.queryById(fileId);
 					if (file == null) {
-						return ERROR_PARAMETER;
+						return "deleteFileSuccess";
 					}
 					// 删除文件块
 					if (!this.fbu.deleteFromFileBlocks(file)) {
@@ -287,6 +292,18 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 					}
 					// 日志记录
 					this.lu.writeDeleteFileEvent(request, file);
+				}
+				//删完选中的文件，再去删文件夹
+				final List<String> fidList = gson.fromJson(strFidList, new TypeToken<List<String>>() {
+				}.getType());
+				for(String fid:fidList) {
+					Folder folder=flm.queryById(fid);
+					final List<Folder> l = this.fu.getParentList(fid);
+					if(fu.deleteAllChildFolder(fid)<=0) {
+						return "cannotDeleteFile";
+					}else {
+						this.lu.writeDeleteFolderEvent(request, folder, l);
+					}
 				}
 				return "deleteFileSuccess";
 			} catch (Exception e) {
@@ -302,15 +319,16 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		// 权限检查
 		if (ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES)) {
 			final String strIdList = request.getParameter("strIdList");
+			final String strFidList = request.getParameter("strFidList");
 			try {
 				// 获得要打包下载的文件ID
 				final List<String> idList = gson.fromJson(strIdList, new TypeToken<List<String>>() {
 				}.getType());
+				final List<String> fidList = gson.fromJson(strFidList, new TypeToken<List<String>>() {
+				}.getType());
 				// 创建ZIP压缩包并将全部文件压缩
 				if (idList.size() > 0) {
-					final String fileBlocks = ConfigureReader.instance().getFileBlockPath();
-					final String tfPath = ConfigureReader.instance().getTemporaryfilePath();
-					final String zipname = this.fbu.createZip(idList, tfPath, fileBlocks);
+					final String zipname = this.fbu.createZip(idList,fidList,account);
 					this.lu.writeDownloadCheckedFileEvent(request, idList);
 					// 返回生成的压缩包路径
 					return zipname;
@@ -330,7 +348,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 			final File zip = new File(tfPath, zipname);
 			String fname = "kiftd_" + ServerTimeUtil.accurateToDay() + "_\u6253\u5305\u4e0b\u8f7d.zip";
 			if (zip.exists()) {
-				writeRangeFileStream(request, response, zip, fname, CONTENT_TYPE);
+				writeRangeFileStream(request, response, zip, fname, "application/zip");
 				zip.delete();
 			}
 		}
@@ -340,9 +358,15 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
 		if (ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES)) {
 			final String strIdList = request.getParameter("strIdList");
+			final String strFidList = request.getParameter("strFidList");
 			try {
 				final List<String> idList = gson.fromJson(strIdList, new TypeToken<List<String>>() {
 				}.getType());
+				final List<String> fidList = gson.fromJson(strFidList, new TypeToken<List<String>>() {
+				}.getType());
+				for(String fid:fidList) {
+					countFolderFilesId(account, fid, fidList);
+				}
 				long packTime = 0L;
 				for (final String fid : idList) {
 					final Node n = this.fm.queryById(fid);
@@ -371,6 +395,18 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 			}
 		}
 		return "0";
+	}
+	
+	//用于迭代获得全部文件夹内的文件ID（方便预测耗时）
+	private void countFolderFilesId(String account,String fid,List<String> idList) {
+		Folder f=flm.queryById(fid);
+		if(ConfigureReader.instance().accessFolder(f, account)) {
+			idList.addAll(Arrays.asList(fm.queryByParentFolderId(fid).parallelStream().map((e)->e.getFileId()).toArray(String[]::new)));
+			List<Folder> cFolders=flm.queryByParentId(fid);
+			for(Folder cFolder:cFolders) {
+				countFolderFilesId(account, cFolder.getFolderId(), idList);
+			}
+		}
 	}
 
 	@Override

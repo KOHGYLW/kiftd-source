@@ -131,6 +131,8 @@ public class FSViewer extends KiftdDynamicWindow {
 			JFileChooser importChooer = new JFileChooser();
 			importChooer.setMultiSelectionEnabled(true);
 			importChooer.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+			importChooer.setPreferredSize(fileChooerSize);
+			importChooer.setDialogTitle("请选择...");
 			if (importChooer.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
 				worker.execute(() -> {
 					doImport(importChooer.getSelectedFiles());
@@ -143,6 +145,8 @@ public class FSViewer extends KiftdDynamicWindow {
 		exportBtn.addActionListener((e) -> {
 			JFileChooser exportChooer = new JFileChooser();
 			exportChooer.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+			exportChooer.setPreferredSize(fileChooerSize);
+			exportChooer.setDialogTitle("导出到...");
 			if (exportChooer.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
 				disableAllButtons();
 				worker.execute(() -> {
@@ -262,6 +266,7 @@ public class FSViewer extends KiftdDynamicWindow {
 		});
 		// 生成文件列表
 		filesTable = new FilesTable();
+		filesTable.setRowHeight((int)(16 * proportion));
 		JScrollPane mianPane = new JScrollPane(filesTable);
 		filesTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
 

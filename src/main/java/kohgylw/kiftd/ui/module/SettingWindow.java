@@ -177,6 +177,8 @@ public class SettingWindow extends KiftdDynamicWindow {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				// TODO 自动生成的方法存根
+				changeFileSystemPathChooser.setPreferredSize(fileChooerSize);
+				changeFileSystemPathChooser.setDialogTitle("请选择...");
 				if (changeFileSystemPathChooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
 					chooserPath = changeFileSystemPathChooser.getSelectedFile();
 				}
