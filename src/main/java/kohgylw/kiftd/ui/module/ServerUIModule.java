@@ -72,6 +72,7 @@ public class ServerUIModule extends KiftdDynamicWindow {
 				(ServerUIModule.trayIcon = new TrayIcon(
 						ImageIO.read(this.getClass().getResourceAsStream("/kohgylw/kiftd/ui/resource/icon_tray.png"))))
 								.setToolTip("青阳网络文件系统-kiftd");
+				trayIcon.setImageAutoSize(true);
 				final PopupMenu pMenu = new PopupMenu();
 				final MenuItem exit = new MenuItem("退出(Exit)");
 				filesViewer = new MenuItem("文件...(Files)");
