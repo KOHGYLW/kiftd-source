@@ -68,15 +68,53 @@ public class ServerUIModule extends KiftdDynamicWindow {
 		if (SystemTray.isSupported()) {
 			ServerUIModule.window.setDefaultCloseOperation(1);
 			ServerUIModule.tray = SystemTray.getSystemTray();
+			String iconType="/kohgylw/kiftd/ui/resource/icon_tray.png";
+			if(System.getProperty("os.name").toLowerCase().indexOf("window")>=0) {
+				iconType="/kohgylw/kiftd/ui/resource/icon_tray_w.png";
+			}
 			try {
 				(ServerUIModule.trayIcon = new TrayIcon(
-						ImageIO.read(this.getClass().getResourceAsStream("/kohgylw/kiftd/ui/resource/icon_tray.png"))))
+						ImageIO.read(this.getClass().getResourceAsStream(iconType))))
 								.setToolTip("青阳网络文件系统-kiftd");
 				trayIcon.setImageAutoSize(true);
 				final PopupMenu pMenu = new PopupMenu();
 				final MenuItem exit = new MenuItem("退出(Exit)");
 				filesViewer = new MenuItem("文件...(Files)");
 				final MenuItem show = new MenuItem("显示主窗口(Show)");
+				trayIcon.addMouseListener(new MouseListener() {
+					
+					@Override
+					public void mouseReleased(MouseEvent e) {
+						// TODO 自动生成的方法存根
+						
+					}
+					
+					@Override
+					public void mousePressed(MouseEvent e) {
+						// TODO 自动生成的方法存根
+						
+					}
+					
+					@Override
+					public void mouseExited(MouseEvent e) {
+						// TODO 自动生成的方法存根
+						
+					}
+					
+					@Override
+					public void mouseEntered(MouseEvent e) {
+						// TODO 自动生成的方法存根
+						
+					}
+					
+					@Override
+					public void mouseClicked(MouseEvent e) {
+						// TODO 自动生成的方法存根
+						if(e.getClickCount()==2) {
+							show();
+						}
+					}
+				});
 				exit.addActionListener(new ActionListener() {
 
 					@Override
