@@ -186,6 +186,12 @@ public class HomeController {
 	public String playAudios(final HttpServletRequest request) {
 		return this.pas.getAudioInfoListByJson(request);
 	}
+	
+	@RequestMapping(value={"/confirmMoveFiles.ajax"},produces = { CHARSET_BY_AJAX })
+	@ResponseBody
+	public String confirmMoveFiles(final HttpServletRequest request) {
+		return fis.confirmMoveFiles(request);
+	}
 
 	@RequestMapping({ "/moveCheckedFiles.ajax" })
 	@ResponseBody

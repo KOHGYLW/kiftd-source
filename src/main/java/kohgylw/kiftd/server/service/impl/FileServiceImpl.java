@@ -15,6 +15,7 @@ import java.nio.charset.Charset;
 
 import kohgylw.kiftd.server.util.*;
 import java.util.*;
+
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
 
@@ -87,7 +88,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		final String folderId = request.getParameter("folderId");
 		final String originalFileName = new String(file.getOriginalFilename().getBytes(Charset.forName("UTF-8")),
 				Charset.forName("UTF-8"));
-		String fileName=originalFileName;
+		String fileName = originalFileName;
 		final String repeType = request.getParameter("repeType");
 		// 再次检查上传文件名与目标目录ID
 		if (folderId == null || folderId.length() <= 0 || originalFileName == null || originalFileName.length() <= 0) {
@@ -99,7 +100,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		}
 		// 检查是否存在同名文件。不存在：直接存入新节点；存在：检查repeType代表的上传类型：覆盖、跳过、保留两者。
 		final List<Node> files = this.fm.queryByParentFolderId(folderId);
-		if (files.parallelStream().anyMatch((e)->e.getFileName().equals(originalFileName))) {
+		if (files.parallelStream().anyMatch((e) -> e.getFileName().equals(originalFileName))) {
 			// 针对存在同名文件的操作
 			if (repeType != null) {
 				switch (repeType) {
@@ -222,11 +223,11 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 			}
 		}
 		try {
-			// 处理无法下载的资源
+			//  处理无法下载的资源
 			response.sendError(404);
 		} catch (IOException e) {
 			// TODO 自动生成的 catch 块
-			
+
 		}
 	}
 
@@ -293,15 +294,15 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 					// 日志记录
 					this.lu.writeDeleteFileEvent(request, file);
 				}
-				//删完选中的文件，再去删文件夹
+				// 删完选中的文件，再去删文件夹
 				final List<String> fidList = gson.fromJson(strFidList, new TypeToken<List<String>>() {
 				}.getType());
-				for(String fid:fidList) {
-					Folder folder=flm.queryById(fid);
+				for (String fid : fidList) {
+					Folder folder = flm.queryById(fid);
 					final List<Folder> l = this.fu.getParentList(fid);
-					if(fu.deleteAllChildFolder(fid)<=0) {
+					if (fu.deleteAllChildFolder(fid) <= 0) {
 						return "cannotDeleteFile";
-					}else {
+					} else {
 						this.lu.writeDeleteFolderEvent(request, folder, l);
 					}
 				}
@@ -328,7 +329,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 				}.getType());
 				// 创建ZIP压缩包并将全部文件压缩
 				if (idList.size() > 0) {
-					final String zipname = this.fbu.createZip(idList,fidList,account);
+					final String zipname = this.fbu.createZip(idList, fidList, account);
 					this.lu.writeDownloadCheckedFileEvent(request, idList);
 					// 返回生成的压缩包路径
 					return zipname;
@@ -364,7 +365,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 				}.getType());
 				final List<String> fidList = gson.fromJson(strFidList, new TypeToken<List<String>>() {
 				}.getType());
-				for(String fid:fidList) {
+				for (String fid : fidList) {
 					countFolderFilesId(account, fid, fidList);
 				}
 				long packTime = 0L;
@@ -396,14 +397,15 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		}
 		return "0";
 	}
-	
-	//用于迭代获得全部文件夹内的文件ID（方便预测耗时）
-	private void countFolderFilesId(String account,String fid,List<String> idList) {
-		Folder f=flm.queryById(fid);
-		if(ConfigureReader.instance().accessFolder(f, account)) {
-			idList.addAll(Arrays.asList(fm.queryByParentFolderId(fid).parallelStream().map((e)->e.getFileId()).toArray(String[]::new)));
-			List<Folder> cFolders=flm.queryByParentId(fid);
-			for(Folder cFolder:cFolders) {
+
+	// 用于迭代获得全部文件夹内的文件ID（方便预测耗时）
+	private void countFolderFilesId(String account, String fid, List<String> idList) {
+		Folder f = flm.queryById(fid);
+		if (ConfigureReader.instance().accessFolder(f, account)) {
+			idList.addAll(Arrays.asList(
+					fm.queryByParentFolderId(fid).parallelStream().map((e) -> e.getFileId()).toArray(String[]::new)));
+			List<Folder> cFolders = flm.queryByParentId(fid);
+			for (Folder cFolder : cFolders) {
 				countFolderFilesId(account, cFolder.getFolderId(), idList);
 			}
 		}
@@ -413,12 +415,169 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 	public String doMoveFiles(HttpServletRequest request) {
 		// TODO 自动生成的方法存根
 		final String strIdList = request.getParameter("strIdList");
+		final String strFidList = request.getParameter("strFidList");
+		final String strOptMap = request.getParameter("strOptMap");
 		final String locationpath = request.getParameter("locationpath");
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
 		if (ConfigureReader.instance().authorized(account, AccountAuth.MOVE_FILES)) {
 			try {
 				final List<String> idList = gson.fromJson(strIdList, new TypeToken<List<String>>() {
 				}.getType());
+				final Map<String, String> optMap = gson.fromJson(strOptMap, new TypeToken<Map<String, String>>() {
+				}.getType());
+				for (final String id : idList) {
+					if (id == null || id.length() <= 0) {
+						return ERROR_PARAMETER;
+					}
+					final Node node = this.fm.queryById(id);
+					if (node == null) {
+						return ERROR_PARAMETER;
+					}
+					if (node.getFileParentFolder().equals(locationpath)) {
+						break;
+					}
+					if (fm.queryByParentFolderId(locationpath).parallelStream()
+							.anyMatch((e) -> e.getFileName().equals(node.getFileName()))) {
+						if (optMap.get(id) == null) {
+							return ERROR_PARAMETER;
+						}
+						switch (optMap.get(id)) {
+						case "cover":
+							Node n = fm.queryByParentFolderId(locationpath).parallelStream()
+									.filter((e) -> e.getFileName().equals(node.getFileName())).findFirst().get();
+							if (fm.deleteById(n.getFileId()) > 0) {
+								Map<String, String> map = new HashMap<>();
+								map.put("fileId", node.getFileId());
+								map.put("locationpath", locationpath);
+								if (this.fm.moveById(map) <= 0) {
+									return "cannotMoveFiles";
+								}
+							} else {
+								return "cannotMoveFiles";
+							}
+							this.lu.writeMoveFileEvent(request, node);
+							break;
+						case "both":
+							node.setFileName(FileNodeUtil.getNewNodeName(node.getFileName(),
+									fm.queryByParentFolderId(locationpath)));
+							if (fm.update(node) <= 0) {
+								return "cannotMoveFiles";
+							}
+							Map<String, String> map = new HashMap<>();
+							map.put("fileId", node.getFileId());
+							map.put("locationpath", locationpath);
+							if (this.fm.moveById(map) <= 0) {
+								return "cannotMoveFiles";
+							}
+							this.lu.writeMoveFileEvent(request, node);
+							break;
+						case "skip":
+							break;
+						default:
+							return ERROR_PARAMETER;
+						}
+					} else {
+						Map<String, String> map = new HashMap<>();
+						map.put("fileId", node.getFileId());
+						map.put("locationpath", locationpath);
+						if (this.fm.moveById(map) <= 0) {
+							return "cannotMoveFiles";
+						}
+						this.lu.writeMoveFileEvent(request, node);
+					}
+				}
+				final List<String> fidList = gson.fromJson(strFidList, new TypeToken<List<String>>() {
+				}.getType());
+				for (final String fid : fidList) {
+					if (fid == null || fid.length() <= 0) {
+						return ERROR_PARAMETER;
+					}
+					final Folder folder = this.flm.queryById(fid);
+					if (folder == null) {
+						return ERROR_PARAMETER;
+					}
+					if (folder.getFolderParent().equals(locationpath)) {
+						break;
+					}
+					if (fid.equals(locationpath) || fu.getParentList(locationpath).parallelStream()
+							.anyMatch((e) -> e.getFolderId().equals(folder.getFolderId()))) {
+						return ERROR_PARAMETER;
+					}
+					if (flm.queryByParentId(locationpath).parallelStream()
+							.anyMatch((e) -> e.getFolderName().equals(folder.getFolderName()))) {
+						if (optMap.get(fid) == null) {
+							return ERROR_PARAMETER;
+						}
+						switch (optMap.get(fid)) {
+						case "cover":
+							Folder f = flm.queryByParentId(locationpath).parallelStream()
+									.filter((e) -> e.getFolderName().equals(folder.getFolderName())).findFirst().get();
+							Map<String, String> map = new HashMap<>();
+							map.put("folderId", folder.getFolderId());
+							map.put("locationpath", locationpath);
+							if (this.flm.moveById(map) > 0) {
+								if (fu.deleteAllChildFolder(f.getFolderId()) > 0) {
+									this.lu.writeMoveFileEvent(request, folder);
+									break;
+								}
+							}
+							return "cannotMoveFiles";
+						case "both":
+							Map<String, String> map3 = new HashMap<>();
+							map3.put("folderId", folder.getFolderId());
+							map3.put("locationpath", locationpath);
+							if (this.flm.moveById(map3) > 0) {
+								Map<String, String> map2 = new HashMap<String, String>();
+								map2.put("folderId", folder.getFolderId());
+								map2.put("newName", FileNodeUtil.getNewFolderName(folder.getFolderName(),
+										flm.queryByParentId(locationpath)));
+								if (flm.updateFolderNameById(map2) <= 0) {
+									return "cannotMoveFiles";
+								}
+								this.lu.writeMoveFileEvent(request, folder);
+								break;
+							}
+							this.lu.writeMoveFileEvent(request, folder);
+							break;
+						case "skip":
+							break;
+						default:
+							return ERROR_PARAMETER;
+						}
+					} else {
+						Map<String, String> map = new HashMap<>();
+						map.put("folderId", folder.getFolderId());
+						map.put("locationpath", locationpath);
+						if (this.flm.moveById(map) > 0) {
+							this.lu.writeMoveFileEvent(request, folder);
+							break;
+						}
+						this.lu.writeMoveFileEvent(request, folder);
+					}
+				}
+				return "moveFilesSuccess";
+			} catch (Exception e) {
+				return ERROR_PARAMETER;
+			}
+		}
+		return NO_AUTHORIZED;
+	}
+
+	@Override
+	public String confirmMoveFiles(HttpServletRequest request) {
+		// TODO 自动生成的方法存根
+		final String strIdList = request.getParameter("strIdList");
+		final String strFidList = request.getParameter("strFidList");
+		final String locationpath = request.getParameter("locationpath");
+		final String account = (String) request.getSession().getAttribute("ACCOUNT");
+		if (ConfigureReader.instance().authorized(account, AccountAuth.MOVE_FILES)) {
+			try {
+				final List<String> idList = gson.fromJson(strIdList, new TypeToken<List<String>>() {
+				}.getType());
+				final List<String> fidList = gson.fromJson(strFidList, new TypeToken<List<String>>() {
+				}.getType());
+				List<Node> repeNodes = new ArrayList<>();
+				List<Folder> repeFolders = new ArrayList<>();
 				for (final String fileId : idList) {
 					if (fileId == null || fileId.length() <= 0) {
 						return ERROR_PARAMETER;
@@ -427,15 +586,41 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 					if (node == null) {
 						return ERROR_PARAMETER;
 					}
-					Map<String, String> map = new HashMap<>();
-					map.put("fileId", fileId);
-					map.put("locationpath", locationpath);
-					if (this.fm.moveById(map) <= 0) {
-						return "cannotMoveFiles";
+					if (node.getFileParentFolder().equals(locationpath)) {
+						break;
 					}
-					this.lu.writeMoveFileEvent(request, node, locationpath);
+					if (fm.queryByParentFolderId(locationpath).parallelStream()
+							.anyMatch((e) -> e.getFileName().equals(node.getFileName()))) {
+						repeNodes.add(node);
+					}
 				}
-				return "moveFilesSuccess";
+				for (final String folderId : fidList) {
+					if (folderId == null || folderId.length() <= 0) {
+						return ERROR_PARAMETER;
+					}
+					final Folder folder = this.flm.queryById(folderId);
+					if (folder == null) {
+						return ERROR_PARAMETER;
+					}
+					if (folder.getFolderParent().equals(locationpath)) {
+						break;
+					}
+					if (folderId.equals(locationpath) || fu.getParentList(locationpath).parallelStream()
+							.anyMatch((e) -> e.getFolderId().equals(folder.getFolderId()))) {
+						return "CANT_MOVE_TO_INSIDE:" + folder.getFolderName();
+					}
+					if (flm.queryByParentId(locationpath).parallelStream()
+							.anyMatch((e) -> e.getFolderName().equals(folder.getFolderName()))) {
+						repeFolders.add(folder);
+					}
+				}
+				if (repeNodes.size() > 0 || repeFolders.size() > 0) {
+					Map<String, List<? extends Object>> repeMap = new HashMap<>();
+					repeMap.put("repeFolders", repeFolders);
+					repeMap.put("repeNodes", repeNodes);
+					return "duplicationFileName:" + gson.toJson(repeMap);
+				}
+				return "confirmMoveFiles";
 			} catch (Exception e) {
 				return ERROR_PARAMETER;
 			}

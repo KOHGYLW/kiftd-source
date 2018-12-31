@@ -48,7 +48,7 @@
 		<!-- 信息栏、操作栏与文件列表 -->
 		<div class="row">
 			<div class="col-md-12">
-				<p id="vicetbbox" class="subtitle">
+				<p id="vicetbbox" class="subtitle" style="display: none;">
 					<span id="tb2"></span>
 					<button class="btn btn-link" onclick="refreshFolderView()">
 						刷新 <span class="glyphicon glyphicon-repeat" aria-hidden="true"></span>
@@ -580,6 +580,25 @@
 				</div>
 				<div class="modal-body">
 					<h5 id="moveFilesMessage"></h5>
+					<div id="selectFileMoveModelAlert" class="alert alert-danger"
+						role="alert">
+						<h4>提示：存在同名文件！</h4>
+						<p>
+							您要移动的文件“<span id="mrepeFileName"></span>”已存在于该路径下，您希望：
+						</p>
+						<p>
+							<input id="selectFileMoveModelAsAll" type="checkbox">
+							全部应用
+						</p>
+						<p>
+							<button type="button" class="btn btn-danger btn-sm"
+								onclick="selectFileUpLoadModelEnd('cover')">覆盖</button>
+							<button type="button" class="btn btn-default btn-sm"
+								onclick="selectFileUpLoadModelEnd('skip')">跳过</button>
+							<button type="button" class="btn btn-default btn-sm"
+								onclick="selectFileUpLoadModelEnd('both')">保留两者</button>
+						</p>
+					</div>
 				</div>
 				<div class="modal-footer">
 					<button type="button" class="btn btn-default" data-dismiss="modal">取消</button>

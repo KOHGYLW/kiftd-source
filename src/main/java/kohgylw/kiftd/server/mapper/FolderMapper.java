@@ -18,4 +18,6 @@ public interface FolderMapper
     int updateFolderNameById(final Map<String, String> map);
     
     int updateFolderConstraintById(final Map<String, Object> map);
+
+	int moveById(Map<String, String> map);
 }

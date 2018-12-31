@@ -23,5 +23,7 @@ public interface FileService
     
     void downloadCheckedFilesZip(final HttpServletRequest request, final HttpServletResponse response) throws Exception;
     
+    String confirmMoveFiles(final HttpServletRequest request);
+    
     String doMoveFiles(final HttpServletRequest request);
 }

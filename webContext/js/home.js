@@ -306,7 +306,7 @@ function changeFilesTableStyle(){
     	if(win < 768){
     		$('#filetableheadera').attr('data-toggle','collapse');
     		$('#filetableheadera').attr('data-target','#filetableoptmenu');
-    		$('#mdropdownicon').html('（点击打开菜单）');
+    		$('#mdropdownicon').html('（点击展开/折叠菜单）');
     	}else{
 		$('#filetableheadera').attr('data-toggle','modal');
 	    $('#filetableheadera').attr('data-target','#folderInfoModal');
@@ -986,17 +986,17 @@ function renameFolder(folderId) {
 					if (result == "noAuthorized") {
 						showRenameFolderAlert("提示：您的操作未被授权，编辑失败");
 					} else if (result == "errorParameter") {
-						showRenameFolderAlert("提示：参数不正确，编辑失败");
+						showRenameFolderAlert("提示：参数不正确，编辑失败，请刷新后重试");
 					} else if (result == "renameFolderSuccess") {
 						$('#renameFolderModal').modal('hide');
 						showFolderView(locationpath);
 					} else {
-						showRenameFolderAlert("提示：出现意外错误，可能未能编辑文件夹");
+						showRenameFolderAlert("提示：出现意外错误，可能未能编辑文件夹，请刷新后重试");
 					}
 				}
 			},
 			error : function() {
-				showRenameFolderAlert("提示：出现意外错误，可能未能编辑文件夹");
+				showRenameFolderAlert("提示：出现意外错误，可能未能编辑文件夹，请刷新后重试");
 			}
 		});
 	} else {
@@ -1017,7 +1017,6 @@ function showUploadFileModel() {
 	$("#uploadFileAlert").removeClass("alert");
 	$("#uploadFileAlert").removeClass("alert-danger");
 	$("#uploadFileAlert").text("");
-	$("#selectFileUpLoadModelAsAll").removeAttr("checked");
 	if(isUpLoading==false){
 		$("#filepath").removeAttr("disabled");
 		$("#uploadfile").val("");
@@ -1028,6 +1027,7 @@ function showUploadFileModel() {
 		$("#filecount").text("");
 		$("#uploadstatus").text("");
 		$("#selectcount").text("");
+		$("#selectFileUpLoadModelAsAll").removeAttr("checked");
 		$("#selectFileUpLoadModelAlert").hide();
 	}
 	$('#uploadFileModal').modal('show');
@@ -1367,16 +1367,16 @@ function renameFile(fileId) {
 							window.location.href = "login.html";
 						} else {
 							if (result == "cannotRenameFile") {
-								showRenameFolderAlert("提示：出现意外错误，可能未能重命名文件");
+								showRenameFolderAlert("提示：出现意外错误，可能未能重命名文件，请刷新后重试");
 							} else if (result == "renameFileSuccess") {
 								$('#renameFileModal').modal('hide');
 								showFolderView(locationpath);
 							} else if (result == "errorParameter") {
-								showRenameFolderAlert("提示：参数错误，重命名失败");
+								showRenameFolderAlert("提示：参数错误，重命名失败，请刷新后重试");
 							} else if (result == "noAuthorized") {
-								showRenameFolderAlert("提示：您的操作未被授权，重命名失败");
+								showRenameFolderAlert("提示：您的操作未被授权，重命名失败，请刷新后重试");
 							} else {
-								showRenameFolderAlert("提示：出现意外错误，可能未能重命名文件");
+								showRenameFolderAlert("提示：出现意外错误，可能未能重命名文件，请刷新后重试");
 							}
 						}
 					},
@@ -1950,11 +1950,15 @@ function startMoveFile(){
 	if($("#cutSignTx").hasClass("cuted")&&checkedMovefiles!==undefined){
 		$('#moveFilesMessage').text("提示：确定将这"+checkedMovefiles.size+"项移动到当前位置么？");
 		$('#moveFilesBox').html("<button id='dmvfbutton' type='button' class='btn btn-danger' onclick='doMoveFiles()'>全部移动</button>");
+		$("#selectFileMoveModelAsAll").removeAttr("checked");
+		$("#selectFileMoveModelAlert").hide();
 		$('#moveFilesModal').modal('show');
 	}else{
 		checkedMovefiles = getCheckedFilesAndFolders();
 		if (checkedMovefiles==undefined||checkedMovefiles.size == 0) {
 			$('#moveFilesMessage').html(checkFilesTip);
+			$("#selectFileMoveModelAsAll").removeAttr("checked");
+			$("#selectFileMoveModelAlert").hide();
 			$('#moveFilesModal').modal('show');
 		} else {
 			$("#cutSignTx").html("粘贴（"+checkedMovefiles.size+"）<span class='pull-right'><span class='glyphicon glyphicon-arrow-up' aria-hidden='true'></span>+V</span>");
@@ -1963,16 +1967,106 @@ function startMoveFile(){
 	}
 }
 
+var repeMap;
+var strMoveOptMap;
+var mRepeSize;
+
 // 执行文件移动操作
 function doMoveFiles(){
 	$("#dmvfbutton").attr('disabled', true);
 	$('#moveFilesMessage').text("提示：正在移动，请稍候...");
+	// 确认移动目标位置
 	$.ajax({
 		type : "POST",
 		dataType : "text",
 		data : {
 			strIdList : checkedMovefiles.filesId,
 			strFidList : checkedMovefiles.foldersId,
+			locationpath:locationpath
+		},
+		url : "homeController/confirmMoveFiles.ajax",
+		success : function(result) {
+			if (result == "mustLogin") {
+				window.location.href = "login.html";
+			} else {
+				if (result == "noAuthorized") {
+					$('#moveFilesMessage').text("提示：您的操作未被授权，移动失败");
+					$("#dmvfbutton").attr('disabled', false);
+				} else if (result == "errorParameter") {
+					$('#moveFilesMessage').text("提示：参数不正确，未能全部移动文件，请刷新后重试");
+					$("#dmvfbutton").attr('disabled', false);
+				} else if (result == "cannotMoveFiles") {
+					$('#moveFilesMessage').text("提示：出现意外错误，可能未能移动全部文件，请刷新后重试");
+					$("#dmvfbutton").attr('disabled', false);
+				} else if (result == "confirmMoveFiles") {
+					strMoveOptMap={};
+					sendMoveFilesReq();
+				} else if(result.startsWith("duplicationFileName:")){
+					repeMap=eval("("+result.substring(20)+")");
+					repeIndex=0;
+					mRepeSize=repeMap.repeFolders.length+repeMap.repeNodes.length;
+					$("#repeMap").text(repeMap.repeFolders[repeIndex]);
+					$("#selectFileMoveModelAlert").show();
+					selectFileMoveModel(repeMap);
+				} else if(result.startsWith("CANT_MOVE_TO_INSIDE:")){
+					$('#moveFilesMessage').text("错误：不能将一个文件夹移动到其自身内部："+result.substring(20));
+					$("#dmvfbutton").attr('disabled', false);
+				} else {
+					$('#moveFilesMessage').text("提示：出现意外错误，可能未能移动全部文件，请刷新后重试");
+					$("#dmvfbutton").attr('disabled', false);
+				}
+			}
+		},
+		error : function() {
+			$('#moveFilesMessage').text("提示：出现意外错误，可能未能移动全部文件");
+			$("#dmvfbutton").attr('disabled', false);
+		}
+	});
+}
+
+//对冲突的移动进行依次询问
+function selectFileMoveModel(t){
+	if($("#selectFileMoveModelAsAll").prop("checked")){
+		while(repeIndex<mRepeSize){
+			if(repeIndex<repeMap.repeFolders.length){
+				strMoveOptMap[repeMap.repeFolders[repeIndex].folderId]=t;
+			}else{
+				strMoveOptMap[repeMap.repeNodes[repeIndex].fileId]=t;
+			}
+			repeIndex++;
+		}
+		$("#selectFileMoveModelAlert").hide();
+		sendMoveFilesReq();
+	}
+	if(repeIndex<repeMap.repeFolders.length){
+		strMoveOptMap[repeMap.repeFolders[repeIndex].folderId]=t;
+	}else{
+		strMoveOptMap[repeMap.repeNodes[repeIndex].fileId]=t;
+	}
+	repeIndex++;
+	if(repeIndex<mRepeSize){
+		if(repeIndex<repeMap.repeFolders.length){
+			$("#repeMap").text(repeMap.repeFolders[repeIndex].folderName);
+		}else{
+			$("#repeMap").text(repeMap.repeNodes[repeIndex-repeMap.repeFolders.length].fileName);
+		}
+	}else{
+		$("#selectFileMoveModelAlert").hide();
+		sendMoveFilesReq();
+	}
+}
+
+
+function sendMoveFilesReq(){
+	// 执行移动行为
+	var strOptMap = JSON.stringify(strMoveOptMap);
+	$.ajax({
+		type : "POST",
+		dataType : "text",
+		data : {
+			strIdList : checkedMovefiles.filesId,
+			strFidList : checkedMovefiles.foldersId,
+			strOptMap : strOptMap,
 			locationpath:locationpath
 		},
 		url : "homeController/moveCheckedFiles.ajax",
@@ -1984,16 +2078,16 @@ function doMoveFiles(){
 					$('#moveFilesMessage').text("提示：您的操作未被授权，移动失败");
 					$("#dmvfbutton").attr('disabled', false);
 				} else if (result == "errorParameter") {
-					$('#moveFilesMessage').text("提示：参数不正确，未能全部移动文件");
+					$('#moveFilesMessage').text("提示：参数不正确，未能全部移动文件，请刷新后重试");
 					$("#dmvfbutton").attr('disabled', false);
 				} else if (result == "cannotMoveFiles") {
-					$('#moveFilesMessage').text("提示：出现意外错误，可能未能移动全部文件");
+					$('#moveFilesMessage').text("提示：出现意外错误，可能未能移动全部文件，请刷新后重试");
 					$("#dmvfbutton").attr('disabled', false);
 				} else if (result == "moveFilesSuccess") {
 					$('#moveFilesModal').modal('hide');
 					showFolderView(locationpath);
 				} else {
-					$('#moveFilesMessage').text("提示：出现意外错误，可能未能移动全部文件");
+					$('#moveFilesMessage').text("提示：出现意外错误，可能未能移动全部文件，请刷新后重试");
 					$("#dmvfbutton").attr('disabled', false);
 				}
 			}
