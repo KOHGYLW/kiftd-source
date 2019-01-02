@@ -27,10 +27,6 @@ public class RangeFileStreamWriter {
 	 * 处理普通的或带有断点续传参数的下载请求，并按照请求方式提供相应的输出流写出。请传入相应的参数并执行该方法以开始传输。
 	 * </p>
 	 * 
-	 * <pre>
-	 * “愿将年岁雕琢，拂去一方萧索”
-	 * </pre>
-	 * 
 	 * @author 青阳龙野(kohgylw)
 	 * @param request
 	 *            javax.servlet.http.HttpServletRequest 请求对象
