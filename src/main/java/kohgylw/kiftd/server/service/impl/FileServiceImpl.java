@@ -328,7 +328,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 				final List<String> fidList = gson.fromJson(strFidList, new TypeToken<List<String>>() {
 				}.getType());
 				// 创建ZIP压缩包并将全部文件压缩
-				if (idList.size() > 0) {
+				if (idList.size() > 0 || fidList.size() > 0) {
 					final String zipname = this.fbu.createZip(idList, fidList, account);
 					this.lu.writeDownloadCheckedFileEvent(request, idList);
 					// 返回生成的压缩包路径
@@ -349,7 +349,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 			final File zip = new File(tfPath, zipname);
 			String fname = "kiftd_" + ServerTimeUtil.accurateToDay() + "_\u6253\u5305\u4e0b\u8f7d.zip";
 			if (zip.exists()) {
-				writeRangeFileStream(request, response, zip, fname, "application/zip");
+				writeRangeFileStream(request, response, zip, fname, CONTENT_TYPE);
 				zip.delete();
 			}
 		}
@@ -550,7 +550,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 						map.put("locationpath", locationpath);
 						if (this.flm.moveById(map) > 0) {
 							this.lu.writeMoveFileEvent(request, folder);
-						}else {
+						} else {
 							return "cannotMoveFiles";
 						}
 					}

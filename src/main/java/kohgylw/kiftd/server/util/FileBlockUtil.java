@@ -107,7 +107,6 @@ public class FileBlockUtil {
 			ZipUtil.pack(zs.toArray(new ZipEntrySource[0]), f);
 			return zipname;
 		} catch (Exception e) {
-			e.printStackTrace();
 			return null;
 		}
 	}

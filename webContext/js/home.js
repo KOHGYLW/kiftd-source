@@ -1556,7 +1556,7 @@ function createViewListByPage() {
 
 // 兼容Chrome、IE、FF的Shift判定
 function isShift(event){
-	var e=window.event ||e;
+	var e=window.event ||event;
 	if(e.shiftKey){
 		return true;
 	}else{
