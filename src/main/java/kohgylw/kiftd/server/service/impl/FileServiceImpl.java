@@ -550,9 +550,9 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 						map.put("locationpath", locationpath);
 						if (this.flm.moveById(map) > 0) {
 							this.lu.writeMoveFileEvent(request, folder);
-							break;
+						}else {
+							return "cannotMoveFiles";
 						}
-						this.lu.writeMoveFileEvent(request, folder);
 					}
 				}
 				return "moveFilesSuccess";
