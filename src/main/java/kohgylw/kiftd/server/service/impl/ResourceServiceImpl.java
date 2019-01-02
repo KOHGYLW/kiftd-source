@@ -146,11 +146,7 @@ public class ResourceServiceImpl implements ResourceService {
 			}
 			out.close();
 		} catch (Exception e) {
-			try {
-				response.sendRedirect("/fileblocks/"+resource.getName());
-			} catch (IOException e1) {
-				// TODO 自动生成的 catch 块
-			}
+			
 		}
 	}
 
