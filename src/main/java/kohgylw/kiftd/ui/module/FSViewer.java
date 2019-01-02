@@ -422,7 +422,7 @@ public class FSViewer extends KiftdDynamicWindow {
 			window.setVisible(true);
 		} catch (Exception e) {
 			// TODO 自动生成的 catch 块
-			Printer.instance.print("错误：无法打开文件，该文件系统正在被另一个kiftd占用。");
+			Printer.instance.print("错误：无法打开文件系统，该文件系统可能正在被另一个kiftd占用。");
 		}
 	}
 
