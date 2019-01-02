@@ -2003,14 +2003,14 @@ function doMoveFiles(){
 					sendMoveFilesReq();
 				} else if(result.startsWith("duplicationFileName:")){
 					repeMap=eval("("+result.substring(20)+")");
+					console.log(repeMap);
 					repeIndex=0;
+					strMoveOptMap={};
 					mRepeSize=repeMap.repeFolders.length+repeMap.repeNodes.length;
 					$("#repeMap").text(repeMap.repeFolders[repeIndex]);
 					$("#selectFileMoveModelAlert").show();
-					selectFileMoveModel(repeMap);
 				} else if(result.startsWith("CANT_MOVE_TO_INSIDE:")){
 					$('#moveFilesMessage').text("错误：不能将一个文件夹移动到其自身内部："+result.substring(20));
-					$("#dmvfbutton").attr('disabled', false);
 				} else {
 					$('#moveFilesMessage').text("提示：出现意外错误，可能未能移动全部文件，请刷新后重试");
 					$("#dmvfbutton").attr('disabled', false);
@@ -2060,6 +2060,7 @@ function selectFileMoveModel(t){
 function sendMoveFilesReq(){
 	// 执行移动行为
 	var strOptMap = JSON.stringify(strMoveOptMap);
+	console.log(strOptMap);
 	$.ajax({
 		type : "POST",
 		dataType : "text",
