@@ -201,7 +201,6 @@ public class ConsoleRunner {
 					}
 				}
 			} catch (Exception e) {
-				// TODO: handle exception
 				Printer.instance.print("错误：读取命令时出现意外导致程序退出，请重启kiftd。");
 			}
 		});
@@ -226,7 +225,6 @@ public class ConsoleRunner {
 				getFolderView("root");
 			}
 		} catch (Exception e) {
-			// TODO 自动生成的 catch 块
 			Printer.instance.print("错误：无法打开文件系统，该文件系统可能正在被另一个kiftd占用。");
 			return;
 		}
@@ -271,7 +269,6 @@ public class ConsoleRunner {
 				}
 			}
 		} catch (Exception e) {
-			// TODO 自动生成的 catch 块
 			Printer.instance.print("错误：读取命令时出现意外，已退出文件管理功能。");
 		}
 	}
@@ -286,7 +283,6 @@ public class ConsoleRunner {
 		try {
 			currentFolder = FileSystemManager.getInstance().getFolderView(currentFolder.getCurrent().getFolderId());
 		} catch (SQLException e) {
-			// TODO 自动生成的 catch 块
 			openFolderError();
 		}
 		List<Folder> fls = currentFolder.getFolders();
@@ -314,11 +310,9 @@ public class ConsoleRunner {
 				}
 				return;
 			} catch (NoSuchElementException e) {
-				// TODO: handle exception
 			}
 			Printer.instance.print("错误：该文件夹不存在或其不是一个文件夹（" + fname + "）。");
 		} catch (SQLException e) {
-			// TODO 自动生成的 catch 块
 			openFolderError();
 		}
 	}
@@ -340,7 +334,7 @@ public class ConsoleRunner {
 					return folders.parallelStream().filter((e) -> e.getFolderName().equals(fname)).findFirst().get();
 				} else {
 					return FileSystemManager.getInstance().selectNodesByFolderId(parent).parallelStream()
-							.filter((e) -> e.equals(fname)).findFirst().get();
+							.filter((e) -> e.getFileName().equals(fname)).findFirst().get();
 				}
 			} catch (Exception e) {
 			}
@@ -377,12 +371,10 @@ public class ConsoleRunner {
 			return currentFolder.getFolders().parallelStream().filter((e) -> e.getFolderName().equals(fname))
 					.findFirst().get().getFolderId();
 		} catch (NoSuchElementException e) {
-			// TODO: handle exception
 			try {
 				return currentFolder.getFiles().parallelStream().filter((m) -> m.getFileName().equals(fname))
 						.findFirst().get().getFileId();
 			} catch (NoSuchElementException e2) {
-				// TODO: handle exception
 			}
 		}
 		return null;
@@ -450,7 +442,6 @@ public class ConsoleRunner {
 				Printer.instance.print("错误：导入失败，可能导入全部文件。");
 			}
 		} catch (Exception e1) {
-			// TODO 自动生成的 catch 块
 			Printer.instance.print("错误：导入失败，出现意外错误。");
 		}
 	}
@@ -493,7 +484,6 @@ public class ConsoleRunner {
 			pl.c = false;
 			Printer.instance.print("导入完成。");
 		} catch (Exception e) {
-			// TODO 自动生成的 catch 块
 			Printer.instance.print("错误：无法导入该文件（或文件夹），请重试。");
 		}
 	}
@@ -570,7 +560,6 @@ public class ConsoleRunner {
 				Printer.instance.print("错误：导出失败，可能导出全部文件。");
 			}
 		} catch (Exception e1) {
-			// TODO 自动生成的 catch 块
 			Printer.instance.print("错误：导出失败，出现意外错误。");
 		}
 	}
@@ -638,7 +627,6 @@ public class ConsoleRunner {
 				pl.c = false;
 				Printer.instance.print("导出完成。");
 			} catch (Exception e1) {
-				// TODO 自动生成的 catch 块
 				Printer.instance.print("错误：无法导出该文件（或文件夹），请重试。");
 			}
 		} else {
@@ -651,7 +639,6 @@ public class ConsoleRunner {
 		try {
 			currentFolder = FileSystemManager.getInstance().getFolderView(currentFolder.getCurrent().getFolderId());
 		} catch (SQLException e2) {
-			// TODO 自动生成的 catch 块
 			openFolderError();
 			return;
 		}
@@ -690,7 +677,6 @@ public class ConsoleRunner {
 				return;
 			}
 		} catch (Exception e1) {
-			// TODO 自动生成的 catch 块
 			Printer.instance.print("错误：无法删除文件，请重试。");
 		}
 		Printer.instance.print("错误：该文件或文件夹不存在（" + fname + "）。");
@@ -714,7 +700,6 @@ public class ConsoleRunner {
 					break;
 				}
 			} catch (UnsupportedEncodingException e) {
-				// TODO 自动生成的 catch 块
 				System.out.println("错误：无法识别输入的内容，重新输入。");
 			}
 		}
@@ -727,11 +712,9 @@ public class ConsoleRunner {
 
 		@Override
 		public void run() {
-			// TODO 自动生成的方法存根
 			try {
 				Thread.sleep(1000);
 			} catch (InterruptedException e) {
-				// TODO 自动生成的 catch 块
 			}
 			while (c) {
 				System.out.println(FileSystemManager.message);
@@ -739,7 +722,6 @@ public class ConsoleRunner {
 				try {
 					Thread.sleep(1000);
 				} catch (InterruptedException e) {
-					// TODO 自动生成的 catch 块
 				}
 			}
 		}
@@ -757,7 +739,6 @@ public class ConsoleRunner {
 				try {
 					currentFolder = FileSystemManager.getInstance().getFolderView("root");
 				} catch (SQLException e1) {
-					// TODO 自动生成的 catch 块
 					Printer.instance.print("错误：无法读取根目录，请尝试重新打开文件管理系统或重启kiftd。");
 				}
 				return;
