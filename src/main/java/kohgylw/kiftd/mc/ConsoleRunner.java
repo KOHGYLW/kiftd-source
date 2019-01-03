@@ -66,35 +66,18 @@ public class ConsoleRunner {
 		ConsoleRunner.cs.execute(args);
 		return ConsoleRunner.cs;
 	}
-	
-	//执行相应的指令并进行后续处理，该方法为整个kiftd命令模式的起点。
+
+	// 执行相应的指令并进行后续处理，该方法为整个kiftd命令模式的起点。
 	private void execute(final String[] args) {
 		if (args.length > 0) {
 			final String command = args[0];
 			switch (command) {
-			case "-backup": {
-				if (args.length == 2) {
-					File path = new File(args[1]);
-					if (path.isDirectory()) {
-						try {
-							FileNodeUtil.initNodeTableToDataBase();
-							Printer.instance.print("正在备份全部文件...");
-							if (FileSystemManager.getInstance().exportTo(new String[] { "root" }, new String[] {}, path,
-									FileSystemManager.COVER)) {
-								Printer.instance.print("所有文件备份完毕。");
-							} else {
-								Printer.instance.print("错误：备份失败，可能未能全部备份。");
-							}
-						} catch (Exception e) {
-							// TODO 自动生成的 catch 块
-							Printer.instance.print("错误：无法读取文件，备份失败。");
-						}
-					} else {
-						Printer.instance.print("错误：备份路径（" + args[1] + "）不是一个文件夹。");
-					}
-				} else {
-					Printer.instance.print("错误：备份失败，必须指定备份路径（示例：“-backup /home/foo/bar/”）。");
-				}
+			case "-export": {
+				doExport(args);
+				break;
+			}
+			case "-import": {
+				doImport(args);
 				break;
 			}
 			case "-console": {
@@ -340,6 +323,31 @@ public class ConsoleRunner {
 		}
 	}
 
+	// 根据路径获取文件夹ID，例如“/ROOT/foo/bar”这样的，如果不能被解析则返回null，否则返回文件夹ID
+	public Object getPath(String path) {
+		if (path.startsWith("/ROOT")) {
+			String[] paths = path.split("/");
+			try {
+				String parent = "null";
+				for (int i = 1; i < paths.length - 1; i++) {
+					String folderName = paths[i];
+					parent = FileSystemManager.getInstance().getFoldersByParentId(parent).parallelStream()
+							.filter((e) -> e.getFolderName().equals(folderName)).findFirst().get().getFolderId();
+				}
+				String fname = paths[paths.length - 1];
+				List<Folder> folders = FileSystemManager.getInstance().getFoldersByParentId(parent);
+				if (path.endsWith("/") || folders.parallelStream().anyMatch((e) -> e.getFolderName().equals(fname))) {
+					return folders.parallelStream().filter((e) -> e.getFolderName().equals(fname)).findFirst().get();
+				} else {
+					return FileSystemManager.getInstance().selectNodesByFolderId(parent).parallelStream()
+							.filter((e) -> e.equals(fname)).findFirst().get();
+				}
+			} catch (Exception e) {
+			}
+		}
+		return null;
+	}
+
 	// 根据用户输入的序号或者名称得到相应的ID
 	private String getSelectFolderOrFileId(String fname) {
 		if ("../".equals(fname) || "..".equals(fname)) {
@@ -378,6 +386,73 @@ public class ConsoleRunner {
 			}
 		}
 		return null;
+	}
+
+	// 导出一个文件或文件夹（直接应用的简化版）
+	private void doImport(String[] args) {
+		// 针对简化命令（只有1个参数），认为要将整个ROOT导出至某位置
+		try {
+			FileNodeUtil.initNodeTableToDataBase();
+			String importTarget;
+			String importPath;
+			Object path;
+			File target;
+			if (args.length == 2) {
+				importTarget = args[1];
+				importPath = "/ROOT";
+				path = FileSystemManager.getInstance().selectFolderById("root");
+				target = new File(importTarget);
+			} else if (args.length == 3 || args.length == 4) {
+				importPath = args[1];
+				importTarget = args[2];
+				target = new File(importTarget);
+				path = getPath(importPath);
+			} else {
+				Printer.instance.print("错误：导入失败，必须指定导入目标（示例：“-import /ROOT/ /home/your/import/file.txt”）。");
+				return;
+			}
+			if (!(path instanceof Folder)) {
+				Printer.instance.print("错误：导入位置（" + importPath + "）必须是一个文件夹（示例：“/ROOT”）。");
+				return;
+			}
+			String folderId = ((Folder) path).getFolderId();
+			if (!target.exists()) {
+				Printer.instance.print("错误：导入失败，要导入的文件或文件夹不存在（" + importTarget + "）。");
+				return;
+			}
+			File[] files = new File[] { target };
+			String type;
+			if (FileSystemManager.getInstance().hasExistsFilesOrFolders(files, folderId) > 0) {
+				if (args.length == 4) {
+					switch (args[3]) {
+					case "-C":
+						type = FileSystemManager.COVER;
+						break;
+					case "-B":
+						type = FileSystemManager.BOTH;
+						break;
+					default:
+						Printer.instance.print("错误：导入失败，导入路径下存在相同的文件或文件夹（请使用以下参数：[-C]覆盖 [-B]保留两者）。");
+						return;
+					}
+				} else if (args.length == 2) {
+					type = FileSystemManager.COVER;
+				} else {
+					Printer.instance.print("错误：导入失败，导入路径下存在相同的文件或文件夹（请增加以下参数：[-C]覆盖 [-B]保留两者）。");
+					return;
+				}
+			} else {
+				type = "cancel";
+			}
+			if (FileSystemManager.getInstance().importFrom(files, folderId, type)) {
+				return;
+			} else {
+				Printer.instance.print("错误：导入失败，可能导入全部文件。");
+			}
+		} catch (Exception e1) {
+			// TODO 自动生成的 catch 块
+			Printer.instance.print("错误：导入失败，出现意外错误。");
+		}
 	}
 
 	// 导入一个文件或文件夹
@@ -420,6 +495,83 @@ public class ConsoleRunner {
 		} catch (Exception e) {
 			// TODO 自动生成的 catch 块
 			Printer.instance.print("错误：无法导入该文件（或文件夹），请重试。");
+		}
+	}
+
+	// 导出一个文件或文件夹（直接应用的简化版）
+	private void doExport(String[] args) {
+		// 针对简化命令（只有1个参数），认为要将整个ROOT导出至某位置
+		try {
+			FileNodeUtil.initNodeTableToDataBase();
+			String exportTarget;
+			String exportPath;
+			Object target;
+			File path;
+			if (args.length == 2) {
+				exportPath = args[1];
+				exportTarget = "/ROOT";
+				path = new File(exportPath);
+				target = FileSystemManager.getInstance().selectFolderById("root");
+			} else if (args.length == 3 || args.length == 4) {
+				exportTarget = args[1];
+				exportPath = args[2];
+				target = getPath(exportTarget);
+				path = new File(exportPath);
+			} else {
+				Printer.instance.print("错误：导出失败，必须指定导出路径（示例：“-export /ROOT/ /home/your/export/folder”）。");
+				return;
+			}
+			if (!path.isDirectory()) {
+				Printer.instance.print("错误：导出路径（" + exportPath + "）必须是一个文件夹。");
+				return;
+			}
+			if (target == null) {
+				Printer.instance.print("错误：导出失败，要导出的文件或文件夹不存在（" + exportTarget + "）。");
+				return;
+			}
+			String[] foldersId;
+			String[] filesId;
+			String type;
+			if (target instanceof Node) {
+				foldersId = new String[] {};
+				filesId = new String[] { ((Node) target).getFileId() };
+			} else if (target instanceof Folder) {
+				foldersId = new String[] { ((Folder) target).getFolderId() };
+				filesId = new String[] {};
+			} else {
+				Printer.instance.print("错误：导出失败，出现意外错误。");
+				return;
+			}
+			if (FileSystemManager.getInstance().hasExistsFilesOrFolders(foldersId, filesId, path) > 0) {
+				if (args.length == 4) {
+					switch (args[3]) {
+					case "-C":
+						type = FileSystemManager.COVER;
+						break;
+					case "-B":
+						type = FileSystemManager.BOTH;
+						break;
+					default:
+						Printer.instance.print("错误：导出失败，导出路径下存在相同的文件或文件夹（请使用以下参数：[-C]覆盖 [-B]保留两者）。");
+						return;
+					}
+				} else if (args.length == 2) {
+					type = FileSystemManager.COVER;
+				} else {
+					Printer.instance.print("错误：导出失败，导出路径下存在相同的文件或文件夹（请增加以下参数：[-C]覆盖 [-B]保留两者）。");
+					return;
+				}
+			} else {
+				type = "cancel";
+			}
+			if (FileSystemManager.getInstance().exportTo(foldersId, filesId, path, type)) {
+				return;
+			} else {
+				Printer.instance.print("错误：导出失败，可能导出全部文件。");
+			}
+		} catch (Exception e1) {
+			// TODO 自动生成的 catch 块
+			Printer.instance.print("错误：导出失败，出现意外错误。");
 		}
 	}
 

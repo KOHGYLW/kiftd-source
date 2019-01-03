@@ -240,7 +240,7 @@ public class FSViewer extends KiftdDynamicWindow {
 								FileSystemManager.getInstance().delete(selectedFolders.toArray(new String[0]),
 										selectedNodes.toArray(new String[0]));
 								fsd.close();
-							} catch (SQLException e1) {
+							} catch (Exception e1) {
 								// TODO 自动生成的 catch 块
 								fsd.close();
 								JOptionPane.showMessageDialog(window, "删除文件时失败，该操作已被中断，未能全部删除。", "错误",

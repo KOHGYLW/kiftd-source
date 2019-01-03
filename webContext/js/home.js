@@ -2003,11 +2003,14 @@ function doMoveFiles(){
 					sendMoveFilesReq();
 				} else if(result.startsWith("duplicationFileName:")){
 					repeMap=eval("("+result.substring(20)+")");
-					console.log(repeMap);
 					repeIndex=0;
 					strMoveOptMap={};
 					mRepeSize=repeMap.repeFolders.length+repeMap.repeNodes.length;
-					$("#repeMap").text(repeMap.repeFolders[repeIndex]);
+					if(repeMap.repeFolders.length>0){
+						$("#mrepeFileName").text(repeMap.repeFolders[repeIndex].folderName);
+					}else{
+						$("#mrepeFileName").text(repeMap.repeNodes[repeIndex].fileName);
+					}
 					$("#selectFileMoveModelAlert").show();
 				} else if(result.startsWith("CANT_MOVE_TO_INSIDE:")){
 					$('#moveFilesMessage').text("错误：不能将一个文件夹移动到其自身内部："+result.substring(20));
@@ -2031,7 +2034,7 @@ function selectFileMoveModel(t){
 			if(repeIndex<repeMap.repeFolders.length){
 				strMoveOptMap[repeMap.repeFolders[repeIndex].folderId]=t;
 			}else{
-				strMoveOptMap[repeMap.repeNodes[repeIndex].fileId]=t;
+				strMoveOptMap[repeMap.repeNodes[repeIndex-repeMap.repeFolders.length].fileId]=t;
 			}
 			repeIndex++;
 		}
@@ -2041,14 +2044,14 @@ function selectFileMoveModel(t){
 	if(repeIndex<repeMap.repeFolders.length){
 		strMoveOptMap[repeMap.repeFolders[repeIndex].folderId]=t;
 	}else{
-		strMoveOptMap[repeMap.repeNodes[repeIndex].fileId]=t;
+		strMoveOptMap[repeMap.repeNodes[repeIndex-repeMap.repeFolders.length].fileId]=t;
 	}
 	repeIndex++;
 	if(repeIndex<mRepeSize){
 		if(repeIndex<repeMap.repeFolders.length){
-			$("#repeMap").text(repeMap.repeFolders[repeIndex].folderName);
+			$("#mrepeFileName").text(repeMap.repeFolders[repeIndex].folderName);
 		}else{
-			$("#repeMap").text(repeMap.repeNodes[repeIndex-repeMap.repeFolders.length].fileName);
+			$("#mrepeFileName").text(repeMap.repeNodes[repeIndex-repeMap.repeFolders.length].fileName);
 		}
 	}else{
 		$("#selectFileMoveModelAlert").hide();
@@ -2060,7 +2063,6 @@ function selectFileMoveModel(t){
 function sendMoveFilesReq(){
 	// 执行移动行为
 	var strOptMap = JSON.stringify(strMoveOptMap);
-	console.log(strOptMap);
 	$.ajax({
 		type : "POST",
 		dataType : "text",

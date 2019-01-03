@@ -314,7 +314,7 @@ public class FileSystemManager {
 	}
 
 	// 根据ID查询文件夹对象，无符合对象则返回null
-	private Folder selectFolderById(String folderId) throws SQLException {
+	public Folder selectFolderById(String folderId) throws SQLException {
 		selectFolderById.setString(1, folderId);
 		ResultSet r = selectFolderById.executeQuery();
 		if (r.next()) {
@@ -334,7 +334,7 @@ public class FileSystemManager {
 	}
 
 	// 查询指定文件夹内的所有文件节点，如无符合则返回空List
-	private List<Node> selectNodesByFolderId(String folderId) throws SQLException {
+	public List<Node> selectNodesByFolderId(String folderId) throws SQLException {
 		List<Node> nodes = new ArrayList<>();
 		selectNodeByFolderId.setString(1, folderId);
 		ResultSet r = selectNodeByFolderId.executeQuery();
@@ -573,6 +573,9 @@ public class FileSystemManager {
 		Folder f = selectFolderById(folderId);
 		List<Node> nodes = selectNodesByFolderId(folderId);
 		int size = nodes.size();
+		if(f==null) {
+			return;
+		}
 		// 删除该文件夹内的所有文件
 		for (int i = 0; i < size && gono; i++) {
 			deleteFile(nodes.get(i).getFileId());
@@ -608,8 +611,8 @@ public class FileSystemManager {
 					return;
 				}
 			}
+			throw new SQLException();
 		}
-		throw new SQLException();
 	}
 
 	// 导出一个文件节点
