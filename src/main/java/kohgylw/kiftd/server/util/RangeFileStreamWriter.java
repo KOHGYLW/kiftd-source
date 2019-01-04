@@ -4,6 +4,8 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.charset.Charset;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -19,7 +21,7 @@ import javax.servlet.http.HttpServletResponse;
  * @version 1.0
  */
 public class RangeFileStreamWriter {
-	
+
 	/**
 	 * 
 	 * <h2>使用断点续传技术提供输出流</h2>
@@ -52,7 +54,15 @@ public class RangeFileStreamWriter {
 		response.setContentType(contentType);
 		// 设置文件信息
 		response.setCharacterEncoding("UTF-8");
-		response.setHeader("Content-Disposition", "attachment; filename=\"" + EncodeUtil.getFileNameByUTF8(fname)+"\"; filename*=utf-8''"+EncodeUtil.getFileNameByUTF8(fname));
+		if (request.getHeader("User-Agent").toLowerCase().indexOf("safari") >= 0) {
+			response.setHeader("Content-Disposition",
+					"attachment; filename=\""
+							+ new String(fname.getBytes(Charset.forName("UTF-8")), Charset.forName("ISO-8859-1"))
+							+ "\"; filename*=utf-8''" + EncodeUtil.getFileNameByUTF8(fname));
+		} else {
+			response.setHeader("Content-Disposition", "attachment; filename=\"" + EncodeUtil.getFileNameByUTF8(fname)
+					+ "\"; filename*=utf-8''" + EncodeUtil.getFileNameByUTF8(fname));
+		}
 		// 设置支持断点续传功能
 		response.setHeader("Accept-Ranges", "bytes");
 		// 针对具备断点续传性质的请求进行解析
@@ -91,7 +101,7 @@ public class RangeFileStreamWriter {
 		// 写出缓冲
 		byte[] buf = new byte[ConfigureReader.instance().getBuffSize()];
 		// 读取文件并写处至输出流
-		try (RandomAccessFile raf=new RandomAccessFile(fo, "r")) {
+		try (RandomAccessFile raf = new RandomAccessFile(fo, "r")) {
 			BufferedOutputStream out = new BufferedOutputStream(response.getOutputStream());
 			raf.seek(startOffset);
 			if (!hasEnd) {
