@@ -45,6 +45,7 @@ public class ResourceServiceImpl implements ResourceService {
 					String suffix = n.getFileName().substring(n.getFileName().lastIndexOf(".")).trim().toLowerCase();
 					String contentType = "application/octet-stream";
 					switch (suffix) {
+					case ".mov":
 					case ".mp4":
 						contentType = "video/mp4";
 						break;
