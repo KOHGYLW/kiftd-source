@@ -244,12 +244,18 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		if (fileId == null || fileId.length() <= 0 || newFileName == null || newFileName.length() <= 0) {
 			return ERROR_PARAMETER;
 		}
-		if (!TextFormateUtil.instance().matcherFileName(newFileName)) {
+		if (!TextFormateUtil.instance().matcherFileName(newFileName) || newFileName.indexOf(".") == 0) {
 			return ERROR_PARAMETER;
 		}
 		final Node file = this.fm.queryById(fileId);
 		if (file == null) {
 			return ERROR_PARAMETER;
+		}
+		// 不允许重名
+		if (fm.queryBySomeFolder(fileId).parallelStream().anyMatch((e) -> e.getFileName().equals(newFileName))
+				|| flm.queryByParentId(file.getFileParentFolder()).parallelStream()
+						.anyMatch((e) -> e.getFolderName().equals(newFileName))) {
+			return "nameOccupied";
 		}
 		// 更新文件名
 		final Map<String, String> map = new HashMap<String, String>();

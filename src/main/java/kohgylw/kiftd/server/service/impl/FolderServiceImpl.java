@@ -15,6 +15,8 @@ public class FolderServiceImpl implements FolderService {
 	@Resource
 	private FolderMapper fm;
 	@Resource
+	private NodeMapper nm;
+	@Resource
 	private FolderUtil fu;
 	@Resource
 	private LogUtil lu;
@@ -121,7 +123,11 @@ public class FolderServiceImpl implements FolderService {
 		if (folder == null) {
 			return "errorParameter";
 		}
+		//不允许和文件或文件夹重名
 		final Folder parentFolder = this.fm.queryById(folder.getFolderParent());
+		if(fm.queryByParentId(parentFolder.getFolderId()).parallelStream().anyMatch((e)->e.getFolderName().equals(newName)) || nm.queryByParentFolderId(parentFolder.getFolderId()).parallelStream().anyMatch((e)->e.getFileName().equals(newName))) {
+			return "nameOccupied";
+		}
 		// TODO 修改文件夹约束
 		int pc = parentFolder.getFolderConstraint();
 		if (folderConstraint != null) {
