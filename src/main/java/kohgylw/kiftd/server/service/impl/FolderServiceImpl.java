@@ -39,14 +39,10 @@ public class FolderServiceImpl implements FolderService {
 		if (parentFolder == null) {
 			return "errorParameter";
 		}
-		final Map<String, String> map = new HashMap<String, String>();
-		map.put("parentId", parentId);
-		map.put("folderName", folderName);
-		Folder f = this.fm.queryByParentIdAndFolderName(map);
-		if (f != null) {
-			return "folderAlreadyExist";
+		if (fm.queryByParentId(parentId).parallelStream().anyMatch((e) -> e.getFolderName().equals(folderName))) {
+			return "nameOccupied";
 		}
-		f = new Folder();
+		Folder f = new Folder();
 		// 设置子文件夹约束等级，不允许子文件夹的约束等级比父文件夹低
 		int pc = parentFolder.getFolderConstraint();
 		if (folderConstraint != null) {
@@ -123,9 +119,10 @@ public class FolderServiceImpl implements FolderService {
 		if (folder == null) {
 			return "errorParameter";
 		}
-		//不允许和文件或文件夹重名
+		// 不允许重名
 		final Folder parentFolder = this.fm.queryById(folder.getFolderParent());
-		if(fm.queryByParentId(parentFolder.getFolderId()).parallelStream().anyMatch((e)->e.getFolderName().equals(newName)) || nm.queryByParentFolderId(parentFolder.getFolderId()).parallelStream().anyMatch((e)->e.getFileName().equals(newName))) {
+		if (fm.queryByParentId(parentFolder.getFolderId()).parallelStream()
+				.anyMatch((e) -> e.getFolderName().equals(newName))) {
 			return "nameOccupied";
 		}
 		// TODO 修改文件夹约束

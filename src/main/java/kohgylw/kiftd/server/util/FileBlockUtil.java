@@ -17,7 +17,7 @@ public class FileBlockUtil {
 	private NodeMapper fm;
 	@Resource
 	private FolderMapper flm;
-	
+
 	private final String fileBlocks = ConfigureReader.instance().getFileBlockPath();
 
 	/**
@@ -94,7 +94,7 @@ public class FileBlockUtil {
 		final File f = new File(tempPath, zipname);
 		try {
 			final List<ZipEntrySource> zs = new ArrayList<>();
-			for(String fid:fidList) {
+			for (String fid : fidList) {
 				addFoldersToZipEntrySourceArray(fid, zs, account, "");
 			}
 			for (int i = 0; i < idList.size(); ++i) {
@@ -110,39 +110,46 @@ public class FileBlockUtil {
 			return null;
 		}
 	}
-	
-	//迭代生成ZIP文件夹单元，将一个文件夹内的文件和文件夹也进行打包
-	private void addFoldersToZipEntrySourceArray(String fid, List<ZipEntrySource> zs, String account,String parentPath) {
+
+	// 迭代生成ZIP文件夹单元，将一个文件夹内的文件和文件夹也进行打包
+	private void addFoldersToZipEntrySourceArray(String fid, List<ZipEntrySource> zs, String account,
+			String parentPath) {
 		Folder f = flm.queryById(fid);
-		if(f!=null && ConfigureReader.instance().accessFolder(f, account)) {
-			String thisPath=parentPath+f.getFolderName()+"/";
+		if (f != null && ConfigureReader.instance().accessFolder(f, account)) {
+			String originFoldername = f.getFolderName();
+			String folderName = originFoldername;
+			if (fm.queryByParentFolderId(f.getFolderParent()).parallelStream().anyMatch((e) -> e.getFileName().equals(originFoldername))) {
+				folderName = folderName + "_与文件重名" + UUID.randomUUID().toString().replaceAll("-", "");
+			}
+			String thisPath = folderName + "/";
 			zs.add(new ZipEntrySource() {
-				
+
 				@Override
 				public String getPath() {
 					// TODO 自动生成的方法存根
 					return thisPath;
 				}
-				
+
 				@Override
 				public InputStream getInputStream() throws IOException {
 					// TODO 自动生成的方法存根
 					return null;
 				}
-				
+
 				@Override
 				public ZipEntry getEntry() {
 					// TODO 自动生成的方法存根
 					return new ZipEntry(thisPath);
 				}
 			});
-			String[] folders=flm.queryByParentId(fid).parallelStream().map((e)->e.getFolderId()).toArray(String[]::new);
-			for(String cf:folders) {
+			String[] folders = flm.queryByParentId(fid).parallelStream().map((e) -> e.getFolderId())
+					.toArray(String[]::new);
+			for (String cf : folders) {
 				addFoldersToZipEntrySourceArray(cf, zs, account, thisPath);
 			}
-			List<Node> nodes=fm.queryByParentFolderId(fid);
-			for(Node n:nodes) {
-				zs.add(new FileSource(thisPath+n.getFileName(), new File(fileBlocks, n.getFilePath())));
+			List<Node> nodes = fm.queryByParentFolderId(fid);
+			for (Node n : nodes) {
+				zs.add(new FileSource(thisPath + n.getFileName(), new File(fileBlocks, n.getFilePath())));
 			}
 		}
 	}

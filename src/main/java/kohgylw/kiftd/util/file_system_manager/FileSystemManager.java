@@ -573,7 +573,7 @@ public class FileSystemManager {
 		Folder f = selectFolderById(folderId);
 		List<Node> nodes = selectNodesByFolderId(folderId);
 		int size = nodes.size();
-		if(f==null) {
+		if (f == null) {
 			return;
 		}
 		// 删除该文件夹内的所有文件
@@ -690,6 +690,11 @@ public class FileSystemManager {
 				default:
 					return;
 				}
+			}
+			if (Arrays.stream(path.listFiles()).parallel().filter((e) -> e.isFile())
+					.anyMatch((e) -> new String(e.getName().getBytes()).equals(folder.getFolderName()))) {
+				target = new File(path, new String(folder.getFolderName().getBytes())+"_与文件同名"+UUID.randomUUID().toString().replaceAll("-", ""));
+				target.mkdir();
 			}
 			if (target == null) {
 				target = new File(path, new String(folder.getFolderName().getBytes()));

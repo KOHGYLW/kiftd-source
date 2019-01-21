@@ -64,7 +64,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		final List<String> namelistObj = gson.fromJson(nameList, new TypeToken<List<String>>() {
 		}.getType());
 		final List<String> pereFileNameList = new ArrayList<>();
-		// 查找目标目录下是否存在与待上传文件同名的文件，如果有，记录在上方的列表中
+		// 查找目标目录下是否存在与待上传文件同名的文件（或文件夹），如果有，记录在上方的列表中
 		for (final String fileName : namelistObj) {
 			if (folderId == null || folderId.length() <= 0 || fileName == null || fileName.length() <= 0) {
 				return ERROR_PARAMETER;
@@ -252,9 +252,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 			return ERROR_PARAMETER;
 		}
 		// 不允许重名
-		if (fm.queryBySomeFolder(fileId).parallelStream().anyMatch((e) -> e.getFileName().equals(newFileName))
-				|| flm.queryByParentId(file.getFileParentFolder()).parallelStream()
-						.anyMatch((e) -> e.getFolderName().equals(newFileName))) {
+		if (fm.queryBySomeFolder(fileId).parallelStream().anyMatch((e) -> e.getFileName().equals(newFileName))) {
 			return "nameOccupied";
 		}
 		// 更新文件名

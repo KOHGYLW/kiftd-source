@@ -89,6 +89,7 @@ $(function() {
 		$("#folderalert").removeClass("alert");
 		$("#folderalert").removeClass("alert-danger");
 		$("#foldernamebox").removeClass("has-error");
+		$("#folderalert").text("");
 		$("#foldername").val("");
 		$("#foldertypelist").html("");
 		if(account!=null){
@@ -850,13 +851,13 @@ function createfolder() {
 					window.location.href = "login.html";
 				} else {
 					if (result == "noAuthorized") {
-						showFolderAlert("提示：您的操作未被授权，创建文件夹失败");
+						showFolderAlert("提示：您的操作未被授权，创建文件夹失败。");
 					} else if (result == "errorParameter") {
-						showFolderAlert("提示：参数不正确，创建文件夹失败");
+						showFolderAlert("提示：参数不正确，创建文件夹失败。");
 					} else if (result == "cannotCreateFolder") {
-						showFolderAlert("提示：出现意外错误，可能未能创建文件夹");
-					} else if (result == "folderAlreadyExist") {
-						showFolderAlert("提示：该文件夹已经存在，请更换文件夹名称");
+						showFolderAlert("提示：出现意外错误，可能未能创建文件夹。");
+					} else if (result == "nameOccupied") {
+						showFolderAlert("提示：该名称已被占用，请选取其他名称。");
 					} else if (result == "createFolderSuccess") {
 						$('#newFolderModal').modal('hide');
 						showFolderView(locationpath);
