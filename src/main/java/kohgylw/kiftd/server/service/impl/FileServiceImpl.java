@@ -251,20 +251,22 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		if (file == null) {
 			return ERROR_PARAMETER;
 		}
-		// 不允许重名
-		if (fm.queryBySomeFolder(fileId).parallelStream().anyMatch((e) -> e.getFileName().equals(newFileName))) {
-			return "nameOccupied";
+		if (!file.getFileName().equals(newFileName)) {
+			// 不允许重名
+			if (fm.queryBySomeFolder(fileId).parallelStream().anyMatch((e) -> e.getFileName().equals(newFileName))) {
+				return "nameOccupied";
+			}
+			// 更新文件名
+			final Map<String, String> map = new HashMap<String, String>();
+			map.put("fileId", fileId);
+			map.put("newFileName", newFileName);
+			if (this.fm.updateFileNameById(map) == 0) {
+				// 并写入日志
+				return "cannotRenameFile";
+			}
 		}
-		// 更新文件名
-		final Map<String, String> map = new HashMap<String, String>();
-		map.put("fileId", fileId);
-		map.put("newFileName", newFileName);
-		if (this.fm.updateFileNameById(map) > 0) {
-			// 并写入日志
-			this.lu.writeRenameFileEvent(request, file, newFileName);
-			return "renameFileSuccess";
-		}
-		return "cannotRenameFile";
+		this.lu.writeRenameFileEvent(request, file, newFileName);
+		return "renameFileSuccess";
 	}
 
 	// 删除所有选中文件和文件夹

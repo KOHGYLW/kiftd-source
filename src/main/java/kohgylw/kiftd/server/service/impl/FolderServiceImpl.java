@@ -119,13 +119,7 @@ public class FolderServiceImpl implements FolderService {
 		if (folder == null) {
 			return "errorParameter";
 		}
-		// 不允许重名
 		final Folder parentFolder = this.fm.queryById(folder.getFolderParent());
-		if (fm.queryByParentId(parentFolder.getFolderId()).parallelStream()
-				.anyMatch((e) -> e.getFolderName().equals(newName))) {
-			return "nameOccupied";
-		}
-		// TODO 修改文件夹约束
 		int pc = parentFolder.getFolderConstraint();
 		if (folderConstraint != null) {
 			try {
@@ -141,10 +135,18 @@ public class FolderServiceImpl implements FolderService {
 					map.put("folderId", folderId);
 					fm.updateFolderConstraintById(map);
 					changeChildFolderConstraint(folderId, ifc);
-					Map<String, String> map2 = new HashMap<String, String>();
-					map2.put("folderId", folderId);
-					map2.put("newName", newName);
-					this.fm.updateFolderNameById(map2);
+					if(!folder.getFolderName().equals(newName)) {
+						if (fm.queryByParentId(parentFolder.getFolderId()).parallelStream()
+								.anyMatch((e) -> e.getFolderName().equals(newName))) {
+							return "nameOccupied";
+						}
+						Map<String, String> map2 = new HashMap<String, String>();
+						map2.put("folderId", folderId);
+						map2.put("newName", newName);
+						if(this.fm.updateFolderNameById(map2)==0) {
+							return "errorParameter";
+						}
+					}
 					this.lu.writeRenameFolderEvent(request, folder, newName, folderConstraint);
 					return "renameFolderSuccess";
 				}
