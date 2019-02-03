@@ -178,13 +178,13 @@ public class FSViewer extends KiftdDynamicWindow {
 						switch (JOptionPane.showConfirmDialog(window,
 								"该路径存在" + exi + "个同名文件或文件夹，您希望覆盖它们么？（“是”覆盖，“否”保留两者，“取消”终止导入）", "导入",
 								JOptionPane.YES_NO_CANCEL_OPTION)) {
-						case 0:
+						case JOptionPane.YES_OPTION:
 							type = FileSystemManager.COVER;
 							break;
-						case 1:
+						case JOptionPane.NO_OPTION:
 							type = FileSystemManager.BOTH;
 							break;
-						case 2:
+						case JOptionPane.CANCEL_OPTION:
 
 						default:
 							type = "CANCEL";

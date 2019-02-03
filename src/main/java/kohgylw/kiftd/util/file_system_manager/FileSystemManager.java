@@ -625,12 +625,12 @@ public class FileSystemManager {
 			if (Arrays.stream(path.listFiles()).parallel().filter((e) -> e.isFile())
 					.anyMatch((f) -> new String(f.getName().getBytes()).equals(node.getFileName()))) {
 				switch (type) {
-				case BOTH:
+				case COVER:
 					target = Arrays.stream(path.listFiles()).parallel().filter((e) -> e.isFile())
 							.filter((e) -> new String(e.getName().getBytes()).equals(node.getFileName())).findFirst()
 							.get();
 					break;
-				case COVER:
+				case BOTH:
 					target = new File(path, new String(FileNodeUtil.getNewNodeName(node, path).getBytes()));
 					target.createNewFile();
 					break;
