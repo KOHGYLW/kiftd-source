@@ -1,6 +1,7 @@
 package kohgylw.kiftd.server.service.impl;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.Date;
@@ -17,6 +18,7 @@ import kohgylw.kiftd.server.mapper.NodeMapper;
 import kohgylw.kiftd.server.model.Node;
 import kohgylw.kiftd.server.service.ResourceService;
 import kohgylw.kiftd.server.util.ConfigureReader;
+import kohgylw.kiftd.server.util.Docx2PDFUtil;
 import kohgylw.kiftd.server.util.FileBlockUtil;
 import kohgylw.kiftd.server.util.LogUtil;
 
@@ -30,14 +32,16 @@ public class ResourceServiceImpl implements ResourceService {
 	private FileBlockUtil fbu;
 	@Resource
 	private LogUtil lu;
-	
-	//提供资源的输出流，原理与下载相同，但是个别细节有区别
+	@Resource
+	private Docx2PDFUtil d2pu;
+
+	// 提供资源的输出流，原理与下载相同，但是个别细节有区别
 	@Override
 	public void getResource(HttpServletRequest request, HttpServletResponse response) {
 		// TODO 自动生成的方法存根
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
 		if (ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES)) {
-			String fid=request.getParameter("fid");
+			String fid = request.getParameter("fid");
 			if (fid != null) {
 				Node n = nm.queryById(fid);
 				if (n != null) {
@@ -76,8 +80,8 @@ public class ResourceServiceImpl implements ResourceService {
 			// TODO 自动生成的 catch 块
 		}
 	}
-	
-	//使用各个浏览器（主要是Safari）兼容的通用格式发送资源至请求来源，类似于断点续传下载功能
+
+	// 使用各个浏览器（主要是Safari）兼容的通用格式发送资源至请求来源，类似于断点续传下载功能
 	private void sendResource(File resource, String fname, String contentType, HttpServletRequest request,
 			HttpServletResponse response) {
 		try (RandomAccessFile randomFile = new RandomAccessFile(resource, "r")) {
@@ -136,7 +140,7 @@ public class ResourceServiceImpl implements ResourceService {
 			while (needSize > 0) {
 				int len = randomFile.read(buffer);
 				if (needSize < buffer.length) {
-					out.write(buffer, 0, (int)needSize);
+					out.write(buffer, 0, (int) needSize);
 				} else {
 					out.write(buffer, 0, len);
 					if (len < buffer.length) {
@@ -147,7 +151,38 @@ public class ResourceServiceImpl implements ResourceService {
 			}
 			out.close();
 		} catch (Exception e) {
-			
+
+		}
+	}
+
+	// 对word的预览实现
+	@Override
+	public void getWordView(String fileId, HttpServletRequest request, HttpServletResponse response) {
+		final String account = (String) request.getSession().getAttribute("ACCOUNT");
+		// 权限检查
+		if (ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES)) {
+			if (fileId != null) {
+				Node n = nm.queryById(fileId);
+				if (n != null) {
+					File file = fbu.getFileFromBlocks(n);
+					// 后缀检查
+					String suffix = n.getFileName().substring(n.getFileName().lastIndexOf(".")).trim().toLowerCase();
+					if (".docx".equals(suffix)) {
+						String contentType = "application/octet-stream";
+						response.setContentType(contentType);
+						//执行转换并写出输出流
+						try {
+							d2pu.convertPdf(new FileInputStream(file), response.getOutputStream());
+							return;
+						} catch (Exception e) {
+						}
+					}
+				}
+			}
+		}
+		try {
+			response.sendError(500);
+		} catch (IOException e1) {
 		}
 	}
 

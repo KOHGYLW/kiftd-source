@@ -5,6 +5,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import kohgylw.kiftd.server.service.ResourceService;
@@ -21,6 +22,12 @@ public class ResourceController {
 	@RequestMapping("/getResource.do")
 	public void getResource(HttpServletRequest request, HttpServletResponse response) {
 		rs.getResource(request, response);
+	}
+	
+	//以PDF格式获取word预览视图
+	@RequestMapping("/getWordView/{fileId}")
+	public void getWordView(@PathVariable("fileId") String fileId,HttpServletRequest request,HttpServletResponse response) {
+		rs.getWordView(fileId,request, response);
 	}
 
 }

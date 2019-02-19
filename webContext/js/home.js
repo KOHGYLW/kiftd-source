@@ -777,6 +777,13 @@ function showFolderTable(folderView) {
 										+ fi.fileId
 										+ '"'
 										+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-play'></span> 播放</button>";
+							} else if(getSuffix(fi.fileName) == "docx"){
+								fileRow = fileRow
+										+ "<button onclick='docxView("
+										+ '"'
+										+ fi.fileId
+										+ '"'
+										+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-eye-open'></span> 预览</button>";
 							}
 						}
 						if (aD) {
@@ -1444,6 +1451,10 @@ function pdfView(filePath) {
 	window.open("/pdfview/web/viewer.html?file=/fileblocks/" + filePath);
 }
 
+function docxView(fileId){
+	window.open("/pdfview/web/viewer.html?file=/resourceController/getWordView/" + fileId);
+}
+
 // 查看图片
 function showPicture(fileId) {
 	$.ajax({
@@ -2064,7 +2075,7 @@ function selectFileMoveModel(t){
 	}
 }
 
-
+// 发送移动文件请求
 function sendMoveFilesReq(){
 	// 执行移动行为
 	var strOptMap = JSON.stringify(strMoveOptMap);
