@@ -182,7 +182,7 @@ public class ResourceServiceImpl implements ResourceService {
 		}
 		try {
 			response.sendError(500);
-		} catch (IOException e1) {
+		} catch (Exception e1) {
 		}
 	}
 
