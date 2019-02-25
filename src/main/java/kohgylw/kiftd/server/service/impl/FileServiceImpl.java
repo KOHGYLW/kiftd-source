@@ -109,6 +109,10 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 					return UPLOADSUCCESS;
 				// 覆盖则找到已存在文件节点的File并将新内容写入其中，同时更新原节点信息（除了文件名、父目录和ID之外的全部信息）
 				case "cover":
+					//其中覆盖操作同时要求用户必须具备删除权限
+					if(!ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER)) {
+						return UPLOADERROR;
+					}
 					for (Node f : files) {
 						if (f.getFileName().equals(originalFileName)) {
 							File file2 = fbu.getFileFromBlocks(f);

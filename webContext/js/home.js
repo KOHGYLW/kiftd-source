@@ -1131,6 +1131,12 @@ var repeModelList;// 这个是对每一个重复文件选取的上传模式，�
 
 // 针对同名文件，选择上传的模式：跳过（skip）、覆盖（cover）和保留两者（both）
 function selectFileUpLoadModelStart(){
+	var authList = originFolderView.authList;
+	if(checkAuth(authList, "D")){
+		$("#uploadcoverbtn").show();
+	}else{
+		$("#uploadcoverbtn").hide();
+	}
 	$("#selectFileUpLoadModelAlert").show();
 	$("#repeFileName").text(repeList[repeIndex]);
 }
