@@ -139,6 +139,24 @@
 
 	<!-- 打包工具配置 -->
 	<build>
+		<!-- maven 项目 src路径 -->
+		<sourceDirectory>src/main/java</sourceDirectory>
+		<!-- end maven 项目 src路径 -->
+
+		<!-- maven 项目 资源路径 -->
+		<resources>
+			<resource>
+				<directory>mybatisResource</directory>
+			</resource>
+			<resource>
+				<directory>src/main/java</directory>
+				<excludes>
+					<exclude>**/*.java</exclude>
+				</excludes>
+			</resource>
+		</resources>
+		<!-- end maven 项目 资源路径 -->
+		
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
