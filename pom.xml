@@ -4,7 +4,7 @@
 
 	<groupId>kohgylw</groupId>
 	<artifactId>kiftd</artifactId>
-	<version>1.0.15-RELEASE</version>
+	<version>1.0.16-RELEASE</version>
 	<packaging>jar</packaging>
 
 	<name>kiftd</name>
@@ -114,7 +114,7 @@
 		</dependency>
 		<!-- end 图片处理 -->
 
-		<!-- word转PDF处理工具整合资源 -->
+		<!-- txt/word转PDF处理工具整合资源 -->
 		<!-- https://mvnrepository.com/artifact/org.freemarker/freemarker -->
 		<dependency>
 			<groupId>org.freemarker</groupId>
@@ -132,8 +132,14 @@
 			<artifactId>org.apache.poi.xwpf.converter.pdf</artifactId>
 			<version>1.0.6</version>
 		</dependency>
-		<!-- end word -->
-
+		<!-- https://mvnrepository.com/artifact/net.sourceforge.jchardet/jchardet -->
+		<dependency>
+			<groupId>net.sourceforge.jchardet</groupId>
+			<artifactId>jchardet</artifactId>
+			<version>1.0</version>
+		</dependency>
+		<!-- end txt/word -->
+		
 	</dependencies>
 	<!-- end 外部资源 -->
 

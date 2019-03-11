@@ -68,6 +68,7 @@ public class ConfigureReader {
 	public static final int CANT_CONNECT_DB = 8;
 	public static final int LEGAL_PROPERTIES = 0;
 	private static Thread accountPropertiesUpdateDaemonThread;
+	private String timeZone;
 
 	private ConfigureReader() {
 		this.propertiesStatus = -1;
@@ -428,16 +429,18 @@ public class ConfigureReader {
 		}
 		if ("true".equals(serverp.getProperty("mysql.enable"))) {
 			dbDriver = "com.mysql.cj.jdbc.Driver";
-			String url=serverp.getProperty("mysql.url", "127.0.0.1/kift");
-			if(url.indexOf("/")<=0||url.substring(url.indexOf("/")).length()==1) {
-				Printer.instance.print(
-						"错误：自定义数据库的URL中必须指定数据库名称。");
+			String url = serverp.getProperty("mysql.url", "127.0.0.1/kift");
+			if (url.indexOf("/") <= 0 || url.substring(url.indexOf("/")).length() == 1) {
+				Printer.instance.print("错误：自定义数据库的URL中必须指定数据库名称。");
 				return 8;
 			}
-			dbURL = "jdbc:mysql://" + url
-					+ "?useUnicode=true&characterEncoding=utf8";
+			dbURL = "jdbc:mysql://" + url + "?useUnicode=true&characterEncoding=utf8";
 			dbUser = serverp.getProperty("mysql.user", "root");
 			dbPwd = serverp.getProperty("mysql.password", "");
+			timeZone = serverp.getProperty("mysql.timezone");
+			if (timeZone != null) {
+				dbURL = dbURL + "&serverTimezone=" + timeZone;
+			}
 			try {
 				Class.forName(dbDriver).newInstance();
 				Connection testConn = DriverManager.getConnection(dbURL, dbUser, dbPwd);
@@ -468,9 +471,11 @@ public class ConfigureReader {
 		dsp.setProperty("buff.size", DEFAULT_BUFFER_SIZE + "");
 		if ("true".equals(serverp.getProperty("mysql.enable"))) {
 			dsp.setProperty("mysql.enable", "false");
-			dsp.setProperty("mysql.url", serverp==null?"127.0.0.1/kift":serverp.getProperty("mysql.url","127.0.0.1/kift"));
+			dsp.setProperty("mysql.url",
+					serverp == null ? "127.0.0.1/kift" : serverp.getProperty("mysql.url", "127.0.0.1/kift"));
 			dsp.setProperty("mysql.user", dbUser == null ? "root" : dbUser);
 			dsp.setProperty("mysql.password", dbPwd == null ? "" : dbPwd);
+			dsp.setProperty("mysql.timezone", timeZone == null ? "" : timeZone);
 		}
 		try {
 			dsp.store(new FileOutputStream(this.confdir + SERVER_PROPERTIES_FILE),
@@ -511,7 +516,7 @@ public class ConfigureReader {
 	 * @return boolean 是否使用了外部MySQL数据库
 	 */
 	public boolean useMySQL() {
-		return serverp==null?false:"true".equals(serverp.getProperty("mysql.enable"));
+		return serverp == null ? false : "true".equals(serverp.getProperty("mysql.enable"));
 	}
 
 	/**
@@ -542,7 +547,7 @@ public class ConfigureReader {
 	public String getFileNodePathDriver() {
 		return dbDriver;
 	}
-	
+
 	/**
 	 * 
 	 * <h2>获取文件节点数据库链接用户名</h2>

@@ -21,6 +21,7 @@ import kohgylw.kiftd.server.util.ConfigureReader;
 import kohgylw.kiftd.server.util.Docx2PDFUtil;
 import kohgylw.kiftd.server.util.FileBlockUtil;
 import kohgylw.kiftd.server.util.LogUtil;
+import kohgylw.kiftd.server.util.Txt2PDFUtil;
 
 //资源服务类，所有处理非下载流请求的工作均在此完成
 @Service
@@ -34,6 +35,8 @@ public class ResourceServiceImpl implements ResourceService {
 	private LogUtil lu;
 	@Resource
 	private Docx2PDFUtil d2pu;
+	@Resource
+	private Txt2PDFUtil t2pu;
 
 	// 提供资源的输出流，原理与下载相同，但是个别细节有区别
 	@Override
@@ -173,6 +176,37 @@ public class ResourceServiceImpl implements ResourceService {
 						//执行转换并写出输出流
 						try {
 							d2pu.convertPdf(new FileInputStream(file), response.getOutputStream());
+							return;
+						} catch (Exception e) {
+						}
+					}
+				}
+			}
+		}
+		try {
+			response.sendError(500);
+		} catch (Exception e1) {
+		}
+	}
+	
+	//对TXT预览的实现
+	@Override
+	public void getTxtView(String fileId, HttpServletRequest request, HttpServletResponse response) {
+		final String account = (String) request.getSession().getAttribute("ACCOUNT");
+		// 权限检查
+		if (ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES)) {
+			if (fileId != null) {
+				Node n = nm.queryById(fileId);
+				if (n != null) {
+					File file = fbu.getFileFromBlocks(n);
+					// 后缀检查
+					String suffix = n.getFileName().substring(n.getFileName().lastIndexOf(".")).trim().toLowerCase();
+					if (".txt".equals(suffix)) {
+						String contentType = "application/octet-stream";
+						response.setContentType(contentType);
+						//执行转换并写出输出流
+						try {
+							t2pu.convertPdf(file, response.getOutputStream());
 							return;
 						} catch (Exception e) {
 						}

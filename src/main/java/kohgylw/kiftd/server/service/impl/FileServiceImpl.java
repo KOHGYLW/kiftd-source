@@ -453,6 +453,9 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 						}
 						switch (optMap.get(id)) {
 						case "cover":
+							if(!ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER)) {
+								return NO_AUTHORIZED;
+							}
 							Node n = fm.queryByParentFolderId(locationpath).parallelStream()
 									.filter((e) -> e.getFileName().equals(node.getFileName())).findFirst().get();
 							if (fm.deleteById(n.getFileId()) > 0) {
@@ -520,6 +523,9 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 						}
 						switch (optMap.get(fid)) {
 						case "cover":
+							if(!ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER)) {
+								return NO_AUTHORIZED;
+							}
 							Folder f = flm.queryByParentId(locationpath).parallelStream()
 									.filter((e) -> e.getFolderName().equals(folder.getFolderName())).findFirst().get();
 							Map<String, String> map = new HashMap<>();

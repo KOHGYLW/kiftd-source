@@ -29,5 +29,11 @@ public class ResourceController {
 	public void getWordView(@PathVariable("fileId") String fileId,HttpServletRequest request,HttpServletResponse response) {
 		rs.getWordView(fileId,request, response);
 	}
+	
+	//以PDF格式获取TXT预览视图
+	@RequestMapping("/getTxtView/{fileId}")
+	public void getTxtView(@PathVariable("fileId") String fileId,HttpServletRequest request,HttpServletResponse response) {
+		rs.getTxtView(fileId, request, response);
+	}
 
 }
