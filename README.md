@@ -32,9 +32,6 @@ _提示：源代码路径下包含了一些程序运行所需的非源代码资�
 + 更换更高版本的Spring Boot后无法启动项目
 > 如果您需要将kiftd所用的Spring Boot版本替换至更高（尤其是Spring Boot 2.0.4及以上版本），请重写源代码`kohgylw.kiftd.server.configation.MVC`类中的`afterPropertiesSet()`方法，并将其方法体留空。否则可能导致项目启动错误（特别鸣谢：用户 songdragon）。
 
-+ 将kiftd内置数据库替换为MySQL后无法链接
-> 如遇该情况，可尝试修改源代码`kohgylw.kiftd.server.util.ConfigureReader`类中的`testServerPropertiesAndEffect`方法，并在数据库链接声明（dbURL）参数的最后追加时区设置参数。示例：`dbURL = "jdbc:mysql://" + url + "？useUnicode=true&characterEncoding=utf8&serverTimezone=GMT%2B8";`，有关时区设置的详情可参见MySQL官方文档（特别鸣谢：用户 白衣胜雪）。
-
 + 启动源代码项目时出现“Error creating bean with name org.mybatis.spring.mapper.MapperScannerConfigurer”
 > 如遇该问题，请尝试将pom.xml文件中引入的`mybatis`资源和`mybatis-spring`资源移除并重新添加`mybatis-spring-boot-starter`资源，从而避免默认整合方式可能导致的Spring Boot框架插件兼容性问题（特别鸣谢：用户 michael）。
 

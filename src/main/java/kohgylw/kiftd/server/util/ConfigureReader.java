@@ -142,22 +142,22 @@ public class ConfigureReader {
 			}
 			switch (auth) {
 			case CREATE_NEW_FOLDER: {
-				return auths.indexOf("c") != -1;
+				return auths.indexOf("c") >= 0;
 			}
 			case UPLOAD_FILES: {
-				return auths.indexOf("u") != -1;
+				return auths.indexOf("u") >= 0;
 			}
 			case DELETE_FILE_OR_FOLDER: {
-				return auths.indexOf("d") != -1;
+				return auths.indexOf("d") >= 0;
 			}
 			case RENAME_FILE_OR_FOLDER: {
-				return auths.indexOf("r") != -1;
+				return auths.indexOf("r") >= 0;
 			}
 			case DOWNLOAD_FILES: {
-				return auths.indexOf("l") != -1;
+				return auths.indexOf("l") >= 0;
 			}
 			case MOVE_FILES: {
-				return auths.indexOf("m") != -1;
+				return auths.indexOf("m") >= 0;
 			}
 			default: {
 				return false;
@@ -170,19 +170,22 @@ public class ConfigureReader {
 			}
 			switch (auth) {
 			case CREATE_NEW_FOLDER: {
-				return overall2.indexOf("c") != -1;
+				return overall2.indexOf("c") >=0 ;
 			}
 			case UPLOAD_FILES: {
-				return overall2.indexOf("u") != -1;
+				return overall2.indexOf("u") >= 0;
 			}
 			case DELETE_FILE_OR_FOLDER: {
-				return overall2.indexOf("d") != -1;
+				return overall2.indexOf("d") >= 0;
 			}
 			case RENAME_FILE_OR_FOLDER: {
-				return overall2.indexOf("r") != -1;
+				return overall2.indexOf("r") >= 0;
 			}
 			case DOWNLOAD_FILES: {
-				return overall2.indexOf("l") != -1;
+				return overall2.indexOf("l") >= 0;
+			}
+			case MOVE_FILES: {
+				return overall2.indexOf("m") >= 0;
 			}
 			default: {
 				return false;
