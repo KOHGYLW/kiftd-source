@@ -475,7 +475,7 @@ public class ConfigureReader {
 					serverp == null ? "127.0.0.1/kift" : serverp.getProperty("mysql.url", "127.0.0.1/kift"));
 			dsp.setProperty("mysql.user", dbUser == null ? "root" : dbUser);
 			dsp.setProperty("mysql.password", dbPwd == null ? "" : dbPwd);
-			dsp.setProperty("mysql.timezone", timeZone == null ? "" : timeZone);
+			dsp.setProperty("mysql.timezone", timeZone == null ? "GMT%2B8" : timeZone);
 		}
 		try {
 			dsp.store(new FileOutputStream(this.confdir + SERVER_PROPERTIES_FILE),
