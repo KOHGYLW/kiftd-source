@@ -4,7 +4,7 @@
 
 	<groupId>kohgylw</groupId>
 	<artifactId>kiftd</artifactId>
-	<version>1.0.16-RELEASE</version>
+	<version>1.0.17-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<name>kiftd</name>

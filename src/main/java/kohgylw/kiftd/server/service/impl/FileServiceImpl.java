@@ -84,7 +84,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		synchronized (keyList) {
 			keyList.add(key);
 		}
-		Cookie c = new Cookie(KIFTD_UPLOAD_KEY, key);//为客户端分发一把钥匙，该钥匙仅有效一次，但不限时长。
+		Cookie c = new Cookie(KIFTD_UPLOAD_KEY, key);// 为客户端分发一把钥匙，该钥匙仅有效一次，但不限时长。
 		response.addCookie(c);
 		if (pereFileNameList.size() > 0) {
 			return "duplicationFileName:" + gson.toJson(pereFileNameList);
@@ -107,18 +107,16 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		}
 		// 比对上传钥匙，如果有则允许上传，否则丢弃该资源。该钥匙用完后立即销毁。
 		boolean isUpload = false;
-		if (!ConfigureReader.instance().authorized(account, AccountAuth.UPLOAD_FILES)) {
-			for (Cookie c : request.getCookies()) {
-				if (KIFTD_UPLOAD_KEY.equals(c.getName())) {
-					synchronized (keyList) {
-						if (keyList.contains(c.getValue())) {//比对钥匙有效性
-							isUpload = true;
-							keyList.remove(c.getValue());//销毁这把钥匙
-							c.setMaxAge(0);
-							response.addCookie(c);
-						} else {
-							return UPLOADERROR;
-						}
+		for (Cookie c : request.getCookies()) {
+			if (KIFTD_UPLOAD_KEY.equals(c.getName())) {
+				synchronized (keyList) {
+					if (keyList.contains(c.getValue())) {// 比对钥匙有效性
+						isUpload = true;
+						keyList.remove(c.getValue());// 销毁这把钥匙
+						 c.setMaxAge(0);
+						 response.addCookie(c);
+					} else {
+						return UPLOADERROR;
 					}
 				}
 			}
