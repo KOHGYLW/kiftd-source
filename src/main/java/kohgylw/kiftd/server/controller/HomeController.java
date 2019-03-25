@@ -88,14 +88,15 @@ public class HomeController {
 
 	@RequestMapping(value = { "/douploadFile.ajax" }, produces = { CHARSET_BY_AJAX })
 	@ResponseBody
-	public String douploadFile(final HttpServletRequest request, final MultipartFile file) {
-		return this.fis.doUploadFile(request, file);
+	public String douploadFile(final HttpServletRequest request, final HttpServletResponse response,
+			final MultipartFile file) {
+		return this.fis.doUploadFile(request, response, file);
 	}
 
 	@RequestMapping(value = { "/checkUploadFile.ajax" }, produces = { CHARSET_BY_AJAX })
 	@ResponseBody
-	public String checkUploadFile(final HttpServletRequest request) {
-		return this.fis.checkUploadFile(request);
+	public String checkUploadFile(final HttpServletRequest request, final HttpServletResponse response) {
+		return this.fis.checkUploadFile(request, response);
 	}
 
 	@RequestMapping({ "/deleteFile.ajax" })
@@ -120,7 +121,7 @@ public class HomeController {
 	public String playVideo(final HttpServletRequest request, final HttpServletResponse response) {
 		return this.pvs.getPlayVideoJson(request);
 	}
-	
+
 	/**
 	 * 
 	 * <h2>预览图片请求</h2>
@@ -186,8 +187,8 @@ public class HomeController {
 	public String playAudios(final HttpServletRequest request) {
 		return this.pas.getAudioInfoListByJson(request);
 	}
-	
-	@RequestMapping(value={"/confirmMoveFiles.ajax"},produces = { CHARSET_BY_AJAX })
+
+	@RequestMapping(value = { "/confirmMoveFiles.ajax" }, produces = { CHARSET_BY_AJAX })
 	@ResponseBody
 	public String confirmMoveFiles(final HttpServletRequest request) {
 		return fis.confirmMoveFiles(request);

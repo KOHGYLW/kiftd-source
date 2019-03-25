@@ -32,10 +32,14 @@ import com.google.gson.reflect.TypeToken;
  */
 @Service
 public class FileServiceImpl extends RangeFileStreamWriter implements FileService {
+	private static final String KIFTD_UPLOAD_KEY = "KIFTDFILUPLOADKEY";
 	private static final String ERROR_PARAMETER = "errorParameter";// 参数错误标识
 	private static final String NO_AUTHORIZED = "noAuthorized";// 权限错误标识
 	private static final String UPLOADSUCCESS = "uploadsuccess";// 上传成功标识
 	private static final String UPLOADERROR = "uploaderror";// 上传失败标识
+
+	private static List<String> keyList = new ArrayList<>();// 上传钥匙表，用于记录用完一次就扔的钥匙
+
 	@Resource
 	private NodeMapper fm;
 	@Resource
@@ -52,7 +56,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 	private static final String CONTENT_TYPE = "application/octet-stream";
 
 	// 检查上传文件列表的实现
-	public String checkUploadFile(final HttpServletRequest request) {
+	public String checkUploadFile(final HttpServletRequest request, final HttpServletResponse response) {
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
 		final String folderId = request.getParameter("folderId");
 		final String nameList = request.getParameter("namelist");
@@ -76,6 +80,12 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 			}
 		}
 		// 如果存在同名文件，返回同名文件的JSON数据，否则直接允许上传
+		String key = UUID.randomUUID().toString();
+		synchronized (keyList) {
+			keyList.add(key);
+		}
+		Cookie c = new Cookie(KIFTD_UPLOAD_KEY, key);//为客户端分发一把钥匙，该钥匙仅有效一次，但不限时长。
+		response.addCookie(c);
 		if (pereFileNameList.size() > 0) {
 			return "duplicationFileName:" + gson.toJson(pereFileNameList);
 		}
@@ -83,7 +93,8 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 	}
 
 	// 执行上传操作，接收文件并存入文件节点
-	public String doUploadFile(final HttpServletRequest request, final MultipartFile file) {
+	public String doUploadFile(final HttpServletRequest request, final HttpServletResponse response,
+			final MultipartFile file) {
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
 		final String folderId = request.getParameter("folderId");
 		final String originalFileName = new String(file.getOriginalFilename().getBytes(Charset.forName("UTF-8")),
@@ -94,8 +105,25 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		if (folderId == null || folderId.length() <= 0 || originalFileName == null || originalFileName.length() <= 0) {
 			return UPLOADERROR;
 		}
-		// 再次检查权限
+		// 比对上传钥匙，如果有则允许上传，否则丢弃该资源。该钥匙用完后立即销毁。
+		boolean isUpload = false;
 		if (!ConfigureReader.instance().authorized(account, AccountAuth.UPLOAD_FILES)) {
+			for (Cookie c : request.getCookies()) {
+				if (KIFTD_UPLOAD_KEY.equals(c.getName())) {
+					synchronized (keyList) {
+						if (keyList.contains(c.getValue())) {//比对钥匙有效性
+							isUpload = true;
+							keyList.remove(c.getValue());//销毁这把钥匙
+							c.setMaxAge(0);
+							response.addCookie(c);
+						} else {
+							return UPLOADERROR;
+						}
+					}
+				}
+			}
+		}
+		if (!isUpload) {
 			return UPLOADERROR;
 		}
 		// 检查是否存在同名文件。不存在：直接存入新节点；存在：检查repeType代表的上传类型：覆盖、跳过、保留两者。
@@ -109,8 +137,8 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 					return UPLOADSUCCESS;
 				// 覆盖则找到已存在文件节点的File并将新内容写入其中，同时更新原节点信息（除了文件名、父目录和ID之外的全部信息）
 				case "cover":
-					//其中覆盖操作同时要求用户必须具备删除权限
-					if(!ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER)) {
+					// 其中覆盖操作同时要求用户必须具备删除权限
+					if (!ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER)) {
 						return UPLOADERROR;
 					}
 					for (Node f : files) {
@@ -453,7 +481,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 						}
 						switch (optMap.get(id)) {
 						case "cover":
-							if(!ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER)) {
+							if (!ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER)) {
 								return NO_AUTHORIZED;
 							}
 							Node n = fm.queryByParentFolderId(locationpath).parallelStream()
@@ -523,7 +551,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 						}
 						switch (optMap.get(fid)) {
 						case "cover":
-							if(!ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER)) {
+							if (!ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER)) {
 								return NO_AUTHORIZED;
 							}
 							Folder f = flm.queryByParentId(locationpath).parallelStream()
