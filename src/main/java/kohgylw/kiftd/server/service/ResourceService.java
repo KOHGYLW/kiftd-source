@@ -43,5 +43,15 @@ public interface ResourceService {
 	 * @param response javax.servlet.http.HttpServletResponse 响应对象
 	 */
 	public void getTxtView(String fileId,HttpServletRequest request,HttpServletResponse response);
+	
+	/**
+	 * 
+	 * <h2>获取视频解码状态</h2>
+	 * <p>获得指定视频的解码状态，并根据返回信息提示界面下一步操作。</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @param request javax.servlet.http.HttpServletRequest 请求对象
+	 * @return java.lang.String 转码状态，若为FIN则代表转码完毕可直接播放，否则为百分制的进度，例如“1.2”代表完成了1.2%。
+	 */
+	public String getVideoTranscodeStatus(HttpServletRequest request);
 
 }

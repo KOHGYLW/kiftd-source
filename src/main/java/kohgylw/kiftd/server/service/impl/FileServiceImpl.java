@@ -38,7 +38,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 	private static final String UPLOADSUCCESS = "uploadsuccess";// 上传成功标识
 	private static final String UPLOADERROR = "uploaderror";// 上传失败标识
 
-	private static List<String> keyList = new ArrayList<>();// 上传钥匙表，用于记录用完一次就扔的钥匙
+	private static Map<String,Integer> keyMap = new HashMap<>();// 上传钥匙表，用于记录用完一批就扔的钥匙
 
 	@Resource
 	private NodeMapper fm;
@@ -79,13 +79,14 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 				pereFileNameList.add(fileName);
 			}
 		}
-		// 如果存在同名文件，返回同名文件的JSON数据，否则直接允许上传
+		// 为客户端分发一把钥匙，该钥匙可使用本次声明要上传的次数，但不限时长。
 		String key = UUID.randomUUID().toString();
-		synchronized (keyList) {
-			keyList.add(key);
+		synchronized (keyMap) {
+			keyMap.put(key, namelistObj.size());
 		}
-		Cookie c = new Cookie(KIFTD_UPLOAD_KEY, key);// 为客户端分发一把钥匙，该钥匙仅有效一次，但不限时长。
+		Cookie c = new Cookie(KIFTD_UPLOAD_KEY, key);
 		response.addCookie(c);
+		// 如果存在同名文件，返回同名文件的JSON数据，否则直接允许上传
 		if (pereFileNameList.size() > 0) {
 			return "duplicationFileName:" + gson.toJson(pereFileNameList);
 		}
@@ -109,12 +110,16 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		boolean isUpload = false;
 		for (Cookie c : request.getCookies()) {
 			if (KIFTD_UPLOAD_KEY.equals(c.getName())) {
-				synchronized (keyList) {
-					if (keyList.contains(c.getValue())) {// 比对钥匙有效性
+				synchronized (keyMap) {
+					Integer i=keyMap.get(c.getValue());
+					if (i!=null) {// 比对钥匙有效性
 						isUpload = true;
-						keyList.remove(c.getValue());// 销毁这把钥匙
-						 c.setMaxAge(0);
-						 response.addCookie(c);
+						i--;
+						if(i<=0) {
+							keyMap.remove(c.getValue());// 销毁这把钥匙
+							c.setMaxAge(0);
+							response.addCookie(c);
+						}
 					} else {
 						return UPLOADERROR;
 					}

@@ -742,8 +742,12 @@ function showFolderTable(folderView) {
 									+ '"'
 									+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-cloud-download'></span> 下载</button>";
 							// 对于各种特殊格式文件提供的预览和播放功能
-							if (getSuffix(fi.fileName) == "mp4"
-									|| getSuffix(fi.fileName) == "webm" || getSuffix(fi.fileName) == "mov") {
+							if (getSuffix(fi.fileName) == "mp4" 
+									|| getSuffix(fi.fileName) == "webm" 
+									|| getSuffix(fi.fileName) == "mov" 
+									|| getSuffix(fi.fileName) == "avi" 
+									|| getSuffix(fi.fileName) == "wmv" 
+									|| getSuffix(fi.fileName) == "mkv") {
 								fileRow = fileRow
 										+ "<button onclick='playVideo("
 										+ '"'

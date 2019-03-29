@@ -7,6 +7,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import kohgylw.kiftd.server.service.ResourceService;
 
@@ -34,6 +35,12 @@ public class ResourceController {
 	@RequestMapping("/getTxtView/{fileId}")
 	public void getTxtView(@PathVariable("fileId") String fileId,HttpServletRequest request,HttpServletResponse response) {
 		rs.getTxtView(fileId, request, response);
+	}
+	
+	//获取视频转码状态，如指定视频未开始转码则开始，如已经开始则返回进度，如已经完成则返回FIN
+	@RequestMapping("/getVideoTranscodeStatus.ajax")
+	public @ResponseBody String getVideoTranscodeStatus(HttpServletRequest request) {
+		return rs.getVideoTranscodeStatus(request);
 	}
 
 }

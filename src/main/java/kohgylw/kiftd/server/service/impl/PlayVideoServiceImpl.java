@@ -9,8 +9,10 @@ import kohgylw.kiftd.server.mapper.*;
 import javax.annotation.*;
 import javax.servlet.http.*;
 import kohgylw.kiftd.server.model.*;
+import kohgylw.kiftd.server.pojo.VideoInfo;
 import kohgylw.kiftd.server.enumeration.*;
 import kohgylw.kiftd.server.util.*;
+import ws.schild.jave.MultimediaObject;
 
 @Service
 public class PlayVideoServiceImpl implements PlayVideoService {
@@ -18,18 +20,39 @@ public class PlayVideoServiceImpl implements PlayVideoService {
 	private NodeMapper fm;
 	@Resource
 	private Gson gson;
+	@Resource
+	private FileBlockUtil fbu;
 
-	private Node foundVideo(final HttpServletRequest request) {
+	private VideoInfo foundVideo(final HttpServletRequest request) {
 		final String fileId = request.getParameter("fileId");
 		if (fileId != null && fileId.length() > 0) {
 			final Node f = this.fm.queryById(fileId);
+			final VideoInfo vi = new VideoInfo(f);
 			if (f != null) {
 				final String account = (String) request.getSession().getAttribute("ACCOUNT");
 				if (ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES)) {
 					final String fileName = f.getFileName();
+					//检查视频格式
 					final String suffix = fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase();
-					if (suffix.equals("mp4") || suffix.equals("webm") || suffix.equals("mov")) {
-						return f;
+					if (suffix.equals("mp4")) {
+						//对于mp4后缀的视频，进一步检查其编码是否为h264，如果是，则设定无需转码直接播放
+						MultimediaObject mo=new MultimediaObject(fbu.getFileFromBlocks(f));
+						try {
+							if(mo.getInfo().getVideo().getDecoder().indexOf("h264")>=0) {
+								vi.setNeedEncode("N");
+								return vi;
+							}
+						} catch (Exception e) {
+							
+						}
+						//对于其他编码格式，则设定需要转码
+						vi.setNeedEncode("Y");
+						return vi;
+					} else if (suffix.equals("webm") || suffix.equals("mov") || suffix.equals("avi")
+							|| suffix.equals("wmv") || suffix.equals("mkv")) {
+						//对于非mp4后缀的视频，统一设定需要转码
+						vi.setNeedEncode("Y");
+						return vi;
 					}
 				}
 			}
@@ -37,22 +60,11 @@ public class PlayVideoServiceImpl implements PlayVideoService {
 		return null;
 	}
 
-	/**
-	 * <h2>解析播放视频文件</h2>
-	 * <p>
-	 * 根据视频文件的ID查询视频文件节点并返回节点JSON信息，以便发起播放请求。
-	 * </p>
-	 * 
-	 * @author kohgylw
-	 * @param request
-	 *            javax.servlet.http.HttpServletRequest 请求对象
-	 * @return String 视频节点的JSON字符串
-	 */
 	@Override
 	public String getPlayVideoJson(final HttpServletRequest request) {
-		final Node f = this.foundVideo(request);
-		if (f != null) {
-			return gson.toJson((Object) f);
+		final VideoInfo v = this.foundVideo(request);
+		if (v != null) {
+			return gson.toJson((Object) v);
 		}
 		return "ERROR";
 	}

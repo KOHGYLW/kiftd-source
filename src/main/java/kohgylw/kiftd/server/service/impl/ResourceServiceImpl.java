@@ -22,6 +22,7 @@ import kohgylw.kiftd.server.util.Docx2PDFUtil;
 import kohgylw.kiftd.server.util.FileBlockUtil;
 import kohgylw.kiftd.server.util.LogUtil;
 import kohgylw.kiftd.server.util.Txt2PDFUtil;
+import kohgylw.kiftd.server.util.VideoTranscodeUtil;
 
 //资源服务类，所有处理非下载流请求的工作均在此完成
 @Service
@@ -37,6 +38,8 @@ public class ResourceServiceImpl implements ResourceService {
 	private Docx2PDFUtil d2pu;
 	@Resource
 	private Txt2PDFUtil t2pu;
+	@Resource
+	private VideoTranscodeUtil vtu;
 
 	// 提供资源的输出流，原理与下载相同，但是个别细节有区别
 	@Override
@@ -218,6 +221,23 @@ public class ResourceServiceImpl implements ResourceService {
 			response.sendError(500);
 		} catch (Exception e1) {
 		}
+	}
+
+	@Override
+	public String getVideoTranscodeStatus(HttpServletRequest request) {
+		final String account = (String) request.getSession().getAttribute("ACCOUNT");
+		if (ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES)) {
+			String fId=request.getParameter("fileId");
+			if(fId!=null) {
+				try {
+					return vtu.getTranscodeProcess(fId);
+				} catch (Exception e) {
+					e.printStackTrace();
+					lu.writeException(e);
+				}
+			}
+		}
+		return "ERROR";
 	}
 
 }
