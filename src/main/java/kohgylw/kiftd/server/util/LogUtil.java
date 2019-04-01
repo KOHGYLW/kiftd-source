@@ -25,7 +25,7 @@ public class LogUtil {
 
 	public LogUtil() {
 		sep = File.separator;
-		logs = ConfigureReader.instance().getPath()+sep+"logs";
+		logs = ConfigureReader.instance().getPath() + sep + "logs";
 		File l = new File(logs);
 		if (!l.exists()) {
 			l.mkdir();
@@ -72,7 +72,7 @@ public class LogUtil {
 					pl = pl + i.getFolderName() + "/";
 				}
 				String content = ">ACCOUNT [" + a + "]\r\n>OPERATE [Create new folder]\r\n>PATH [" + pl + "]\r\n>NAME ["
-						+ f.getFolderName() + "]，CONSTRAINT ["+f.getFolderConstraint()+"]";
+						+ f.getFolderName() + "]，CONSTRAINT [" + f.getFolderConstraint() + "]";
 				writeToLog("Event", content);
 			});
 			t.start();
@@ -85,7 +85,7 @@ public class LogUtil {
 	 * 写入重命名文件夹信息
 	 * </p>
 	 */
-	public void writeRenameFolderEvent(HttpServletRequest request, Folder f, String newName,String newConstraint) {
+	public void writeRenameFolderEvent(HttpServletRequest request, Folder f, String newName, String newConstraint) {
 		if (ConfigureReader.instance().inspectLogLevel(LogLevel.Event)) {
 			String account = (String) request.getSession().getAttribute("ACCOUNT");
 			if (account == null || account.length() == 0) {
@@ -99,7 +99,8 @@ public class LogUtil {
 					pl = pl + i.getFolderName() + "/";
 				}
 				String content = ">ACCOUNT [" + a + "]\r\n>OPERATE [Edit folder]\r\n>PATH [" + pl + "]\r\n>NAME ["
-						+ f.getFolderName() + "]->[" + newName + "]，CONSTRAINT ["+f.getFolderConstraint()+"]->["+newConstraint+"]";
+						+ f.getFolderName() + "]->[" + newName + "]，CONSTRAINT [" + f.getFolderConstraint() + "]->["
+						+ newConstraint + "]";
 				writeToLog("Event", content);
 			});
 			t.start();
@@ -166,9 +167,8 @@ public class LogUtil {
 	 * 写入上传文件信息
 	 * </p>
 	 */
-	public void writeUploadFileEvent(HttpServletRequest request, Node f) {
+	public void writeUploadFileEvent(Node f, String account) {
 		if (ConfigureReader.instance().inspectLogLevel(LogLevel.Event)) {
-			String account = (String) request.getSession().getAttribute("ACCOUNT");
 			if (account == null || account.length() == 0) {
 				account = "Anonymous";
 			}
@@ -243,15 +243,21 @@ public class LogUtil {
 			t.start();
 		}
 	}
-	
+
 	/**
 	 * 
 	 * <h2>日志记录：移动文件</h2>
-	 * <p>记录移动文件操作，谁、在什么时候、将哪个文件移动到哪。</p>
+	 * <p>
+	 * 记录移动文件操作，谁、在什么时候、将哪个文件移动到哪。
+	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param request HttpServletRequest 请求对象
-	 * @param f Node 被移动的文件节点
-	 * @param locationpath String 被移动到的位置
+	 * @param request
+	 *            HttpServletRequest 请求对象
+	 * @param f
+	 *            Node 被移动的文件节点
+	 * @param locationpath
+	 *            String 被移动到的位置
 	 */
 	public void writeMoveFileEvent(HttpServletRequest request, Node f) {
 		if (ConfigureReader.instance().inspectLogLevel(LogLevel.Event)) {
@@ -274,7 +280,7 @@ public class LogUtil {
 			t.start();
 		}
 	}
-	
+
 	public void writeMoveFileEvent(HttpServletRequest request, Folder f) {
 		if (ConfigureReader.instance().inspectLogLevel(LogLevel.Event)) {
 			String account = (String) request.getSession().getAttribute("ACCOUNT");

@@ -21,6 +21,8 @@ var viewerPageIndex; // 分页预览图片——已浏览图片页号
 var viewerTotal; // 分页预览图片——总页码数
 var pvl;// 预览图片列表的JSON格式对象
 var checkFilesTip="提示：您还未选择任何文件，请先选中一些文件后再执行本操作：<br /><br /><kbd>单击</kbd>：选中某一文件<br /><br /><kbd><kbd>Shift</kbd>+<kbd>单击</kbd></kbd>：选中多个文件<br /><br /><kbd><kbd>Shift</kbd>+<kbd>双击</kbd></kbd>：选中连续的文件<br /><br /><kbd><kbd>Shitf</kbd>+<kbd>A</kbd></kbd>：选中/取消选中所有文件";// 选取文件提示
+var winHeight;// 窗口高度
+var uploadKey;// 上传所用的一次性密钥
 
 // 界面功能方法定义
 // 页面初始化
@@ -285,6 +287,20 @@ $(function() {
 	// 关闭下载提示模态框自动隐藏下载链接
 	$('#downloadModal').on('hidden.bs.modal', function(e) {
 		$('#downloadURLCollapse').collapse('hide');
+	});
+	// 获取窗口高度
+	if (window.innerHeight){
+		winHeight = window.innerHeight;
+	}else if ((document.body) && (document.body.clientHeight)){
+		winHeight = document.body.clientHeight;
+	}
+	// 根据屏幕下拉程度自动显示、隐藏“返回顶部”按钮
+	$(window).scroll(function(){
+		if($(this).scrollTop() > 2*winHeight){
+			$('#gobacktotopbox').removeClass("hidden");
+		}else{
+			$('#gobacktotopbox').addClass("hidden");
+		}
 	});
 });
 
@@ -1115,14 +1131,18 @@ function checkUploadFile() {
 							showUploadFileAlert("提示：参数不正确，无法开始上传");
 						} else if (result == "noAuthorized") {
 							showUploadFileAlert("提示：您的操作未被授权，无法开始上传");
-						} else if (result.startsWith("duplicationFileName:")) {
-							repeList=eval("("+result.substring(20)+")");
-							repeIndex=0;
-							selectFileUpLoadModelStart();
-						} else if (result == "permitUpload") {
-							doupload(1);
 						} else {
-							showUploadFileAlert("提示：出现意外错误，无法开始上传");
+							var resp=eval("("+result+")");
+							uploadKey=resp.uploadKey;
+							if(resp.checkResult == "hasExistsNames"){
+								repeList=resp.pereFileNameList;
+								repeIndex=0;
+								selectFileUpLoadModelStart();
+							}else if(resp.checkResult == "permitUpload"){
+								doupload(1);
+							}else {
+								showUploadFileAlert("提示：出现意外错误，无法开始上传");
+							}
 						}
 					}
 				},
@@ -1193,6 +1213,7 @@ function doupload(count) {
 
 		fd.append("file", uploadfile);// 将文件对象添加到FormData对象中，字段名为uploadfile
 		fd.append("folderId", locationpath);
+		fd.append("uploadKey", uploadKey);
 		if(repeModelList != null && repeModelList[fname] != null){
 			if(repeModelList[fname] == 'skip'){
 				$("#uls_" + count).text("[已完成]");
@@ -2182,4 +2203,8 @@ function doSearchFile(){
 		alert("错误：搜索关键字有误。请在特殊符号（例如“*”）前加上“\\”进行转义。");
 	}
 	endLoading();
+}
+
+function goBackToTop(){
+	$('html,body').animate({scrollTop: 0},'slow');
 }

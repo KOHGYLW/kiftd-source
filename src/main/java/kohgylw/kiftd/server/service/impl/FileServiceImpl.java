@@ -7,6 +7,9 @@ import kohgylw.kiftd.server.mapper.*;
 import javax.annotation.*;
 import kohgylw.kiftd.server.enumeration.*;
 import kohgylw.kiftd.server.model.*;
+import kohgylw.kiftd.server.pojo.CheckUploadFilesRespons;
+import kohgylw.kiftd.server.pojo.UploadKeyCertificate;
+
 import org.springframework.web.multipart.*;
 
 import javax.servlet.http.*;
@@ -32,13 +35,12 @@ import com.google.gson.reflect.TypeToken;
  */
 @Service
 public class FileServiceImpl extends RangeFileStreamWriter implements FileService {
-	private static final String KIFTD_UPLOAD_KEY = "KIFTDFILUPLOADKEY";
 	private static final String ERROR_PARAMETER = "errorParameter";// 参数错误标识
 	private static final String NO_AUTHORIZED = "noAuthorized";// 权限错误标识
 	private static final String UPLOADSUCCESS = "uploadsuccess";// 上传成功标识
 	private static final String UPLOADERROR = "uploaderror";// 上传失败标识
 
-	private static Map<String,Integer> keyMap = new HashMap<>();// 上传钥匙表，用于记录用完一批就扔的钥匙
+	private static Map<String, UploadKeyCertificate> keyEffecMap = new HashMap<>();// 上传次数凭证表，用于记录用次数有限但时间不限的上传凭证
 
 	@Resource
 	private NodeMapper fm;
@@ -79,24 +81,29 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 				pereFileNameList.add(fileName);
 			}
 		}
-		// 为客户端分发一把钥匙，该钥匙可使用本次声明要上传的次数，但不限时长。
+		// 为客户端分发一个凭证，该凭证可使用本次声明要上传的次数，但不限时长。
 		String key = UUID.randomUUID().toString();
-		synchronized (keyMap) {
-			keyMap.put(key, namelistObj.size());
+		synchronized (keyEffecMap) {
+			keyEffecMap.put(key, new UploadKeyCertificate(namelistObj.size(), account));
 		}
-		Cookie c = new Cookie(KIFTD_UPLOAD_KEY, key);
-		response.addCookie(c);
-		// 如果存在同名文件，返回同名文件的JSON数据，否则直接允许上传
+		// 装订检查结果
+		CheckUploadFilesRespons cufr = new CheckUploadFilesRespons();
+		cufr.setUploadKey(key);// 分配一个凭证
+		// 如果存在同名文件，则写入同名文件的列表；否则，直接允许上传
 		if (pereFileNameList.size() > 0) {
-			return "duplicationFileName:" + gson.toJson(pereFileNameList);
+			cufr.setCheckResult("hasExistsNames");
+			cufr.setPereFileNameList(pereFileNameList);
+		} else {
+			cufr.setCheckResult("permitUpload");
+			cufr.setPereFileNameList(new ArrayList<String>());
 		}
-		return "permitUpload";
+		return gson.toJson(cufr);//以JSON格式写回该结果
 	}
 
 	// 执行上传操作，接收文件并存入文件节点
 	public String doUploadFile(final HttpServletRequest request, final HttpServletResponse response,
 			final MultipartFile file) {
-		final String account = (String) request.getSession().getAttribute("ACCOUNT");
+		String account = (String) request.getSession().getAttribute("ACCOUNT");
 		final String folderId = request.getParameter("folderId");
 		final String originalFileName = new String(file.getOriginalFilename().getBytes(Charset.forName("UTF-8")),
 				Charset.forName("UTF-8"));
@@ -106,27 +113,22 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		if (folderId == null || folderId.length() <= 0 || originalFileName == null || originalFileName.length() <= 0) {
 			return UPLOADERROR;
 		}
-		// 比对上传钥匙，如果有则允许上传，否则丢弃该资源。该钥匙用完后立即销毁。
-		boolean isUpload = false;
-		for (Cookie c : request.getCookies()) {
-			if (KIFTD_UPLOAD_KEY.equals(c.getName())) {
-				synchronized (keyMap) {
-					Integer i=keyMap.get(c.getValue());
-					if (i!=null) {// 比对钥匙有效性
-						isUpload = true;
-						i--;
-						if(i<=0) {
-							keyMap.remove(c.getValue());// 销毁这把钥匙
-							c.setMaxAge(0);
-							response.addCookie(c);
-						}
-					} else {
-						return UPLOADERROR;
+		// 检查上传凭证，如果有则允许上传，否则丢弃该资源。该凭证用完后立即销毁。
+		String uploadKey = request.getParameter("uploadKey");
+		if (uploadKey != null) {
+			synchronized (keyEffecMap) {
+				UploadKeyCertificate c = keyEffecMap.get(uploadKey);
+				if (c != null && c.isEffective()) {// 比对凭证有效性
+					c.checked();// 使用一次
+					account = c.getAccount();
+					if (!c.isEffective()) {
+						keyEffecMap.remove(uploadKey);// 用完后销毁这个凭证
 					}
+				} else {
+					return UPLOADERROR;
 				}
 			}
-		}
-		if (!isUpload) {
+		} else {
 			return UPLOADERROR;
 		}
 		// 检查是否存在同名文件。不存在：直接存入新节点；存在：检查repeType代表的上传类型：覆盖、跳过、保留两者。
@@ -157,7 +159,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 									f.setFileCreator("\u533f\u540d\u7528\u6237");
 								}
 								if (fm.update(f) > 0) {
-									this.lu.writeUploadFileEvent(request, f);
+									this.lu.writeUploadFileEvent(f, account);
 									return UPLOADSUCCESS;
 								} else {
 									return UPLOADERROR;
@@ -202,7 +204,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		f2.setFilePath(path);
 		f2.setFileSize(fsize);
 		if (this.fm.insert(f2) > 0) {
-			this.lu.writeUploadFileEvent(request, f2);
+			this.lu.writeUploadFileEvent(f2, account);
 			return UPLOADSUCCESS;
 		}
 		return UPLOADERROR;
