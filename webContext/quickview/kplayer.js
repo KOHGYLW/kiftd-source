@@ -1,5 +1,5 @@
 /**
- * 播放器
+ * Kplayer播放器内置功能
  */
 $(function() {
 	var fileId = getFileId();
@@ -23,7 +23,7 @@ $(function() {
 						} else {
 							$("#playerMassage")
 									.html(
-											"<h2>播放器正在努力解码中...</h2><h3>已完成：<span id='transcodeProgress'>0</span>%</h3><p class='text-muted'>提示：解码完成后即可播放，请耐心等待！</p>");
+											"<h2>播放器正在努力解码中...</h2><h3>已完成：<span id='transcodeProgress'>0</span>%</h3><p class='text-muted'>提示：该视频需解码后播放，请耐心等待！</p>");
 							doTranscode();
 						}
 					} else {
