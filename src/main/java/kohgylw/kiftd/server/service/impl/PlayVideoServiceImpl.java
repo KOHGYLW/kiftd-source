@@ -32,27 +32,33 @@ public class PlayVideoServiceImpl implements PlayVideoService {
 				final String account = (String) request.getSession().getAttribute("ACCOUNT");
 				if (ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES)) {
 					final String fileName = f.getFileName();
-					//检查视频格式
+					// 检查视频格式
 					final String suffix = fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase();
-					if (suffix.equals("mp4")) {
-						//对于mp4后缀的视频，进一步检查其编码是否为h264，如果是，则设定无需转码直接播放
-						MultimediaObject mo=new MultimediaObject(fbu.getFileFromBlocks(f));
+					switch (suffix) {
+					case "mp4":
+						// 对于mp4后缀的视频，进一步检查其编码是否为h264，如果是，则设定无需转码直接播放
+						MultimediaObject mo = new MultimediaObject(fbu.getFileFromBlocks(f));
 						try {
-							if(mo.getInfo().getVideo().getDecoder().indexOf("h264")>=0) {
+							if (mo.getInfo().getVideo().getDecoder().indexOf("h264") >= 0) {
 								vi.setNeedEncode("N");
 								return vi;
 							}
 						} catch (Exception e) {
-							
+
 						}
-						//对于其他编码格式，则设定需要转码
+						// 对于其他编码格式，则设定需要转码
 						vi.setNeedEncode("Y");
 						return vi;
-					} else if (suffix.equals("webm") || suffix.equals("mov") || suffix.equals("avi")
-							|| suffix.equals("wmv") || suffix.equals("mkv")) {
-						//对于非mp4后缀的视频，统一设定需要转码
+					case "webm":
+					case "mov":
+					case "avi":
+					case "wmv":
+					case "mkv":
+					case "flv":
 						vi.setNeedEncode("Y");
 						return vi;
+					default:
+						break;
 					}
 				}
 			}
