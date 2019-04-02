@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import kohgylw.kiftd.server.enumeration.AccountAuth;
 import kohgylw.kiftd.server.mapper.NodeMapper;
 import kohgylw.kiftd.server.model.Node;
+import kohgylw.kiftd.server.pojo.VideoTranscodeThread;
 import kohgylw.kiftd.server.service.ResourceService;
 import kohgylw.kiftd.server.util.ConfigureReader;
 import kohgylw.kiftd.server.util.Docx2PDFUtil;
@@ -55,12 +56,29 @@ public class ResourceServiceImpl implements ResourceService {
 					String suffix = n.getFileName().substring(n.getFileName().lastIndexOf(".")).trim().toLowerCase();
 					String contentType = "application/octet-stream";
 					switch (suffix) {
-					case ".mov":
 					case ".mp4":
-						contentType = "video/mp4";
-						break;
 					case ".webm":
-						contentType = "video/webm";
+					case ".mov":
+					case ".avi":
+					case ".wmv":
+					case ".mkv":
+					case ".flv":
+						contentType = "video/mp4";
+						synchronized (VideoTranscodeUtil.videoTranscodeThreads) {
+							VideoTranscodeThread vtt=VideoTranscodeUtil.videoTranscodeThreads.get(fid);
+							if(vtt != null) {//针对需要转码的视频（在转码列表中存在）
+								File f=new File(ConfigureReader.instance().getTemporaryfilePath(),vtt.getOutputFileName());
+								if(f.isFile() && vtt.getProgress().equals("FIN")) {//判断是否转码成功
+									file=f;//成功，则播放它
+								}else {
+									try {
+										response.sendError(500);//否则，返回处理失败
+									} catch (IOException e) {
+									}
+									return;
+								}
+							}
+						}
 						break;
 					case ".mp3":
 						contentType = "audio/mpeg";
@@ -176,7 +194,7 @@ public class ResourceServiceImpl implements ResourceService {
 					if (".docx".equals(suffix)) {
 						String contentType = "application/octet-stream";
 						response.setContentType(contentType);
-						//执行转换并写出输出流
+						// 执行转换并写出输出流
 						try {
 							d2pu.convertPdf(new FileInputStream(file), response.getOutputStream());
 							return;
@@ -191,8 +209,8 @@ public class ResourceServiceImpl implements ResourceService {
 		} catch (Exception e1) {
 		}
 	}
-	
-	//对TXT预览的实现
+
+	// 对TXT预览的实现
 	@Override
 	public void getTxtView(String fileId, HttpServletRequest request, HttpServletResponse response) {
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
@@ -207,7 +225,7 @@ public class ResourceServiceImpl implements ResourceService {
 					if (".txt".equals(suffix)) {
 						String contentType = "application/octet-stream";
 						response.setContentType(contentType);
-						//执行转换并写出输出流
+						// 执行转换并写出输出流
 						try {
 							t2pu.convertPdf(file, response.getOutputStream());
 							return;
@@ -227,8 +245,8 @@ public class ResourceServiceImpl implements ResourceService {
 	public String getVideoTranscodeStatus(HttpServletRequest request) {
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
 		if (ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES)) {
-			String fId=request.getParameter("fileId");
-			if(fId!=null) {
+			String fId = request.getParameter("fileId");
+			if (fId != null) {
 				try {
 					return vtu.getTranscodeProcess(fId);
 				} catch (Exception e) {

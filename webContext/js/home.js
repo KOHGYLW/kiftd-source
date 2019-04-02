@@ -758,59 +758,70 @@ function showFolderTable(folderView) {
 									+ '"'
 									+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-cloud-download'></span> 下载</button>";
 							// 对于各种特殊格式文件提供的预览和播放功能
-							if (getSuffix(fi.fileName) == "mp4" 
-									|| getSuffix(fi.fileName) == "webm" 
-									|| getSuffix(fi.fileName) == "mov" 
-									|| getSuffix(fi.fileName) == "avi" 
-									|| getSuffix(fi.fileName) == "wmv" 
-									|| getSuffix(fi.fileName) == "mkv") {
+							var suffix=getSuffix(fi.fileName);
+							switch (suffix) {
+							case "mp4":
+							case "webm":
+							case "mov":
+							case "avi":
+							case "wmv":
+							case "mkv":
+							case "flv":
 								fileRow = fileRow
-										+ "<button onclick='playVideo("
-										+ '"'
-										+ fi.fileId
-										+ '"'
-										+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-play'></span> 播放</button>";
-							} else if (getSuffix(fi.fileName) == "pdf") {
+								+ "<button onclick='playVideo("
+								+ '"'
+								+ fi.fileId
+								+ '"'
+								+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-play'></span> 播放</button>";
+								break;
+							case "pdf":
 								fileRow = fileRow
-										+ "<button onclick='pdfView("
-										+ '"'
-										+ fi.filePath
-										+ '"'
-										+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-eye-open'></span> 预览</button>";
-							} else if (getSuffix(fi.fileName) == "jpg"
-									|| getSuffix(fi.fileName) == "jpeg"
-									|| getSuffix(fi.fileName) == "gif"
-									|| getSuffix(fi.fileName) == "png"
-									|| getSuffix(fi.fileName) == "bmp") {
+								+ "<button onclick='pdfView("
+								+ '"'
+								+ fi.filePath
+								+ '"'
+								+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-eye-open'></span> 预览</button>";
+								break;
+							case "jpg":
+							case "jpeg":
+							case "gif":
+							case "png":
+							case "bmp":
 								fileRow = fileRow
-										+ "<button onclick='showPicture("
-										+ '"'
-										+ fi.fileId
-										+ '"'
-										+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-picture'></span> 查看</button>";
-							} else if (getSuffix(fi.fileName) == "mp3"
-									|| getSuffix(fi.fileName) == "wav"
-									|| getSuffix(fi.fileName) == "ogg") {
+								+ "<button onclick='showPicture("
+								+ '"'
+								+ fi.fileId
+								+ '"'
+								+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-picture'></span> 查看</button>";
+								break;
+							case "mp3":
+							case "wav":
+							case "ogg":
 								fileRow = fileRow
-										+ "<button onclick='playAudio("
-										+ '"'
-										+ fi.fileId
-										+ '"'
-										+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-play'></span> 播放</button>";
-							} else if(getSuffix(fi.fileName) == "docx"){
+								+ "<button onclick='playAudio("
+								+ '"'
+								+ fi.fileId
+								+ '"'
+								+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-play'></span> 播放</button>";
+								break;
+							case "docx":
 								fileRow = fileRow
-										+ "<button onclick='docxView("
-										+ '"'
-										+ fi.fileId
-										+ '"'
-										+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-eye-open'></span> 预览</button>";
-							} else if(getSuffix(fi.fileName) == "txt"){
+								+ "<button onclick='docxView("
+								+ '"'
+								+ fi.fileId
+								+ '"'
+								+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-eye-open'></span> 预览</button>";
+								break;
+							case "txt":
 								fileRow = fileRow
 								+ "<button onclick='txtView("
 								+ '"'
 								+ fi.fileId
 								+ '"'
 								+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-eye-open'></span> 预览</button>";
+								break;
+							default:
+								break;
 							}
 						}
 						if (aD) {

@@ -36,7 +36,7 @@ public class VideoTranscodeUtil {
 	@Resource
 	private NodeMapper nm;
 
-	private Map<String, VideoTranscodeThread> videoTranscodeThreads = new HashMap<>();
+	public static Map<String, VideoTranscodeThread> videoTranscodeThreads = new HashMap<>();
 
 	{
 		AudioAttributes audio = new AudioAttributes();
@@ -74,8 +74,10 @@ public class VideoTranscodeUtil {
 			if (vtt != null) {
 				if ("FIN".equals(vtt.getProgress())) {
 					String md5 = DigestUtils.md5Hex(new FileInputStream(f));
-					if (md5.equals(vtt.getMd5())) {
+					if (md5.equals(vtt.getMd5()) && new File(ConfigureReader.instance().getTemporaryfilePath(), vtt.getOutputFileName()).isFile()) {
 						return vtt.getProgress();
+					}else{
+						videoTranscodeThreads.remove(fId);
 					}
 				} else {
 					return vtt.getProgress();
@@ -89,6 +91,7 @@ public class VideoTranscodeUtil {
 			case "avi":
 			case "wmv":
 			case "mkv":
+			case "flv":
 				break;
 			default:
 				throw new IllegalArgumentException();
