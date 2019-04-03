@@ -2,6 +2,9 @@
  * Kplayer播放器内置功能
  */
 $(function() {
+	window.onresize = function(){
+		showCloseBtn();
+    }
 	var fileId = getFileId();
 	$
 			.ajax({
@@ -92,4 +95,13 @@ function doTranscode() {
 			reMainPage();
 		}
 	});
+}
+
+function showCloseBtn(){
+	var win = $(window).width();
+    if(win < 450){
+    		$("#closeBtn").addClass("hidden");
+    }else{
+    		$("#closeBtn").removeClass("hidden");
+    }
 }
