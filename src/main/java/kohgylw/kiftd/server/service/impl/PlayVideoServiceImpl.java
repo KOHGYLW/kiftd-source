@@ -36,6 +36,7 @@ public class PlayVideoServiceImpl implements PlayVideoService {
 					final String suffix = fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase();
 					switch (suffix) {
 					case "mp4":
+					case "mov":
 						// 对于mp4后缀的视频，进一步检查其编码是否为h264，如果是，则设定无需转码直接播放
 						MultimediaObject mo = new MultimediaObject(fbu.getFileFromBlocks(f));
 						try {
@@ -50,7 +51,6 @@ public class PlayVideoServiceImpl implements PlayVideoService {
 						vi.setNeedEncode("Y");
 						return vi;
 					case "webm":
-					case "mov":
 					case "avi":
 					case "wmv":
 					case "mkv":

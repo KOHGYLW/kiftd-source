@@ -91,8 +91,12 @@ body {
 	width: 150px;
 	height: 35px;
 	background-color: #FCFCFC;
-	color: #104E8B;
-	alpha (Opacity=70);
+	color: #104E8B; alpha (Opacity=70);
 	-moz-opacity: 0.7;
 	opacity: 0.7;
+}
+
+td {
+	word-break: break-all;
+	word-wrap: break-all;
 }

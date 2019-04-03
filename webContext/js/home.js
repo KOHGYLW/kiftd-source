@@ -302,6 +302,11 @@ $(function() {
 			$('#gobacktotopbox').addClass("hidden");
 		}
 	});
+	
+	// 打开查看下载链接时，向后台生成/获取下载链接
+	$('#downloadURLCollapse').on('shown.bs.collapse', function () {
+		getDownloadURL();
+	});
 });
 
 // 根据屏幕大小增删表格显示内容
@@ -1324,14 +1329,15 @@ function showUploadFileAlert(txt) {
 
 // 显示下载文件模态框
 function showDownloadModel(fileId, fileName) {
-	$("#downloadModal").modal('toggle');
 	$("#downloadFileName").text("提示：您确认要下载文件：[" + fileName + "]么？");
-	$("#downloadHrefBox").html("<a href='"+window.location.protocol+"//"+window.location.host+"/homeController/downloadFile.do?fileId="+fileId+"'>"+window.location.protocol+"//"+window.location.host+"/homeController/downloadFile.do?fileId="+fileId+"</a>");
+	$("#downloadHrefBox").html("<span class='text-muted'>正在生成...</span>");
+	getDownloadFileId=fileId;
 	$("#downloadFileBox")
 			.html(
 					"<button id='dlmbutton' type='button' class='btn btn-primary' onclick='dodownload("
 							+ '"' + fileId + '"' + ")'>开始下载</button>");
 	$("#dlmbutton").attr('disabled', false);
+	$("#downloadModal").modal('show');
 }
 
 // 执行下载操作
@@ -2216,6 +2222,27 @@ function doSearchFile(){
 	endLoading();
 }
 
+// 返回顶部实现
 function goBackToTop(){
 	$('html,body').animate({scrollTop: 0},'slow');
+}
+
+var getDownloadFileId;
+
+// 获取某一文件的下载链接
+function getDownloadURL(){
+	$.ajax({
+		url:'externalLinksController/getDownloadKey.ajax',
+		type:'POST',
+		dataType:'text',
+		data:{
+			fId:getDownloadFileId
+		},
+		success:function(result){
+			$("#downloadHrefBox").html("<a href='"+window.location.protocol+"//"+window.location.host+"/externalLinksController/downloadFileByKey.do?dkey="+result+"'>"+window.location.protocol+"//"+window.location.host+"/externalLinksController/downloadFileByKey.do?dkey="+result+"</a>");
+		},
+		error:function(){
+			$("#downloadHrefBox").html("<span class='text-muted'>获取失败，请检查网络状态或<a href='javascript:void(0);' onclick='getDownloadURL()'>点此</a>重新获取。</span>");
+		}
+	});
 }

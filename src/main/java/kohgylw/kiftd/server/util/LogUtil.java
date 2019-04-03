@@ -215,6 +215,59 @@ public class LogUtil {
 			t.start();
 		}
 	}
+	
+	/**
+	 * 
+	 * <h2>简述</h2>
+	 * <p>详细描述</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @param xxx 参数描述
+	 * @return xxx
+	 */
+	public void writeDownloadFileByKeyEvent(Node f) {
+		if (ConfigureReader.instance().inspectLogLevel(LogLevel.Event)) {
+			Thread t = new Thread(() -> {
+				Folder folder = fm.queryById(f.getFileParentFolder());
+				List<Folder> l = fu.getParentList(folder.getFolderId());
+				String pl = new String();
+				for (Folder i : l) {
+					pl = pl + i.getFolderName() + "/";
+				}
+				String content = ">OPERATE [Download file By Shared URL]\r\n>PATH [" + pl
+						+ folder.getFolderName() + "]\r\n>NAME [" + f.getFileName() + "]";
+				writeToLog("Event", content);
+			});
+			t.start();
+		}
+	}
+	
+	/**
+	 * 
+	 * <h2>记录分享下载链接事件</h2>
+	 * <p>当用户试图获取一个资源的下载链接时，记录此事件。</p>
+	 * @author 青阳龙野(kohgylw)
+	 */
+	public void writeShareFileURLEvent(HttpServletRequest request, Node f) {
+		if (ConfigureReader.instance().inspectLogLevel(LogLevel.Event)) {
+			String account = (String) request.getSession().getAttribute("ACCOUNT");
+			if (account == null || account.length() == 0) {
+				account = "Anonymous";
+			}
+			String a = account;
+			Thread t = new Thread(() -> {
+				Folder folder = fm.queryById(f.getFileParentFolder());
+				List<Folder> l = fu.getParentList(folder.getFolderId());
+				String pl = new String();
+				for (Folder i : l) {
+					pl = pl + i.getFolderName() + "/";
+				}
+				String content = ">ACCOUNT [" + a + "]\r\n>OPERATE [Share Download file URL]\r\n>PATH [" + pl
+						+ folder.getFolderName() + "]\r\n>NAME [" + f.getFileName() + "]";
+				writeToLog("Event", content);
+			});
+			t.start();
+		}
+	}
 
 	/**
 	 * 以格式化记录重命名文件日志
