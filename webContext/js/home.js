@@ -1332,6 +1332,7 @@ function showDownloadModel(fileId, fileName) {
 	$("#downloadFileName").text("提示：您确认要下载文件：[" + fileName + "]么？");
 	$("#downloadHrefBox").html("<span class='text-muted'>正在生成...</span>");
 	getDownloadFileId=fileId;
+	getDownloadFileName=fileName;
 	$("#downloadFileBox")
 			.html(
 					"<button id='dlmbutton' type='button' class='btn btn-primary' onclick='dodownload("
@@ -2227,7 +2228,8 @@ function goBackToTop(){
 	$('html,body').animate({scrollTop: 0},'slow');
 }
 
-var getDownloadFileId;
+var getDownloadFileId;//下载链接的文件ID
+var getDownloadFileName;//下载链接的文件名（便于下载工具识别）
 
 // 获取某一文件的下载链接
 function getDownloadURL(){
@@ -2239,7 +2241,7 @@ function getDownloadURL(){
 			fId:getDownloadFileId
 		},
 		success:function(result){
-			$("#downloadHrefBox").html("<a href='"+window.location.protocol+"//"+window.location.host+"/externalLinksController/downloadFileByKey.do?dkey="+result+"'>"+window.location.protocol+"//"+window.location.host+"/externalLinksController/downloadFileByKey.do?dkey="+result+"</a>");
+			$("#downloadHrefBox").html("<a href='"+window.location.protocol+"//"+window.location.host+"/externalLinksController/downloadFileByKey/"+getDownloadFileName+"?dkey="+result+"'>"+window.location.protocol+"//"+window.location.host+"/externalLinksController/downloadFileByKey/"+getDownloadFileName+"?dkey="+result+"</a>");
 		},
 		error:function(){
 			$("#downloadHrefBox").html("<span class='text-muted'>获取失败，请检查网络状态或<a href='javascript:void(0);' onclick='getDownloadURL()'>点此</a>重新获取。</span>");

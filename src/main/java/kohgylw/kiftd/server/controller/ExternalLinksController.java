@@ -31,7 +31,7 @@ public class ExternalLinksController {
 		return eds.getDownloadKey(request);
 	}
 	
-	@RequestMapping("/downloadFileByKey.do")
+	@RequestMapping("/downloadFileByKey/{fileName}")
 	public void downloadFileByKey(HttpServletRequest request,HttpServletResponse response) {
 		eds.downloadFileByKey(request, response);
 	}
