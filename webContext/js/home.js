@@ -226,7 +226,7 @@ $(function() {
 	$(document).keypress(function (e) {
 		if($('.modal.shown').length == 0 || ($('.modal.shown').length == 1 && $('.modal.shown').attr('id') == 'loadingModal')){
 			var keyCode = e.keyCode ? e.keyCode : e.which ? e.which : e.charCode;
-			if (isShift(e)) {
+			if (isShift(e) && document.activeElement.id != "sreachKeyWordIn") {
 				switch (keyCode) {
 				case 65:
 					checkallfile();
@@ -252,7 +252,7 @@ $(function() {
 					break;
 	
 				default:
-					break;
+					return true;
 				}
 				return false;
 			}
