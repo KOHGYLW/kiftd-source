@@ -3,9 +3,9 @@ package kohgylw.kiftd.server.pojo;
 import java.util.*;
 import kohgylw.kiftd.server.model.*;
 
-public class FolderView
-{
-    private Folder folder;
+public class FolderView{
+
+	private Folder folder;
     private List<Folder> parentList;
     private List<Folder> folderList;
     private List<Node> fileList;

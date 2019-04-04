@@ -199,4 +199,10 @@ public class HomeController {
 	public String moveCheckedFiles(final HttpServletRequest request) {
 		return fis.doMoveFiles(request);
 	}
+
+	@RequestMapping(value = { "/sreachInCompletePath.ajax" }, produces = { CHARSET_BY_AJAX })
+	@ResponseBody
+	public String sreachInCompletePath(final HttpServletRequest request) {
+		return fvs.getSreachViewToJson(request);
+	}
 }

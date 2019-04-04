@@ -374,9 +374,14 @@ function showFolderView(fid) {
 		url : 'homeController/getFolderView.ajax',
 		success : function(result) {
 			endLoading();
-			if (result == "mustLogin") {
+			if(result == "ERROR"){
+				doAlert();
+				$("#tb").html("<span class='graytext'>获取失败，请尝试刷新</span>");
+				$("#publishTime").html("<span class='graytext'>获取失败，请尝试刷新</span>");
+				$("#parentlistbox").html("<span class='graytext'>获取失败，请尝试刷新</span>");
+			} else if (result == "mustLogin") {
 				window.location.href = "login.html";
-			}else if(result == "notAccess"){
+			} else if(result == "notAccess"){
 				window.location.href="/";
 			} else {
 				folderView = eval("(" + result + ")");
@@ -2189,38 +2194,107 @@ var screenedFoldrView;// 经过排序的文件视图
 
 // 执行搜索功能
 function doSearchFile(){
-	startLoading();
-	try{
-		var keyworld=$("#sreachKeyWordIn").val();
-		if(keyworld.length!=0){
-			var reg=new RegExp(keyworld+"+");
-			screenedFoldrView=$.extend(true, {}, originFolderView);
-			screenedFoldrView.folderList=[];
-			screenedFoldrView.fileList=[];
-			for(var i=0,j=originFolderView.folderList.length;i<j;i++){
-				if(reg.test(originFolderView.folderList[i].folderName)){
-					screenedFoldrView.folderList.push(originFolderView.folderList[i]);
-				}
-			}
-			for(var i=0,j=originFolderView.fileList.length;i<j;i++){
-				if(reg.test(originFolderView.fileList[i].fileName)){
-					screenedFoldrView.fileList.push(originFolderView.fileList[i]);
-				}
-			}
-			$("#sortByFN").removeClass();
-			$("#sortByCD").removeClass();
-			$("#sortByFS").removeClass();
-			$("#sortByCN").removeClass();
-			folderView=$.extend(true, {}, screenedFoldrView);
-			showFolderTable(folderView);
+	var keyworld=$("#sreachKeyWordIn").val();
+	if(keyworld.length!=0){
+		// 如果用户在搜索字段中声明了全局搜索
+		if(keyworld.startsWith("all:") || keyworld.startsWith("all：")){
+			selectInCompletePath(keyworld.substring(4));
+		}else{
+			startLoading();
+			selectInThisPath(keyworld);// 否则，均在本级下搜索
+			endLoading();
+		}
+	}else{
+		if(folderView.keyWorld != null){
+			showFolderView(locationpath);
 		}else{
 			screenedFoldrView=null;
 			showOriginFolderView();
 		}
+	}
+}
+
+// 在本级内搜索
+function selectInThisPath(keyworld){
+	try{
+		var reg=new RegExp(keyworld+"+");
+		screenedFoldrView=$.extend(true, {}, originFolderView);
+		screenedFoldrView.folderList=[];
+		screenedFoldrView.fileList=[];
+		for(var i=0,j=originFolderView.folderList.length;i<j;i++){
+			if(reg.test(originFolderView.folderList[i].folderName)){
+				screenedFoldrView.folderList.push(originFolderView.folderList[i]);
+			}
+		}
+		for(var i=0,j=originFolderView.fileList.length;i<j;i++){
+			if(reg.test(originFolderView.fileList[i].fileName)){
+				screenedFoldrView.fileList.push(originFolderView.fileList[i]);
+			}
+		}
+		$("#sortByFN").removeClass();
+		$("#sortByCD").removeClass();
+		$("#sortByFS").removeClass();
+		$("#sortByCN").removeClass();
+		folderView=$.extend(true, {}, screenedFoldrView);
+		showFolderTable(folderView);
 	}catch(e){
 		alert("错误：搜索关键字有误。请在特殊符号（例如“*”）前加上“\\”进行转义。");
 	}
-	endLoading();
+}
+
+//全路径查找
+function selectInCompletePath(keyworld){
+	if(keyworld.length == 0){
+		showFolderView(locationpath.folder.folderId);
+		return;
+	}
+	startLoading();
+	$.ajax({
+		type : 'POST',
+		dataType : 'text',
+		data : {
+			fid : locationpath,
+			keyworld : keyworld
+		},
+		url : 'homeController/sreachInCompletePath.ajax',
+		success : function(result) {
+			endLoading();
+			if(result == "ERROR"){
+				doAlert();
+				$("#tb").html("<span class='graytext'>获取失败，请尝试刷新</span>");
+				$("#publishTime").html("<span class='graytext'>获取失败，请尝试刷新</span>");
+				$("#parentlistbox").html("<span class='graytext'>获取失败，请尝试刷新</span>");
+			} else if (result == "mustLogin") {
+				window.location.href = "login.html";
+			} else if(result == "notAccess"){
+				window.location.href="/";
+			} else {
+				folderView = eval("(" + result + ")");
+				locationpath = folderView.folder.folderId;
+				parentpath = folderView.folder.folderParent;
+				constraintLevel=folderView.folder.folderConstraint;
+				screenedFoldrView=null;
+				$("#sreachKeyWordIn").val("all:" + folderView.keyWorld);
+				showParentList(folderView);
+				showAccountView(folderView);
+				showPublishTime(folderView);
+				originFolderView=$.extend(true, {}, folderView);
+				$("#sortByFN").removeClass();
+				$("#sortByCD").removeClass();
+				$("#sortByFS").removeClass();
+				$("#sortByCN").removeClass();
+				showFolderTable(folderView);
+			}
+		},
+		error : function() {
+			endLoading();
+			doAlert();
+			$("#tb").html("<span class='graytext'>获取失败，请尝试刷新</span>");
+			$("#publishTime").html("<span class='graytext'>获取失败，请尝试刷新</span>");
+			$("#parentlistbox")
+					.html("<span class='graytext'>获取失败，请尝试刷新</span>");
+		}
+	});
 }
 
 // 返回顶部实现
@@ -2228,8 +2302,8 @@ function goBackToTop(){
 	$('html,body').animate({scrollTop: 0},'slow');
 }
 
-var getDownloadFileId;//下载链接的文件ID
-var getDownloadFileName;//下载链接的文件名（便于下载工具识别）
+var getDownloadFileId;// 下载链接的文件ID
+var getDownloadFileName;// 下载链接的文件名（便于下载工具识别）
 
 // 获取某一文件的下载链接
 function getDownloadURL(){
