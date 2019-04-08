@@ -363,7 +363,7 @@ function getServerOS() {
 }
 
 // 获取实时文件夹视图
-function showFolderView(fid) {
+function showFolderView(fid,targetId) {
 	startLoading();
 	$.ajax({
 		type : 'POST',
@@ -399,6 +399,10 @@ function showFolderView(fid) {
 				$("#sortByFS").removeClass();
 				$("#sortByCN").removeClass();
 				showFolderTable(folderView);
+				if(targetId != null && targetId.length > 0){
+					$("#"+targetId).addClass("info");
+					$("html,body").animate({scrollTop:$("#"+targetId).offset().top - $(window).height()/2},'slow');
+				}
 			}
 		},
 		error : function() {
@@ -698,6 +702,7 @@ function showFolderTable(folderView) {
 	var aD = false;
 	var aR = false;
 	var aL = false;
+	var aO = false;
 	if (checkAuth(authList, "D")) {
 		aD = true;
 	}
@@ -706,6 +711,9 @@ function showFolderTable(folderView) {
 	}
 	if (checkAuth(authList, "L")) {
 		aL = true;
+	}
+	if (checkAuth(authList, "O")){
+		aO = true;
 	}
 	$
 			.each(
@@ -738,7 +746,17 @@ function showFolderTable(folderView) {
 									+ f.folderConstraint
 									+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-wrench'></span> 编辑</button>";
 						}
-						if (!aR && !aD) {
+						if (aO) {
+							folderRow = folderRow
+									+ "<button onclick='showFolderView("
+									+ '"'
+									+ f.folderParent
+									+ '","'
+									+ f.folderId
+									+ '"'
+									+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-sunglasses'></span> 定位</button>";
+						}
+						if (!aR && !aD && !aO) {
 							folderRow = folderRow + "--";
 						}
 						folderRow = folderRow + "</td></tr>";
@@ -748,7 +766,7 @@ function showFolderTable(folderView) {
 			.each(
 					folderView.fileList,
 					function(n, fi) {
-						var fileRow = "<tr onclick='checkfile(event," + '"'
+						var fileRow = "<tr id=" + fi.fileId + " onclick='checkfile(event," + '"'
 								+ fi.fileId + '"' + ")' ondblclick='checkConsFile(event,"+'"'+fi.fileId+'"'+")' id='" + fi.fileId
 								+ "' class='filerow'><td>" + fi.fileName
 								+ "</td><td class='hiddenColumn'>" + fi.fileCreationDate + "</td>";
@@ -856,7 +874,17 @@ function showFolderTable(folderView) {
 									+ '"'
 									+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-wrench'></span> 重命名</button>";
 						}
-						if (!aR && !aD && !aL) {
+						if (aO) {
+							fileRow = fileRow
+									+ "<button onclick='showFolderView("
+									+ '"'
+									+ fi.fileParentFolder
+									+ '","'
+									+ fi.fileId
+									+ '"'
+									+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-sunglasses'></span> 定位</button>";
+						}
+						if (!aR && !aD && !aL && !aO) {
 							fileRow = fileRow + "--";
 						}
 						fileRow = fileRow + "</td></tr>";
@@ -882,12 +910,12 @@ function changeNewFolderType(type){
 function createfolder() {
 	var fn = $("#foldername").val();
 	var fc=$("#foldername").attr("folderConstraintLevel");
-	var reg = new RegExp("^[0-9a-zA-Z_\\u4E00-\\u9FFF]+$", "g");
+	var reg = new RegExp("[\/\|\\s\\\\\*\\<\\>\\?\\:\\&\\$" + '"' + "]+", "g");
 	if (fn.length == 0) {
 		showFolderAlert("提示：文件夹名称不能为空。");
 	} else if (fn.length > 20) {
 		showFolderAlert("提示：文件夹名称太长。");
-	} else if (reg.test(fn)) {
+	} else if (!reg.test(fn) && fn.indexOf(".") != 0) {
 		$("#folderalert").removeClass("alert");
 		$("#folderalert").removeClass("alert-danger");
 		$("#foldernamebox").removeClass("has-error");
@@ -927,7 +955,7 @@ function createfolder() {
 			}
 		});
 	} else {
-		showFolderAlert("提示：文件夹名只能包含英文字母、数组、汉字和下划线。");
+		showFolderAlert("提示：文件夹名中不应含有：空格 引号 / \ * | < > & $ : ? 且不能以“.”开头。");
 	}
 }
 
@@ -1016,12 +1044,12 @@ function changeEditFolderType(type){
 function renameFolder(folderId) {
 	var newName = $("#newfoldername").val();
 	var fc=$("#newfoldername").attr("folderConstraintLevel");
-	var reg = new RegExp("^[0-9a-zA-Z_\\u4E00-\\u9FFF]+$", "g");
+	var reg = new RegExp("[\/\|\\s\\\\\*\\<\\>\\?\\:\\&\\$" + '"' + "]+", "g");
 	if (newName.length == 0) {
 		showRFolderAlert("提示：文件夹名称不能为空。");
 	} else if (newName.length > 20) {
 		showRFolderAlert("提示：文件夹名称太长。");
-	} else if (reg.test(newName)) {
+	} else if (!reg.test(newName) && newName.indexOf(".") != 0) {
 		$("#newfolderalert").removeClass("alert");
 		$("#newfolderalert").removeClass("alert-danger");
 		$("#folderrenamebox").removeClass("has-error");
@@ -1058,7 +1086,7 @@ function renameFolder(folderId) {
 			}
 		});
 	} else {
-		showRFolderAlert("提示：文件夹名只能包含英文字母、数组、汉字和下划线。");
+		showRFolderAlert("提示：文件夹名中不应含有：空格 引号 / \ * | < > & $ : ? 且不能以“.”开头。");
 	}
 }
 
@@ -1420,7 +1448,7 @@ function showRenameFileModel(fileId, fileName) {
 
 // 修改文件名
 function renameFile(fileId) {
-	var reg = new RegExp("[\/\|\\s\\\\\*\\<\\>" + '"' + "]+", "g");
+	var reg = new RegExp("[\/\|\\s\\\\\*\\<\\>\\?\\:\\&\\$" + '"' + "]+", "g");
 	var newFileName = $("#newfilename").val();
 	if (newFileName.length > 0) {
 		if (newFileName.length < 128) {
@@ -1458,7 +1486,7 @@ function renameFile(fileId) {
 					}
 				});
 			} else {
-				showRFileAlert("提示：文件名中不应含有：空格 引号 / \ * | < > 且不能以“.”开头。");
+				showRFileAlert("提示：文件名中不应含有：空格 引号 / \ * | < > & $ : ? 且不能以“.”开头。");
 			}
 		} else {
 			showRFileAlert("提示：文件名称太长。");
@@ -1517,6 +1545,7 @@ function docxView(fileId){
 	window.open("/pdfview/web/viewer.html?file=/resourceController/getWordView/" + fileId);
 }
 
+// 预览TXT文档
 function txtView(fileId){
 	window.open("/pdfview/web/viewer.html?file=/resourceController/getTxtView/" + fileId);
 }
@@ -2242,7 +2271,7 @@ function selectInThisPath(keyworld){
 	}
 }
 
-//全路径查找
+// 全路径查找
 function selectInCompletePath(keyworld){
 	if(keyworld.length == 0){
 		showFolderView(locationpath.folder.folderId);

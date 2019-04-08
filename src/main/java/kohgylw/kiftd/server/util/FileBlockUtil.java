@@ -11,6 +11,16 @@ import java.util.zip.ZipEntry;
 
 import org.zeroturnaround.zip.*;
 
+/**
+ * 
+ * <h2>文件块整合操作工具</h2>
+ * <p>
+ * 该工具内包含了众多关于文件块的操作，例如索引、压缩等。详见各个方法。
+ * </p>
+ * 
+ * @author 青阳龙野(kohgylw)
+ * @version 1.0
+ */
 @Component
 public class FileBlockUtil {
 	@Resource
@@ -88,6 +98,23 @@ public class FileBlockUtil {
 		checkThread.start();
 	}
 
+	/**
+	 * 
+	 * <h2>将指定节点及文件夹打包为ZIP压缩文件。</h2>
+	 * <p>
+	 * 该功能用于创建ZIP压缩文件，线程阻塞。如果压缩目标中存在同名情况，则使用“{文件名} (n).{后缀}”或“{文件夹名} n”的形式重命名。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @param idList
+	 *            java.util.List<String> 要压缩的文件节点目标ID列表
+	 * @param fidList
+	 *            java.util.List<String> 要压缩的文件夹目标ID列表，迭代压缩
+	 * @param account
+	 *            java.lang.String 用户ID，用于判断压缩文件夹是否有效
+	 * @return java.lang.String
+	 *         压缩后产生的文件名称，命名规则为“tf_{UUID}.zip”，存放于文件系统中的temporaryfiles目录下
+	 */
 	public String createZip(final List<String> idList, final List<String> fidList, String account) {
 		final String zipname = "tf_" + UUID.randomUUID().toString() + ".zip";
 		final String tempPath = ConfigureReader.instance().getTemporaryfilePath();
@@ -110,14 +137,36 @@ public class FileBlockUtil {
 				}
 			}
 			for (Folder fo : folders) {
-				if (folders.parallelStream().filter((e) -> e.getFolderName().equals(fo.getFolderName())).count() > 1) {
-					fo.setFolderName(fo.getFolderName() + "_存在同名_" + UUID.randomUUID().toString().replaceAll("-", ""));
+				int i = 1;
+				String flname = fo.getFolderName();
+				while (true) {
+					if (folders.parallelStream().filter((e) -> e.getFolderName().equals(fo.getFolderName()))
+							.count() > 1) {
+						fo.setFolderName(flname + " " + i);
+						i++;
+					} else {
+						break;
+					}
 				}
 				addFoldersToZipEntrySourceArray(fo, zs, account, "");
 			}
 			for (Node node : nodes) {
-				if (nodes.parallelStream().filter((e) -> e.getFileName().equals(node.getFileName())).count() > 1) {
-					node.setFileName(node.getFileName() + "_存在同名_" + UUID.randomUUID().toString().replaceAll("-", ""));
+				int i = 1;
+				String fname = node.getFileName();
+				while (true) {
+					if (nodes.parallelStream().filter((e) -> e.getFileName().equals(node.getFileName())).count() > 1
+							|| folders.parallelStream().filter((e) -> e.getFolderName().equals(node.getFileName()))
+									.count() > 0) {
+						if (fname.indexOf(".") >= 0) {
+							node.setFileName(fname.substring(0, fname.lastIndexOf(".")) + " (" + i + ")"
+									+ fname.substring(fname.lastIndexOf(".")));
+						} else {
+							node.setFileName(fname + " (" + i + ")");
+						}
+						i++;
+					} else {
+						break;
+					}
 				}
 				zs.add((ZipEntrySource) new FileSource(node.getFileName(), new File(fileBlocks, node.getFilePath())));
 			}
@@ -131,12 +180,7 @@ public class FileBlockUtil {
 	// 迭代生成ZIP文件夹单元，将一个文件夹内的文件和文件夹也进行打包
 	private void addFoldersToZipEntrySourceArray(Folder f, List<ZipEntrySource> zs, String account, String parentPath) {
 		if (f != null && ConfigureReader.instance().accessFolder(f, account)) {
-			String originFoldername = f.getFolderName();
-			String folderName = originFoldername;
-			if (fm.queryByParentFolderId(f.getFolderParent()).parallelStream()
-					.anyMatch((e) -> e.getFileName().equals(originFoldername))) {
-				folderName = folderName + "_存在同名_" + UUID.randomUUID().toString().replaceAll("-", "");
-			}
+			String folderName = f.getFolderName();
 			String thisPath = folderName + "/";
 			zs.add(new ZipEntrySource() {
 
@@ -159,12 +203,40 @@ public class FileBlockUtil {
 				}
 			});
 			List<Folder> folders = flm.queryByParentId(f.getFolderId());
-			for (Folder cf : folders) {
-				addFoldersToZipEntrySourceArray(cf, zs, account, thisPath);
+			for (Folder fo : folders) {
+				int i = 1;
+				String flname = fo.getFolderName();
+				while (true) {
+					if (folders.parallelStream().filter((e) -> e.getFolderName().equals(fo.getFolderName()))
+							.count() > 1) {
+						fo.setFolderName(flname + " " + i);
+						i++;
+					} else {
+						break;
+					}
+				}
+				addFoldersToZipEntrySourceArray(fo, zs, account, thisPath);
 			}
 			List<Node> nodes = fm.queryByParentFolderId(f.getFolderId());
-			for (Node n : nodes) {
-				zs.add(new FileSource(thisPath + n.getFileName(), new File(fileBlocks, n.getFilePath())));
+			for (Node node : nodes) {
+				int i = 1;
+				String fname = node.getFileName();
+				while (true) {
+					if (nodes.parallelStream().filter((e) -> e.getFileName().equals(node.getFileName())).count() > 1
+							|| folders.parallelStream().filter((e) -> e.getFolderName().equals(node.getFileName()))
+									.count() > 0) {
+						if (fname.indexOf(".") >= 0) {
+							node.setFileName(fname.substring(0, fname.lastIndexOf(".")) + " (" + i + ")"
+									+ fname.substring(fname.lastIndexOf(".")));
+						} else {
+							node.setFileName(fname + " (" + i + ")");
+						}
+						i++;
+					} else {
+						break;
+					}
+				}
+				zs.add(new FileSource(thisPath + node.getFileName(), new File(fileBlocks, node.getFilePath())));
 			}
 		}
 	}

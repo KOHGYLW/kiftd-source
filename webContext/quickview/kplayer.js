@@ -1,6 +1,8 @@
 /**
  * Kplayer播放器内置功能
  */
+var tReq;
+var tTimer;
 $(function() {
 	window.onresize = function(){
 		showCloseBtn();
@@ -65,6 +67,12 @@ function playVideo() {
 
 // 关闭当前窗口并释放播放器
 function reMainPage() {
+	if(tReq != null){
+		tReq.abort()
+	}
+	if(tTimer != null){
+		window.clearTimeout(tTimer);
+	}
 	window.opener = null;
 	window.open('', '_self');
 	window.close();
@@ -72,7 +80,7 @@ function reMainPage() {
 
 // 进行转码请求并监听进度状态（轮询）
 function doTranscode() {
-	$.ajax({
+	tReq=$.ajax({
 		url : 'resourceController/getVideoTranscodeStatus.ajax',
 		type : 'POST',
 		dataType : 'text',
@@ -87,7 +95,7 @@ function doTranscode() {
 				reMainPage();
 			} else {
 				$("#transcodeProgress").text(result);
-				setTimeout('doTranscode()', 500);// 每隔1秒询问一次进度
+				tTimer=setTimeout('doTranscode()', 500);// 每隔1秒询问一次进度
 			}
 		},
 		error : function() {

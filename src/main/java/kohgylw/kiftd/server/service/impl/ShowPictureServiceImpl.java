@@ -32,6 +32,7 @@ public class ShowPictureServiceImpl implements ShowPictureService {
 	 * <p>
 	 * 该方法用于根据请求获取预览图片列表并进行封装，对于过大图片会进行压缩。
 	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
 	 * @param request
 	 *            HttpServletRequest 请求对象，需包含fileId字段（需预览的图片ID）。
@@ -53,7 +54,7 @@ public class ShowPictureServiceImpl implements ShowPictureService {
 							|| suffix.equals("png")) {
 						int pSize = Integer.parseInt(n.getFileSize());
 						if (pSize > 1) {
-							n.setFilePath("homeController/showCondensedPicture.do?fileId="+n.getFileId());
+							n.setFilePath("homeController/showCondensedPicture.do?fileId=" + n.getFileId());
 						}
 						pictureViewList.add(n);
 						if (!n.getFileId().equals(fileId)) {
@@ -80,27 +81,31 @@ public class ShowPictureServiceImpl implements ShowPictureService {
 	}
 
 	@Override
-	public void getCondensedPicture(final HttpServletRequest request,final HttpServletResponse response) {
+	public void getCondensedPicture(final HttpServletRequest request, final HttpServletResponse response) {
 		// TODO 自动生成的方法存根
-		if(ConfigureReader.instance().authorized((String)request.getSession().getAttribute("ACCOUNT"), AccountAuth.DOWNLOAD_FILES)) {
-			String fileId=request.getParameter("fileId");
-			if(fileId!=null) {
-				Node node=fm.queryById(fileId);
-				if(node!=null) {
-					File pBlock=new File(ConfigureReader.instance().getFileBlockPath(),node.getFilePath());
-					if(pBlock.exists()) {
+		if (ConfigureReader.instance().authorized((String) request.getSession().getAttribute("ACCOUNT"),
+				AccountAuth.DOWNLOAD_FILES)) {
+			String fileId = request.getParameter("fileId");
+			if (fileId != null) {
+				Node node = fm.queryById(fileId);
+				if (node != null) {
+					File pBlock = new File(ConfigureReader.instance().getFileBlockPath(), node.getFilePath());
+					if (pBlock.exists()) {
 						try {
-							int pSize=Integer.parseInt(node.getFileSize());
+							int pSize = Integer.parseInt(node.getFileSize());
 							if (pSize < 3) {
-								Thumbnails.of(pBlock).scale(0.5).outputFormat("JPG").toOutputStream(response.getOutputStream());
-							} else if(pSize<5){
-								Thumbnails.of(pBlock).scale(0.3).outputFormat("JPG").toOutputStream(response.getOutputStream());
-							}else {
-								Thumbnails.of(pBlock).size(600, 600).outputFormat("JPG").toOutputStream(response.getOutputStream());
+								Thumbnails.of(pBlock).size(1024, 1024).outputFormat("JPG")
+										.toOutputStream(response.getOutputStream());
+							} else if (pSize < 5) {
+								Thumbnails.of(pBlock).size(1440, 1440).outputFormat("JPG")
+										.toOutputStream(response.getOutputStream());
+							} else {
+								Thumbnails.of(pBlock).size(1680, 1680).outputFormat("JPG")
+										.toOutputStream(response.getOutputStream());
 							}
 						} catch (IOException e) {
 							// TODO 自动生成的 catch 块
-							//压缩失败时，尝试以源文件进行预览
+							// 压缩失败时，尝试以源文件进行预览
 							try {
 								Files.copy(pBlock.toPath(), response.getOutputStream());
 							} catch (IOException e1) {

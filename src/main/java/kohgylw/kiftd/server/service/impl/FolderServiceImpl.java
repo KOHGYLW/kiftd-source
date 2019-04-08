@@ -32,7 +32,7 @@ public class FolderServiceImpl implements FolderService {
 		if (parentId == null || folderName == null || parentId.length() <= 0 || folderName.length() <= 0) {
 			return "errorParameter";
 		}
-		if (!TextFormateUtil.instance().matcherFolderName(folderName)) {
+		if (!TextFormateUtil.instance().matcherFolderName(folderName) || folderName.indexOf(".") == 0) {
 			return "errorParameter";
 		}
 		final Folder parentFolder = this.fm.queryById(parentId);
@@ -112,7 +112,7 @@ public class FolderServiceImpl implements FolderService {
 		if (folderId == null || folderId.length() <= 0 || newName == null || newName.length() <= 0) {
 			return "errorParameter";
 		}
-		if (!TextFormateUtil.instance().matcherFolderName(newName)) {
+		if (!TextFormateUtil.instance().matcherFolderName(newName) || newName.indexOf(".") == 0) {
 			return "errorParameter";
 		}
 		final Folder folder = this.fm.queryById(folderId);
@@ -135,7 +135,7 @@ public class FolderServiceImpl implements FolderService {
 					map.put("folderId", folderId);
 					fm.updateFolderConstraintById(map);
 					changeChildFolderConstraint(folderId, ifc);
-					if(!folder.getFolderName().equals(newName)) {
+					if (!folder.getFolderName().equals(newName)) {
 						if (fm.queryByParentId(parentFolder.getFolderId()).parallelStream()
 								.anyMatch((e) -> e.getFolderName().equals(newName))) {
 							return "nameOccupied";
@@ -143,7 +143,7 @@ public class FolderServiceImpl implements FolderService {
 						Map<String, String> map2 = new HashMap<String, String>();
 						map2.put("folderId", folderId);
 						map2.put("newName", newName);
-						if(this.fm.updateFolderNameById(map2)==0) {
+						if (this.fm.updateFolderNameById(map2) == 0) {
 							return "errorParameter";
 						}
 					}

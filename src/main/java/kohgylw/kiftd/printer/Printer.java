@@ -23,7 +23,7 @@ public class Printer
                 Printer.sum.printMessage(context);
             }
             else {
-                System.out.println("[" + ServerTimeUtil.accurateToSecond() + "]" + context + "\r\n");
+                System.out.println("[" + new String(ServerTimeUtil.accurateToSecond().getBytes()) + "]" + new String(context.getBytes()) + "\r\n");
             }
         }
     }

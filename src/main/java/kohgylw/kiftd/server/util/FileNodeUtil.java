@@ -49,7 +49,8 @@ public class FileNodeUtil {
 			String newUrl = ConfigureReader.instance().getFileNodePathURL();
 			// 判断当前位置是否初始化文件节点
 			if (url == null || !url.equals(newUrl)) {
-				conn = DriverManager.getConnection(newUrl, ConfigureReader.instance().getFileNodePathUserName(), ConfigureReader.instance().getFileNodePathPassWord());
+				conn = DriverManager.getConnection(newUrl, ConfigureReader.instance().getFileNodePathUserName(),
+						ConfigureReader.instance().getFileNodePathPassWord());
 				url = newUrl;
 				final Statement state1 = conn.createStatement();
 				state1.execute(
@@ -67,23 +68,24 @@ public class FileNodeUtil {
 				state2.execute(
 						"CREATE TABLE IF NOT EXISTS FILE(file_id VARCHAR(128) PRIMARY KEY,file_name VARCHAR(128) NOT NULL,file_size VARCHAR(128) NOT NULL,file_parent_folder varchar(128) NOT NULL,file_creation_date varchar(128) NOT NULL,file_creator varchar(128) NOT NULL,file_path varchar(128) NOT NULL)");
 				state2.close();
-				//为了匹配之前的版本而设计的兼容性字段设置，后续可能会删除
-				if(!ConfigureReader.instance().useMySQL()) {
+				// 为了匹配之前的版本而设计的兼容性字段设置，后续可能会删除
+				if (!ConfigureReader.instance().useMySQL()) {
 					final Statement state3 = conn.createStatement();
-					state3.execute("ALTER TABLE FOLDER ADD COLUMN IF NOT EXISTS folder_constraint INT NOT NULL DEFAULT 0");
+					state3.execute(
+							"ALTER TABLE FOLDER ADD COLUMN IF NOT EXISTS folder_constraint INT NOT NULL DEFAULT 0");
 					state3.close();
 				}
-				//为数据库生成索引，此处分为MySQL和H2两种操作
-				if(ConfigureReader.instance().useMySQL()) {
+				// 为数据库生成索引，此处分为MySQL和H2两种操作
+				if (ConfigureReader.instance().useMySQL()) {
 					final Statement state4 = conn.createStatement();
-					ResultSet indexCount=state4.executeQuery("SHOW INDEX FROM FILE WHERE Key_name = 'file_index'");
-					if(!indexCount.next()) {
+					ResultSet indexCount = state4.executeQuery("SHOW INDEX FROM FILE WHERE Key_name = 'file_index'");
+					if (!indexCount.next()) {
 						final Statement state41 = conn.createStatement();
 						state41.execute("CREATE INDEX file_index ON FILE (file_id,file_name)");
 						state41.close();
 					}
 					state4.close();
-				}else {
+				} else {
 					final Statement state4 = conn.createStatement();
 					state4.execute("CREATE INDEX IF NOT EXISTS file_index ON FILE (file_id,file_name)");
 					state4.close();
@@ -109,18 +111,21 @@ public class FileNodeUtil {
 	public static Connection getNodeDBConnection() {
 		return conn;
 	}
-	
+
 	/**
 	 * 
 	 * <h2>生成不与已存在文件同名的、带计数的新文件名</h2>
 	 * <p>
 	 * 针对需要保留两个文件至一个路径下的行为，可使用该方法生成新文件名，其格式为“{原文件名} (计数).{后缀}”的格式。
-	 * 例如，某路径下已存在“test1.txt”，再传入一个“test1.txt”时，会返回“test1 (1).txt”，继续传入“test1 (1).txt”
-	 * 则返回“test1 (2).txt”，以此类推。当文件列表中不含同名文件时，返回原始文件名。
+	 * 例如，某路径下已存在“test1.txt”，再传入一个“test1.txt”时，会返回“test1 (1).txt”，继续传入“test1
+	 * (1).txt” 则返回“test1 (2).txt”，以此类推。当文件列表中不含同名文件时，返回原始文件名。
 	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param originalName java.lang.String 原始文件名
-	 * @param nodes java.util.List Node 要检查的文件节点列表
+	 * @param originalName
+	 *            java.lang.String 原始文件名
+	 * @param nodes
+	 *            java.util.List Node 要检查的文件节点列表
 	 * @return java.lang.String 新文件名
 	 */
 	public static String getNewNodeName(String originalName, List<Node> nodes) {
@@ -130,19 +135,28 @@ public class FileNodeUtil {
 		String newName = originalName;
 		while (fileNames.contains(newName)) {
 			i++;
-			newName = originalName.substring(0, originalName.lastIndexOf(".")) + " (" + i + ")"
-					+ originalName.substring(originalName.lastIndexOf("."));
+			if (originalName.indexOf(".") >= 0) {
+				newName = originalName.substring(0, originalName.lastIndexOf(".")) + " (" + i + ")"
+						+ originalName.substring(originalName.lastIndexOf("."));
+			} else {
+				newName = originalName + " (" + i + ")";
+			}
 		}
 		return newName;
 	}
-	
+
 	/**
 	 * 
 	 * <h2>生成不与已存在文件夹同名的、带计数的新文件夹名</h2>
-	 * <p>功能与得到新文件名类似，当文件夹列表中存在“doc”文件夹时，传入“doc”则返回“doc 2”，以此类推。</p>
+	 * <p>
+	 * 功能与得到新文件名类似，当文件夹列表中存在“doc”文件夹时，传入“doc”则返回“doc 2”，以此类推。
+	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param originalName java.lang.String 原始文件夹名
-	 * @param nodes java.util.List Folder 要检查的文件夹列表
+	 * @param originalName
+	 *            java.lang.String 原始文件夹名
+	 * @param nodes
+	 *            java.util.List Folder 要检查的文件夹列表
 	 * @return java.lang.String 新文件夹名
 	 */
 	public static String getNewFolderName(String originalName, List<? extends Folder> folders) {
@@ -156,20 +170,25 @@ public class FileNodeUtil {
 		}
 		return newName;
 	}
-	
+
 	/**
 	 * 
 	 * <h2>生成不与已存在文件夹同名的、带计数的新文件夹名</h2>
-	 * <p>功能与得到新文件名类似，当文件夹列表中存在“doc”文件夹时，传入“doc”则返回“doc 2”，以此类推。</p>
+	 * <p>
+	 * 功能与得到新文件名类似，当文件夹列表中存在“doc”文件夹时，传入“doc”则返回“doc 2”，以此类推。
+	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param folder kohgylw.kiftd.server.model.Folder 原始文件夹
-	 * @param parentfolder java.io.File 要检查的文件夹
+	 * @param folder
+	 *            kohgylw.kiftd.server.model.Folder 原始文件夹
+	 * @param parentfolder
+	 *            java.io.File 要检查的文件夹
 	 * @return java.lang.String 新文件夹名
 	 */
-	public static String getNewFolderName(Folder folder,File parentfolder) {
+	public static String getNewFolderName(Folder folder, File parentfolder) {
 		int i = 0;
-		List<String> fileNames = Arrays
-				.asList(Arrays.stream(parentfolder.listFiles()).parallel().filter((e)->e.isDirectory()).map((t) -> t.getName()).toArray(String[]::new));
+		List<String> fileNames = Arrays.asList(Arrays.stream(parentfolder.listFiles()).parallel()
+				.filter((e) -> e.isDirectory()).map((t) -> t.getName()).toArray(String[]::new));
 		String newName = folder.getFolderName();
 		while (fileNames.contains(newName)) {
 			i++;
@@ -177,29 +196,36 @@ public class FileNodeUtil {
 		}
 		return newName;
 	}
-	
+
 	/**
 	 * 
 	 * <h2>生成不与已存在文件同名的、带计数的新文件名</h2>
 	 * <p>
 	 * 针对需要保留两个文件至一个路径下的行为，可使用该方法生成新文件名，其格式为“{原文件名} (计数).{后缀}”的格式。
-	 * 例如，某路径下已存在“test1.txt”，再传入一个“test1.txt”时，会返回“test1 (1).txt”，继续传入“test1 (1).txt”
-	 * 则返回“test1 (2).txt”，以此类推。当文件列表中不含同名文件时，返回原始文件名。
+	 * 例如，某路径下已存在“test1.txt”，再传入一个“test1.txt”时，会返回“test1 (1).txt”，继续传入“test1
+	 * (1).txt” 则返回“test1 (2).txt”，以此类推。当文件列表中不含同名文件时，返回原始文件名。
 	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param n kohgylw.kiftd.server.model.Node 要重命名的文件节点
-	 * @param folder java.io.File 要检查的本地文件夹
+	 * @param n
+	 *            kohgylw.kiftd.server.model.Node 要重命名的文件节点
+	 * @param folder
+	 *            java.io.File 要检查的本地文件夹
 	 * @return java.lang.String 新文件名
 	 */
-	public static String getNewNodeName(Node n,File folder) {
+	public static String getNewNodeName(Node n, File folder) {
 		int i = 0;
-		List<String> fileNames = Arrays
-				.asList(Arrays.stream(folder.listFiles()).parallel().filter((e)->e.isFile()).map((t) -> t.getName()).toArray(String[]::new));
+		List<String> fileNames = Arrays.asList(Arrays.stream(folder.listFiles()).parallel().filter((e) -> e.isFile())
+				.map((t) -> t.getName()).toArray(String[]::new));
 		String newName = n.getFileName();
 		while (fileNames.contains(newName)) {
 			i++;
-			newName = n.getFileName().substring(0, n.getFileName().lastIndexOf(".")) + " (" + i + ")"
-					+ n.getFileName().substring(n.getFileName().lastIndexOf("."));
+			if (n.getFileName().indexOf(".") >= 0) {
+				newName = n.getFileName().substring(0, n.getFileName().lastIndexOf(".")) + " (" + i + ")"
+						+ n.getFileName().substring(n.getFileName().lastIndexOf("."));
+			} else {
+				newName = n.getFileName() + " (" + i + ")";
+			}
 		}
 		return newName;
 	}

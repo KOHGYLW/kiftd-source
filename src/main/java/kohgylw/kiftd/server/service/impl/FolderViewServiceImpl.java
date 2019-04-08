@@ -119,9 +119,12 @@ public class FolderViewServiceImpl implements FolderViewService {
 		}
 		// 设置操作权限，对于搜索视图而言，只能进行下载操作（因为是虚拟的）
 		final List<String> authList = new ArrayList<String>();
+		//搜索结果只接受“下载”操作
 		if (cr.authorized(account, AccountAuth.DOWNLOAD_FILES)) {
 			authList.add("L");
 		}
+		//同时额外具备普通文件夹没有的“定位”功能。
+		authList.add("O");
 		sv.setAuthList(authList);
 		// 写入实时系统时间
 		sv.setPublishTime(ServerTimeUtil.accurateToMinute());
