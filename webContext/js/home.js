@@ -2280,7 +2280,7 @@ function selectInThisPath(keyworld){
 // 全路径查找
 function selectInCompletePath(keyworld){
 	if(keyworld.length == 0){
-		showFolderView(locationpath.folder.folderId);
+		showFolderView(locationpath);
 		return;
 	}
 	startLoading();
