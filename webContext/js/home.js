@@ -583,7 +583,7 @@ function showParentList(folderView) {
 		$("#folderIconSpan").removeClass("glyphicon-folder-close");
 		$("#folderIconSpan").removeClass("glyphicon-search");
 		$("#folderIconSpan").addClass("glyphicon-home");
-	}else if(f.keyWorld != null){
+	}else if(folderView.keyWorld != null){
 		$("#folderIconSpan").removeClass("glyphicon-folder-close");
 		$("#folderIconSpan").removeClass("glyphicon-home");
 		$("#folderIconSpan").addClass("glyphicon-search");
