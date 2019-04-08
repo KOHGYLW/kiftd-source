@@ -579,11 +579,17 @@ function showParentList(folderView) {
 	}else{
 		$("#currentFolderName").text(f.folderName);
 	}
-	if(f.folderName=="ROOT"){
+	if(f.folderName == "ROOT"){
 		$("#folderIconSpan").removeClass("glyphicon-folder-close");
+		$("#folderIconSpan").removeClass("glyphicon-search");
 		$("#folderIconSpan").addClass("glyphicon-home");
+	}else if(f.keyWorld != null){
+		$("#folderIconSpan").removeClass("glyphicon-folder-close");
+		$("#folderIconSpan").removeClass("glyphicon-home");
+		$("#folderIconSpan").addClass("glyphicon-search");
 	}else{
 		$("#folderIconSpan").removeClass("glyphicon-home");
+		$("#folderIconSpan").removeClass("glyphicon-search");
 		$("#folderIconSpan").addClass("glyphicon-folder-close");
 	}
 }
