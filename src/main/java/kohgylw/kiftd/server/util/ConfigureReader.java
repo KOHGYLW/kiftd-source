@@ -170,7 +170,7 @@ public class ConfigureReader {
 			}
 			switch (auth) {
 			case CREATE_NEW_FOLDER: {
-				return overall2.indexOf("c") >=0 ;
+				return overall2.indexOf("c") >= 0;
 			}
 			case UPLOAD_FILES: {
 				return overall2.indexOf("u") >= 0;
