@@ -53,7 +53,10 @@ public class ResourceServiceImpl implements ResourceService {
 				Node n = nm.queryById(fid);
 				if (n != null) {
 					File file = fbu.getFileFromBlocks(n);
-					String suffix = n.getFileName().substring(n.getFileName().lastIndexOf(".")).trim().toLowerCase();
+					String suffix = "";
+					if (n.getFileName().indexOf(".") >= 0) {
+						suffix = n.getFileName().substring(n.getFileName().lastIndexOf(".")).trim().toLowerCase();
+					}
 					String contentType = "application/octet-stream";
 					switch (suffix) {
 					case ".mp4":
@@ -65,14 +68,15 @@ public class ResourceServiceImpl implements ResourceService {
 					case ".flv":
 						contentType = "video/mp4";
 						synchronized (VideoTranscodeUtil.videoTranscodeThreads) {
-							VideoTranscodeThread vtt=VideoTranscodeUtil.videoTranscodeThreads.get(fid);
-							if(vtt != null) {//针对需要转码的视频（在转码列表中存在）
-								File f=new File(ConfigureReader.instance().getTemporaryfilePath(),vtt.getOutputFileName());
-								if(f.isFile() && vtt.getProgress().equals("FIN")) {//判断是否转码成功
-									file=f;//成功，则播放它
-								}else {
+							VideoTranscodeThread vtt = VideoTranscodeUtil.videoTranscodeThreads.get(fid);
+							if (vtt != null) {// 针对需要转码的视频（在转码列表中存在）
+								File f = new File(ConfigureReader.instance().getTemporaryfilePath(),
+										vtt.getOutputFileName());
+								if (f.isFile() && vtt.getProgress().equals("FIN")) {// 判断是否转码成功
+									file = f;// 成功，则播放它
+								} else {
 									try {
-										response.sendError(500);//否则，返回处理失败
+										response.sendError(500);// 否则，返回处理失败
 									} catch (IOException e) {
 									}
 									return;
@@ -190,7 +194,10 @@ public class ResourceServiceImpl implements ResourceService {
 				if (n != null) {
 					File file = fbu.getFileFromBlocks(n);
 					// 后缀检查
-					String suffix = n.getFileName().substring(n.getFileName().lastIndexOf(".")).trim().toLowerCase();
+					String suffix = "";
+					if (n.getFileName().indexOf(".") >= 0) {
+						suffix = n.getFileName().substring(n.getFileName().lastIndexOf(".")).trim().toLowerCase();
+					}
 					if (".docx".equals(suffix)) {
 						String contentType = "application/octet-stream";
 						response.setContentType(contentType);
@@ -221,7 +228,10 @@ public class ResourceServiceImpl implements ResourceService {
 				if (n != null) {
 					File file = fbu.getFileFromBlocks(n);
 					// 后缀检查
-					String suffix = n.getFileName().substring(n.getFileName().lastIndexOf(".")).trim().toLowerCase();
+					String suffix = "";
+					if (n.getFileName().indexOf(".") >= 0) {
+						suffix = n.getFileName().substring(n.getFileName().lastIndexOf(".")).trim().toLowerCase();
+					}
 					if (".txt".equals(suffix)) {
 						String contentType = "application/octet-stream";
 						response.setContentType(contentType);

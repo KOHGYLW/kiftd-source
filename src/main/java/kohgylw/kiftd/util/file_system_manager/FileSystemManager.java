@@ -443,8 +443,20 @@ public class FileSystemManager {
 				node.setFileCreator("SYS_IN");
 				int mb = (int) (size / 1024L / 1024L);
 				node.setFileSize(mb + "");
-				if (insertNode(node) == 0) {
-					throw new SQLException();
+				int i = 0;
+				while (true) {
+					try {
+						if (insertNode(node) == 0) {
+							throw new SQLException();
+						}
+						break;
+					} catch (Exception e2) {
+						node.setFileId(UUID.randomUUID().toString());
+						i++;
+					}
+					if (i >= 10) {
+						break;
+					}
 				}
 			} else {
 				target = new File(fileBlocks, node.getFilePath());
@@ -505,8 +517,20 @@ public class FileSystemManager {
 				folder.setFolderParent(folderId);
 				folder.setFolderCreator("SYS_IN");
 				folder.setFolderCreationDate(ServerTimeUtil.accurateToDay());
-				if (insertFolder(folder) == 0) {
-					throw new SQLException();
+				int i = 0;
+				while (true) {
+					try {
+						if (insertFolder(folder) == 0) {
+							throw new SQLException();
+						}
+						break;
+					} catch (Exception e2) {
+						folder.setFolderId(UUID.randomUUID().toString());
+						i++;
+					}
+					if (i >= 10) {
+						break;
+					}
 				}
 			} else {
 				folder.setFolderCreationDate(ServerTimeUtil.accurateToDay());
@@ -693,7 +717,8 @@ public class FileSystemManager {
 			}
 			if (Arrays.stream(path.listFiles()).parallel().filter((e) -> e.isFile())
 					.anyMatch((e) -> new String(e.getName().getBytes()).equals(folder.getFolderName()))) {
-				target = new File(path, new String(folder.getFolderName().getBytes())+"_与文件同名"+UUID.randomUUID().toString().replaceAll("-", ""));
+				target = new File(path, new String(folder.getFolderName().getBytes()) + "_与文件同名"
+						+ UUID.randomUUID().toString().replaceAll("-", ""));
 				target.mkdir();
 			}
 			if (target == null) {

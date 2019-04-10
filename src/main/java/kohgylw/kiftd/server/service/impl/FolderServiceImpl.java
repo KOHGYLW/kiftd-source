@@ -72,10 +72,22 @@ public class FolderServiceImpl implements FolderService {
 			f.setFolderCreator("匿名用户");
 		}
 		f.setFolderParent(parentId);
-		final int i = this.fm.insertNewFolder(f);
-		if (i > 0) {
-			this.lu.writeCreateFolderEvent(request, f);
-			return "createFolderSuccess";
+		int i = 0;
+		while (true) {
+			try {
+				final int r = this.fm.insertNewFolder(f);
+				if (r > 0) {
+					this.lu.writeCreateFolderEvent(request, f);
+					return "createFolderSuccess";
+				}
+				break;
+			} catch (Exception e) {
+				f.setFolderId(UUID.randomUUID().toString());
+				i++;
+			}
+			if (i >= 10) {
+				break;
+			}
 		}
 		return "cannotCreateFolder";
 	}

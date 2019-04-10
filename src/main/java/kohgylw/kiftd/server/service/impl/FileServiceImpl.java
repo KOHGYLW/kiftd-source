@@ -97,7 +97,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 			cufr.setCheckResult("permitUpload");
 			cufr.setPereFileNameList(new ArrayList<String>());
 		}
-		return gson.toJson(cufr);//以JSON格式写回该结果
+		return gson.toJson(cufr);// 以JSON格式写回该结果
 	}
 
 	// 执行上传操作，接收文件并存入文件节点
@@ -203,9 +203,22 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		f2.setFileParentFolder(folderId);
 		f2.setFilePath(path);
 		f2.setFileSize(fsize);
-		if (this.fm.insert(f2) > 0) {
-			this.lu.writeUploadFileEvent(f2, account);
-			return UPLOADSUCCESS;
+		int i = 0;
+		// 尽可能避免UUID重复的情况发生，重试10次
+		while (true) {
+			try {
+				if (this.fm.insert(f2) > 0) {
+					this.lu.writeUploadFileEvent(f2, account);
+					return UPLOADSUCCESS;
+				}
+				break;
+			} catch (Exception e) {
+				f2.setFileId(UUID.randomUUID().toString());
+				i++;
+			}
+			if (i >= 10) {
+				break;
+			}
 		}
 		return UPLOADERROR;
 	}

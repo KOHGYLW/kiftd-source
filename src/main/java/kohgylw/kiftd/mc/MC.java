@@ -31,7 +31,7 @@ public class MC {
 			try {
 				UIRunner.build();//以界面模式启动kiftd。
 			} catch (Exception e) {
-				System.out.println("错误！无法以图形界面模式启动kiftd，您的操作系统可能不支持图形界面。您可以尝试使用命令模式参数“-console”来启动并开始使用kiftd。");
+				System.out.println(new String("错误！无法以图形界面模式启动kiftd，您的操作系统可能不支持图形界面。您可以尝试使用命令模式参数“-console”来启动并开始使用kiftd。".getBytes()));
 			}
 		} else {
 			ConsoleRunner.build(args);//以控制台模式启动kiftd。
