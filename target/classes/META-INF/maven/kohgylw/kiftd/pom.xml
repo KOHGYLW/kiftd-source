@@ -4,11 +4,11 @@
 
 	<groupId>kohgylw</groupId>
 	<artifactId>kiftd</artifactId>
-	<version>1.0.17-SNAPSHOT</version>
+	<version>1.0.17-RELEASE</version>
 	<packaging>jar</packaging>
 
 	<name>kiftd</name>
-	<url>http://maven.apache.org</url>
+	<url>https://kohgylw.gitee.io</url>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

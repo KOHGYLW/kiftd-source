@@ -1,9 +1,9 @@
 Manifest-Version: 1.0
 Implementation-Title: kiftd
-Implementation-Version: 1.0.17-SNAPSHOT
+Implementation-Version: 1.0.17-RELEASE
 Built-By: kohgylw
 Implementation-Vendor-Id: kohgylw
 Build-Jdk: 1.8.0_131
-Implementation-URL: http://maven.apache.org
+Implementation-URL: https://kohgylw.gitee.io
 Created-By: Maven Integration for Eclipse
 
