@@ -170,6 +170,9 @@ public class FileBlockUtil {
 				}
 				zs.add((ZipEntrySource) new FileSource(node.getFileName(), new File(fileBlocks, node.getFilePath())));
 			}
+			for(ZipEntrySource zes:zs) {
+				System.out.println(zes.getPath());
+			}
 			ZipUtil.pack(zs.toArray(new ZipEntrySource[0]), f);
 			return zipname;
 		} catch (Exception e) {
@@ -181,24 +184,21 @@ public class FileBlockUtil {
 	private void addFoldersToZipEntrySourceArray(Folder f, List<ZipEntrySource> zs, String account, String parentPath) {
 		if (f != null && ConfigureReader.instance().accessFolder(f, account)) {
 			String folderName = f.getFolderName();
-			String thisPath = folderName + "/";
+			String thisPath = parentPath + folderName + "/";
 			zs.add(new ZipEntrySource() {
 
 				@Override
 				public String getPath() {
-					// TODO 自动生成的方法存根
 					return thisPath;
 				}
 
 				@Override
 				public InputStream getInputStream() throws IOException {
-					// TODO 自动生成的方法存根
 					return null;
 				}
 
 				@Override
 				public ZipEntry getEntry() {
-					// TODO 自动生成的方法存根
 					return new ZipEntry(thisPath);
 				}
 			});
