@@ -179,7 +179,7 @@
 					<archive>
 						<manifest>
 							<addClasspath>true</addClasspath>
-							<classpathPrefix>lib/</classpathPrefix>
+							<classpathPrefix>libs/</classpathPrefix>
 							<mainClass>kohgylw.kiftd.mc.MC</mainClass>
 						</manifest>
 					</archive>
@@ -197,7 +197,7 @@
                         </goals>
                         <configuration>
                             <outputDirectory>
-                                lib/
+                                libs/
                             </outputDirectory>
                         </configuration>
                     </execution>
