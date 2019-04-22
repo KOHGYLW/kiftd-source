@@ -8,8 +8,11 @@ import org.springframework.context.*;
 import kohgylw.kiftd.printer.*;
 import kohgylw.kiftd.server.util.*;
 
+import org.apache.catalina.Context;
 import org.apache.catalina.connector.Connector;
 import org.apache.coyote.http11.Http11NioProtocol;
+import org.apache.tomcat.util.descriptor.web.SecurityCollection;
+import org.apache.tomcat.util.descriptor.web.SecurityConstraint;
 import org.springframework.boot.*;
 import org.springframework.http.*;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
@@ -111,16 +114,43 @@ public class KiftdCtl {
 	// SpringBoot内置Tomcat引擎必要设置：端口、错误页面及HTTPS支持
 	@Bean
 	public ServletWebServerFactory servletContainer() {
-		//创建Tomcat容器引擎
-		TomcatServletWebServerFactory tomcat = new TomcatServletWebServerFactory();
-		tomcat.setPort(ConfigureReader.instance().getPort());//设置端口号
+		//创建Tomcat容器引擎，分为开启https和不开启https两种模式
+		TomcatServletWebServerFactory tomcat = null;
+		if (ConfigureReader.instance().openHttps()) {
+			//对于开启https模式，则将http端口的请求全部转发至https端口处理
+			tomcat = new TomcatServletWebServerFactory() {
+				//设置默认http处理转发
+				@Override
+				protected void customizeConnector(Connector connector) {
+					connector.setScheme("http");
+					// Connector监听的http的端口号
+					connector.setPort(ConfigureReader.instance().getPort());
+					connector.setSecure(false);
+					// 监听到http的端口号后转向到的https的端口号
+					connector.setRedirectPort(ConfigureReader.instance().getHttpsPort());
+				}
+				
+				//设置默认http处理
+				@Override
+				protected void postProcessContext(Context context) {
+					SecurityConstraint constraint = new SecurityConstraint();
+					constraint.setUserConstraint("CONFIDENTIAL");
+					SecurityCollection collection = new SecurityCollection();
+					collection.addPattern("/*");
+					constraint.addCollection(collection);
+					context.addConstraint(constraint);
+				}
+			};
+			//添加https链接处理器
+			tomcat.addAdditionalTomcatConnectors(createHttpsConnector());
+		}else {
+			//对于不开启https模式，以常规方法生成容器
+			tomcat = new TomcatServletWebServerFactory();
+			tomcat.setPort(ConfigureReader.instance().getPort());//设置端口号
+		}
 		//设置错误处理页面
 		tomcat.addErrorPages(new ErrorPage[] { new ErrorPage(HttpStatus.NOT_FOUND, "/errorController/pageNotFound.do"),
 				new ErrorPage(HttpStatus.INTERNAL_SERVER_ERROR, "/errorController/pageNotFound.do") });
-		//检查是否需要https支持，如是，则开启
-		if (ConfigureReader.instance().openHttps()) {
-			tomcat.addAdditionalTomcatConnectors(createHttpsConnector());
-		}
 		return tomcat;
 	}
 
@@ -130,15 +160,11 @@ public class KiftdCtl {
 		// 配置针对Https的支持
 		connector.setScheme("https");//设置请求协议头
 		connector.setPort(ConfigureReader.instance().getHttpsPort());//设置https请求端口
-		System.out.println(ConfigureReader.instance().getHttpsPort());
 		Http11NioProtocol protocol = (Http11NioProtocol) connector.getProtocolHandler();
 		protocol.setSSLEnabled(true);//开启SSL加密通信
 		protocol.setKeystoreFile(ConfigureReader.instance().getHttpsKeyFile());// 设置证书文件
-		System.out.println(ConfigureReader.instance().getHttpsKeyFile());
 		protocol.setKeystoreType(ConfigureReader.instance().getHttpsKeyType());// 设置加密类别（PKCS12/JKS）
-		System.out.println(ConfigureReader.instance().getHttpsKeyType());
 		protocol.setKeystorePass(ConfigureReader.instance().getHttpsKeyPass());// 设置证书密码
-		System.out.println(ConfigureReader.instance().getHttpsKeyPass());
 		return connector;
 	}
 }
