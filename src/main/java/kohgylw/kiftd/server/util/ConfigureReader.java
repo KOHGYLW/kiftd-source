@@ -66,9 +66,15 @@ public class ConfigureReader {
 	public static final int CANT_CREATE_FILE_NODE_PATH = 6;
 	public static final int CANT_CREATE_TF_PATH = 7;
 	public static final int CANT_CONNECT_DB = 8;
+	public static final int HTTPS_SETTING_ERROR = 9;
 	public static final int LEGAL_PROPERTIES = 0;
 	private static Thread accountPropertiesUpdateDaemonThread;
 	private String timeZone;
+	private boolean openHttps;
+	private String httpsKeyFile;
+	private String httpsKeyType;
+	private String httpsKeyPass;
+	private int httpsPort;
 
 	private ConfigureReader() {
 		this.propertiesStatus = -1;
@@ -363,9 +369,11 @@ public class ConfigureReader {
 			try {
 				this.port = Integer.parseInt(ports);
 				if (this.port <= 0 || this.port > 65535) {
+					Printer.instance.print("错误：端口号配置不正确，必须使用1-65535之间的整数。");
 					return 1;
 				}
 			} catch (Exception e) {
+				Printer.instance.print("错误：端口号配置不正确，必须使用1-65535之间的整数。");
 				return 1;
 			}
 		}
@@ -460,6 +468,41 @@ public class ConfigureReader {
 			dbUser = "root";
 			dbPwd = "301537gY";
 		}
+		// https支持检查及生效处理
+		if ("true".equals(serverp.getProperty("https.enable"))) {
+			File keyFile = new File(path, "https.p12");
+			if (keyFile.isFile()) {
+				httpsKeyType = "PKCS12";
+			} else {
+				keyFile = new File(path, "https.jks");
+				if (keyFile.isFile()) {
+					httpsKeyType = "JKS";
+				} else {
+					Printer.instance.print(
+							"错误：无法启用https支持，因为kiftd未能找到https证书文件。您必须在应用主目录内放置PKCS12（必须命名为https.p12）或JKS（必须命名为https.jks）证书。");
+					return HTTPS_SETTING_ERROR;
+				}
+			}
+			httpsKeyFile = keyFile.getAbsolutePath();
+			httpsKeyPass = serverp.getProperty("https.keypass", "");
+			String httpsports = serverp.getProperty("https.port");
+			if (httpsports == null) {
+				Printer.instance.print("警告：未找到https端口配置，将采用默认值（443）。");
+				httpsPort = 443;
+			} else {
+				try {
+					this.httpsPort = Integer.parseInt(httpsports);
+					if (httpsPort <= 0 || httpsPort > 65535) {
+						Printer.instance.print("错误：无法启用https支持，https访问端口号配置不正确。");
+						return HTTPS_SETTING_ERROR;
+					}
+				} catch (Exception e) {
+					Printer.instance.print("错误：无法启用https支持，https访问端口号配置不正确。");
+					return HTTPS_SETTING_ERROR;
+				}
+			}
+			openHttps = true;
+		}
 		Printer.instance.print("检查完毕。");
 		return 0;
 	}
@@ -479,6 +522,15 @@ public class ConfigureReader {
 			dsp.setProperty("mysql.user", dbUser == null ? "root" : dbUser);
 			dsp.setProperty("mysql.password", dbPwd == null ? "" : dbPwd);
 			dsp.setProperty("mysql.timezone", timeZone == null ? "GMT%2B8" : timeZone);
+		}
+		if ("true".equals(serverp.getProperty("https.enable"))) {
+			dsp.setProperty("https.enable", "false");
+			if (serverp.getProperty("https.keypass") != null) {
+				dsp.setProperty("https.keypass", serverp.getProperty("https.keypass"));
+			}
+			if (serverp.getProperty("https.port") != null) {
+				dsp.setProperty("https.port", serverp.getProperty("https.port"));
+			}
 		}
 		try {
 			dsp.store(new FileOutputStream(this.confdir + SERVER_PROPERTIES_FILE),
@@ -674,6 +726,36 @@ public class ConfigureReader {
 			accountPropertiesUpdateDaemonThread.setDaemon(true);
 			accountPropertiesUpdateDaemonThread.start();
 		}
+	}
+
+	/**
+	 * 
+	 * <h2>是否开启Https支持</h2>
+	 * <p>
+	 * 该方法将返回用户是否开启了https的设置项。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @return boolean 是否开启
+	 */
+	public boolean openHttps() {
+		return openHttps;
+	}
+
+	public String getHttpsKeyType() {
+		return httpsKeyType;
+	}
+
+	public String getHttpsKeyFile() {
+		return httpsKeyFile;
+	}
+
+	public String getHttpsKeyPass() {
+		return httpsKeyPass;
+	}
+
+	public int getHttpsPort() {
+		return httpsPort;
 	}
 
 }

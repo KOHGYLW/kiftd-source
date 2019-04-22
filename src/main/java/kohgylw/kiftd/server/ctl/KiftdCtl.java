@@ -7,30 +7,38 @@ import kohgylw.kiftd.server.configation.*;
 import org.springframework.context.*;
 import kohgylw.kiftd.printer.*;
 import kohgylw.kiftd.server.util.*;
+
+import org.apache.catalina.connector.Connector;
+import org.apache.coyote.http11.Http11NioProtocol;
 import org.springframework.boot.*;
 import org.springframework.http.*;
+import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.*;
-
 
 /**
  * 
  * <h2>服务器引擎控制器</h2>
- * <p>该类为服务器引擎的控制层，负责连接服务器内核与用户操作界面，用于控制服务器行为。包括启动、关闭、重启等。同时，该类也为SpringBoot框架
+ * <p>
+ * 该类为服务器引擎的控制层，负责连接服务器内核与用户操作界面，用于控制服务器行为。包括启动、关闭、重启等。同时，该类也为SpringBoot框架
  * 应用入口，负责初始化SpringBoot容器。详见内置公有方法。
  * </p>
+ * 
  * @author 青阳龙野(kohgylw)
  * @version 1.0
  */
 @SpringBootApplication
 @Import({ MVC.class })
-public class KiftdCtl implements WebServerFactoryCustomizer<ConfigurableServletWebServerFactory> {
+public class KiftdCtl {
 	private static ApplicationContext context;
 	private static boolean run;
-	
+
 	/**
 	 * 
 	 * <h2>启动服务器</h2>
-	 * <p>该方法将启动SpringBoot服务器引擎并返回启动结果。该过程较为耗时，为了不阻塞主线程，请在额外线程中执行该方法。</p>
+	 * <p>
+	 * 该方法将启动SpringBoot服务器引擎并返回启动结果。该过程较为耗时，为了不阻塞主线程，请在额外线程中执行该方法。
+	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
 	 * @return boolean 启动结果
 	 */
@@ -49,18 +57,20 @@ public class KiftdCtl implements WebServerFactoryCustomizer<ConfigurableServletW
 					return false;
 				}
 			}
-			Printer.instance.print(
-					"服务器设置检查失败，无法开启服务器。");
+			Printer.instance.print("服务器设置检查失败，无法开启服务器。");
 			return false;
 		}
 		Printer.instance.print("服务器正在运行中。");
 		return true;
 	}
-	
+
 	/**
 	 * 
 	 * <h2>停止服务器</h2>
-	 * <p>该方法将关闭服务器引擎并清理缓存文件。该方法较为耗时。</p>
+	 * <p>
+	 * 该方法将关闭服务器引擎并清理缓存文件。该方法较为耗时。
+	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
 	 * @return boolean 关闭结果
 	 */
@@ -79,22 +89,14 @@ public class KiftdCtl implements WebServerFactoryCustomizer<ConfigurableServletW
 		Printer.instance.print("服务器未启动。");
 		return true;
 	}
-	
-	/**
-	 * SpringBoot框架设置全局错误页面，无需调用
-	 */
-	public void customize(final ConfigurableServletWebServerFactory factory) {
-		factory.setPort(ConfigureReader.instance().getPort());
-		factory.addErrorPages(
-				new ErrorPage[] { new ErrorPage(HttpStatus.NOT_FOUND, "/errorController/pageNotFound.do") });
-		factory.addErrorPages(new ErrorPage[] {
-				new ErrorPage(HttpStatus.INTERNAL_SERVER_ERROR, "/errorController/pageNotFound.do") });
-	}
-	
+
 	/**
 	 * 
 	 * <h2>获取服务器运行状态</h2>
-	 * <p>该方法返回服务器引擎的运行状态，该状态由内置属性记录，且唯一。</p>
+	 * <p>
+	 * 该方法返回服务器引擎的运行状态，该状态由内置属性记录，且唯一。
+	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
 	 * @return boolean 服务器是否启动
 	 */
@@ -104,5 +106,39 @@ public class KiftdCtl implements WebServerFactoryCustomizer<ConfigurableServletW
 
 	static {
 		KiftdCtl.run = false;
+	}
+
+	// SpringBoot内置Tomcat引擎必要设置：端口、错误页面及HTTPS支持
+	@Bean
+	public ServletWebServerFactory servletContainer() {
+		//创建Tomcat容器引擎
+		TomcatServletWebServerFactory tomcat = new TomcatServletWebServerFactory();
+		tomcat.setPort(ConfigureReader.instance().getPort());//设置端口号
+		//设置错误处理页面
+		tomcat.addErrorPages(new ErrorPage[] { new ErrorPage(HttpStatus.NOT_FOUND, "/errorController/pageNotFound.do"),
+				new ErrorPage(HttpStatus.INTERNAL_SERVER_ERROR, "/errorController/pageNotFound.do") });
+		//检查是否需要https支持，如是，则开启
+		if (ConfigureReader.instance().openHttps()) {
+			tomcat.addAdditionalTomcatConnectors(createHttpsConnector());
+		}
+		return tomcat;
+	}
+
+	// 生成https支持配置，包括端口号、证书文件、证书密码等
+	private Connector createHttpsConnector() {
+		Connector connector = new Connector("org.apache.coyote.http11.Http11NioProtocol");
+		// 配置针对Https的支持
+		connector.setScheme("https");//设置请求协议头
+		connector.setPort(ConfigureReader.instance().getHttpsPort());//设置https请求端口
+		System.out.println(ConfigureReader.instance().getHttpsPort());
+		Http11NioProtocol protocol = (Http11NioProtocol) connector.getProtocolHandler();
+		protocol.setSSLEnabled(true);//开启SSL加密通信
+		protocol.setKeystoreFile(ConfigureReader.instance().getHttpsKeyFile());// 设置证书文件
+		System.out.println(ConfigureReader.instance().getHttpsKeyFile());
+		protocol.setKeystoreType(ConfigureReader.instance().getHttpsKeyType());// 设置加密类别（PKCS12/JKS）
+		System.out.println(ConfigureReader.instance().getHttpsKeyType());
+		protocol.setKeystorePass(ConfigureReader.instance().getHttpsKeyPass());// 设置证书密码
+		System.out.println(ConfigureReader.instance().getHttpsKeyPass());
+		return connector;
 	}
 }
