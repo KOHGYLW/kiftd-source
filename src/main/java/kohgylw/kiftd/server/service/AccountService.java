@@ -9,4 +9,6 @@ public interface AccountService
     void logout(final HttpSession session);
     
     String getPublicKey();
+    
+    void getNewLoginVerCode(final HttpServletRequest request, final HttpServletResponse response, final HttpSession session);
 }

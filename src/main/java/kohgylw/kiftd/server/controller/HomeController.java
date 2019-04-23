@@ -55,6 +55,12 @@ public class HomeController {
 	public String doLogin(final HttpServletRequest request, final HttpSession session) {
 		return this.as.checkLoginRequest(request, session);
 	}
+	
+	//获取一个新验证码并存入请求者的Session中
+	@RequestMapping({ "/getNewVerCode.do" })
+	public void getNewVerCode(final HttpServletRequest request, final HttpServletResponse response,final HttpSession session) {
+		as.getNewLoginVerCode(request, response,session);
+	}
 
 	@RequestMapping(value = { "/getFolderView.ajax" }, produces = { CHARSET_BY_AJAX })
 	@ResponseBody
