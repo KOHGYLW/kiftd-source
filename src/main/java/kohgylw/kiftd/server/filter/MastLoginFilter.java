@@ -23,8 +23,9 @@ public class MastLoginFilter implements Filter
         final HttpServletResponse hsr = (HttpServletResponse)response;
         final String url = hsq.getServletPath();
         final HttpSession session = hsq.getSession();
-        if(url.startsWith("/externalLinksController/") || url.startsWith("//externalLinksController/")) {
-        		chain.doFilter(request, response);//对于外部链接控制器的请求直接放行。
+        if(url.startsWith("/externalLinksController/") || url.startsWith("//externalLinksController/") || url.startsWith("/homeController/getNewVerCode.do") || url.startsWith("//homeController/getNewVerCode.do")) {
+        		chain.doFilter(request, response);//对于外部链接控制器和验证码的请求直接放行。
+        		return;
         }
         if (url.equals("//prv/login.html") || url.equals("/prv/login.html")) {
             if (s) {

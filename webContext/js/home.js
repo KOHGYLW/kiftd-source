@@ -537,7 +537,7 @@ function sendLoginInfo(encrypted) {
 				$("#alertbox").text("提示：登录失败，密码错误或未设置");
 				break;
 			case "needsubmitvercode":
-				$("#vercodebox").html("<label id='vercodetitle' class='col-sm-6'><img id='showvercode' style='width: 100%; CURSOR: hand' alt='点击获取验证码' src='homeController/getNewVerCode.do?s="+(new Date()).getTime()+"' onclick='getNewVerCode()'></label><div class='col-sm-6'><input type='text' class='form-control' id='vercode' placeholder='验证码……'></div>");
+				$("#vercodebox").html("<label id='vercodetitle' class='col-sm-6'><img id='showvercode' class='vercodeimg' alt='点击获取验证码' src='homeController/getNewVerCode.do?s="+(new Date()).getTime()+"' onclick='getNewVerCode()'></label><div class='col-sm-6'><input type='text' class='form-control' id='vercode' placeholder='验证码……'></div>");
 				$("#vercodebox").removeClass("hidden");
 				$("#vercodebox").addClass("show");
 				break;
