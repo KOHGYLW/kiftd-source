@@ -37,11 +37,11 @@ Class-Path: libs/spring-boot-starter-web-2.0.2.RELEASE.jar libs/spring
  .10-FINAL.jar libs/poi-3.10-FINAL.jar libs/dom4j-1.6.1.jar libs/xml-a
  pis-1.4.01.jar libs/ooxml-schemas-1.1.jar libs/xmlbeans-2.3.0.jar lib
  s/stax-api-1.0.1.jar libs/fr.opensagres.xdocreport.itext.extension-1.
- 0.6.jar libs/jchardet-1.0.jar libs/jave-all-deps-2.4.5.jar libs/jave-
- core-2.4.5.jar libs/commons-logging-api-1.1.jar libs/jave-native-win3
- 2-2.4.5.jar libs/jave-native-win64-2.4.5.jar libs/jave-native-linux32
- -2.4.5.jar libs/jave-native-linux64-2.4.5.jar libs/jave-native-osx64-
- 2.4.5.jar libs/commons-codec-1.11.jar
+ 0.6.jar libs/jchardet-1.0.jar libs/jave-all-deps-2.5.0.jar libs/jave-
+ core-2.5.0.jar libs/commons-logging-api-1.1.jar libs/jave-nativebin-w
+ in32-2.5.0.jar libs/jave-nativebin-win64-2.5.0.jar libs/jave-nativebi
+ n-linux32-2.5.0.jar libs/jave-nativebin-linux64-2.5.0.jar libs/jave-n
+ ativebin-osx64-2.5.0.jar libs/commons-codec-1.11.jar
 Build-Jdk: 1.8.0_131
 Implementation-URL: https://kohgylw.gitee.io
 Created-By: Maven Integration for Eclipse
