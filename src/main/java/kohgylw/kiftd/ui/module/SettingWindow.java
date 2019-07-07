@@ -4,6 +4,7 @@ import java.io.*;
 
 import kohgylw.kiftd.printer.Printer;
 import kohgylw.kiftd.server.enumeration.LogLevel;
+import kohgylw.kiftd.server.enumeration.VCLevel;
 import kohgylw.kiftd.server.pojo.ServerSetting;
 import kohgylw.kiftd.ui.callback.*;
 import javax.swing.*;
@@ -11,11 +12,22 @@ import javax.swing.border.*;
 import java.awt.*;
 import java.awt.event.*;
 
+/**
+ * 
+ * <h2>界面模块——设置</h2>
+ * <p>
+ * 设置界面类，负责图形化界面下的设置界面显示。
+ * </p>
+ * 
+ * @author 青阳龙野(kohgylw)
+ * @version 1.0
+ */
 public class SettingWindow extends KiftdDynamicWindow {
 	private static JDialog window;
 	private static JTextField portinput;
 	private static JTextField bufferinput;
 	private static JComboBox<String> mlinput;
+	private static JComboBox<String> vcinput;
 	private static JComboBox<String> logLevelinput;
 	private static JButton cancel;
 	private static JButton update;
@@ -26,13 +38,17 @@ public class SettingWindow extends KiftdDynamicWindow {
 	private static SettingWindow sw;
 	private static final String ML_OPEN = "是(YES)";
 	private static final String ML_CLOSE = "否(CLOSE)";
+	private static final String VC_STANDARD = "标准(STANDARD)";
+	private static final String VC_SIMP = "简化(SIMPLIFIED)";
+	private static final String VC_CLOSE = "关闭(CLOSE)";
 	protected static GetServerStatus st;
 	protected static UpdateSetting us;
 
 	private SettingWindow() {
-		setUIFont();
+		setUIFont();// 全局字体设置
+		// 窗口主体相关设置
 		(SettingWindow.window = new JDialog(ServerUIModule.window, "kiftd-设置")).setModal(true);
-		SettingWindow.window.setSize(410, 380);
+		SettingWindow.window.setSize(410, 400);
 		SettingWindow.window.setLocation(150, 150);
 		SettingWindow.window.setDefaultCloseOperation(1);
 		SettingWindow.window.setResizable(false);
@@ -43,10 +59,12 @@ public class SettingWindow extends KiftdDynamicWindow {
 		title.setFont(new Font("宋体", 1, (int) (20 * proportion)));
 		titlebox.add(title);
 		SettingWindow.window.add(titlebox);
-		final JPanel settingbox = new JPanel(new GridLayout(5, 1, 0, 0));
+		// 窗口组件排布
+		final JPanel settingbox = new JPanel(new GridLayout(6, 1, 0, 0));
 		settingbox.setBorder(new EtchedBorder());
-		final JPanel mlbox = new JPanel(new FlowLayout(1));
 		final int interval = 0;
+		// 必须登入下拉框
+		final JPanel mlbox = new JPanel(new FlowLayout(1));
 		mlbox.setBorder(new EmptyBorder(interval, 0, interval, 0));
 		final JLabel mltitle = new JLabel("必须登入(must login)：");
 		(SettingWindow.mlinput = new JComboBox<String>()).addItem(ML_OPEN);
@@ -54,6 +72,17 @@ public class SettingWindow extends KiftdDynamicWindow {
 		SettingWindow.mlinput.setPreferredSize(new Dimension((int) (170 * proportion), (int) (20 * proportion)));
 		mlbox.add(mltitle);
 		mlbox.add(SettingWindow.mlinput);
+		// 登录验证码下拉框
+		final JPanel vcbox = new JPanel(new FlowLayout(1));
+		vcbox.setBorder(new EmptyBorder(interval, 0, interval, 0));
+		final JLabel vctitle = new JLabel("登录验证码(VC type)：");
+		(SettingWindow.vcinput = new JComboBox<>()).addItem(VC_STANDARD);
+		SettingWindow.vcinput.addItem(VC_SIMP);
+		SettingWindow.vcinput.addItem(VC_CLOSE);
+		SettingWindow.mlinput.setPreferredSize(new Dimension((int) (170 * proportion), (int) (20 * proportion)));
+		vcbox.add(vctitle);
+		vcbox.add(SettingWindow.vcinput);
+		// 端口号输入框
 		final JPanel portbox = new JPanel(new FlowLayout(1));
 		portbox.setBorder(new EmptyBorder(interval, 0, interval, 0));
 		final JLabel porttitle = new JLabel("端口(port)：");
@@ -91,6 +120,7 @@ public class SettingWindow extends KiftdDynamicWindow {
 		filePathBox.add(SettingWindow.changeFileSystemPath);
 		settingbox.add(portbox);
 		settingbox.add(mlbox);
+		settingbox.add(vcbox);
 		settingbox.add(bufferbox);
 		settingbox.add(logbox);
 		settingbox.add(filePathBox);
@@ -157,6 +187,22 @@ public class SettingWindow extends KiftdDynamicWindow {
 								default:
 									break;
 								}
+								switch (vcinput.getSelectedIndex()) {
+								case 0: {
+									ss.setVc(VCLevel.Standard);
+									break;
+								}
+								case 1:{
+									ss.setVc(VCLevel.Simplified);
+									break;
+								}
+								case 2:{
+									ss.setVc(VCLevel.Close);
+									break;
+								}
+								default:
+									break;
+								}
 								if (us.update(ss)) {
 									ServerUIModule.getInsatnce().updateServerStatus();
 									window.setVisible(false);
@@ -220,6 +266,20 @@ public class SettingWindow extends KiftdDynamicWindow {
 					SettingWindow.mlinput.setSelectedIndex(0);
 				} else {
 					SettingWindow.mlinput.setSelectedIndex(1);
+				}
+				switch (SettingWindow.st.getVCLevel()) {
+				case Standard: {
+					SettingWindow.vcinput.setSelectedIndex(0);
+					break;
+				}
+				case Simplified: {
+					SettingWindow.vcinput.setSelectedIndex(1);
+					break;
+				}
+				case Close: {
+					SettingWindow.vcinput.setSelectedIndex(2);
+					break;
+				}
 				}
 			}
 			return;

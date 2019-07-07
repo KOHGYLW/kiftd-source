@@ -37,6 +37,7 @@ public class ConfigureReader {
 	private String mustLogin;
 	private int port;
 	private String log;
+	private String vc;
 	private String FSPath;
 	private int bufferSize;
 	private String fileBlockPath;
@@ -51,6 +52,7 @@ public class ConfigureReader {
 	private final int DEFAULT_BUFFER_SIZE = 1048576;
 	private final int DEFAULT_PORT = 8080;
 	private final String DEFAULT_LOG_LEVEL = "E";
+	private final String DEFAULT_VC_LEVEL = "STANDARD";
 	private final String DEFAULT_MUST_LOGIN = "O";
 	private final String DEFAULT_FILE_SYSTEM_PATH;
 	private final String DEFAULT_FILE_SYSTEM_PATH_SETTING = "DEFAULT";
@@ -67,6 +69,7 @@ public class ConfigureReader {
 	public static final int CANT_CREATE_TF_PATH = 7;
 	public static final int CANT_CONNECT_DB = 8;
 	public static final int HTTPS_SETTING_ERROR = 9;
+	public static final int INVALID_VC = 10;
 	public static final int LEGAL_PROPERTIES = 0;
 	private static Thread accountPropertiesUpdateDaemonThread;
 	private String timeZone;
@@ -296,6 +299,34 @@ public class ConfigureReader {
 		}
 		}
 	}
+	
+	/**
+	 * 
+	 * <h2>获得验证码等级</h2>
+	 * <p>返回设置的验证码等级枚举类（kohgylw.kiftd.server.enumeration.VCLevel），包括：关闭（CLOSE）、简单（Simplified）、标准（Standard）</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @return kohgylw.kiftd.server.enumeration.VCLevel 验证码等级
+	 */
+	public VCLevel getVCLevel() {
+		if (this.vc == null) {
+			this.vc = "";
+		}
+		final String vc = this.vc;
+		switch (vc) {
+		case "STANDARD": {
+			return VCLevel.Standard;
+		}
+		case "SIMP": {
+			return VCLevel.Simplified;
+		}
+		case "CLOSE": {
+			return VCLevel.Close;
+		}
+		default: {
+			return null;
+		}
+		}
+	}
 
 	public int getPort() {
 		return this.port;
@@ -326,6 +357,20 @@ public class ConfigureReader {
 			}
 			}
 			this.serverp.setProperty("log", loglevelCode);
+			switch (ss.getVc()) {
+			case Standard:{
+				this.serverp.setProperty("VC.level", "STANDARD");
+				break;
+			}
+			case Close:{
+				this.serverp.setProperty("VC.level", "CLOSE");
+				break;
+			}
+			case Simplified:{
+				this.serverp.setProperty("VC.level", "SIMP");
+				break;
+			}
+			}
 			this.serverp.setProperty("port", ss.getPort() + "");
 			this.serverp.setProperty("FS.path",
 					(ss.getFsPath() + File.separator).equals(this.DEFAULT_FILE_SYSTEM_PATH) ? "DEFAULT"
@@ -386,6 +431,21 @@ public class ConfigureReader {
 				return 2;
 			}
 			this.log = logs;
+		}
+		final String vcl = this.serverp.getProperty("VC.level");
+		if (vcl == null) {
+			Printer.instance.print("警告：未找到登录验证码配置，将采用默认值（STANDARD）。");
+			this.vc = DEFAULT_VC_LEVEL;
+		} else {
+			switch (vcl) {
+			case "STANDARD":
+			case "SIMP":
+			case "CLOSE":
+				this.vc = vcl;
+				break;
+			default:
+				return INVALID_VC;
+			}
 		}
 		final String bufferSizes = this.serverp.getProperty("buff.size");
 		if (bufferSizes == null) {
@@ -513,6 +573,7 @@ public class ConfigureReader {
 		dsp.setProperty("mustLogin", DEFAULT_MUST_LOGIN);
 		dsp.setProperty("port", DEFAULT_PORT + "");
 		dsp.setProperty("log", DEFAULT_LOG_LEVEL);
+		dsp.setProperty("VC.level", DEFAULT_VC_LEVEL);
 		dsp.setProperty("FS.path", DEFAULT_FILE_SYSTEM_PATH_SETTING);
 		dsp.setProperty("buff.size", DEFAULT_BUFFER_SIZE + "");
 		if ("true".equals(serverp.getProperty("mysql.enable"))) {

@@ -14,6 +14,8 @@ public interface GetServerStatus
     
     LogLevel getLogLevel();
     
+    VCLevel getVCLevel();
+    
     String getFileSystemPath();
     
     boolean getMustLogin();

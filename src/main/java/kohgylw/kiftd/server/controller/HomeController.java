@@ -211,4 +211,17 @@ public class HomeController {
 	public String sreachInCompletePath(final HttpServletRequest request) {
 		return fvs.getSreachViewToJson(request);
 	}
+	
+	/**
+	 * 
+	 * <h2>应答机制</h2>
+	 * <p>该机制能够有效防止在某些长时间不操作的情况下Session失效的问题。</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @return String “pong”
+	 */
+	@RequestMapping(value = { "/ping.ajax" }, produces = { CHARSET_BY_AJAX })
+	@ResponseBody
+	public String pong() {
+		return "pong";
+	}
 }
