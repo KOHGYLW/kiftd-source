@@ -1396,7 +1396,7 @@ function showDownloadModel(fileId, fileName) {
 	$("#downloadFileName").text("提示：您确认要下载文件：[" + fileName + "]么？");
 	$("#downloadHrefBox").html("<span class='text-muted'>正在生成...</span>");
 	getDownloadFileId=fileId;
-	getDownloadFileName=fileName;
+	getDownloadFileName=fileName.replace("#","%23").replace("%","%25").replace("?","%3F");
 	$("#downloadFileBox")
 			.html(
 					"<button id='dlmbutton' type='button' class='btn btn-primary' onclick='dodownload("
