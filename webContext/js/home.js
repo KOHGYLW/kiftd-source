@@ -748,7 +748,7 @@ function showFolderTable(folderView) {
 			.each(
 					folderView.folderList,
 					function(n, f) {
-						f.folderName = f.folderName.replace('\'','&#39;');
+						f.folderName = f.folderName.replace('\'','&#39;').replace('<','&lt;').replace('>','&gt;');
 						var folderRow = "<tr id='"+f.folderId+"' onclick='checkfile(event,"+'"'+f.folderId+'"'+")' ondblclick='checkConsFile(event,"+'"'+f.folderId+'"'+")' class='filerow' iskfolder='true' ><td><button onclick='entryFolder("
 								+ '"' + f.folderId + '"'
 								+ ")' class='btn btn-link btn-xs'>/"
@@ -796,7 +796,7 @@ function showFolderTable(folderView) {
 			.each(
 					folderView.fileList,
 					function(n, fi) {
-						fi.fileName = fi.fileName.replace('\'','&#39;');
+						fi.fileName = fi.fileName.replace('\'','&#39;').replace('<','&lt;').replace('>','&gt;');
 						var fileRow = "<tr id=" + fi.fileId + " onclick='checkfile(event," + '"'
 								+ fi.fileId + '"' + ")' ondblclick='checkConsFile(event,"+'"'+fi.fileId+'"'+")' id='" + fi.fileId
 								+ "' class='filerow'><td>" + fi.fileName
