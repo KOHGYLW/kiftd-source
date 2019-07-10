@@ -19,7 +19,7 @@ $(function() {
 				success : function(result) {
 					if (result != "ERROR") {
 						f = eval("(" + result + ")");
-						$("#vname").text(f.fileName);
+						$("#vname").text(f.fileName.replace('\'','&#39;').replace('<','&lt;').replace('>','&gt;'));
 						$("#vcreator").text(f.fileCreator);
 						$("#vcdate").text(f.fileCreationDate);
 						$("#vsize").text(f.fileSize);
@@ -52,7 +52,7 @@ function getFileId() {
 	}
 	return "";
 }
-// 显示视屏信息并播放视频
+// 显示视频信息并播放视频
 function playVideo() {
 	$("#playerbox")
 			.html(

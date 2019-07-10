@@ -1957,6 +1957,10 @@ function playAudio(fileId) {
 		dataType:'text',
 		success:function(result){
 			var ail=eval("("+result+")");
+			//避免存在恶意标签注入在文件名中
+			for(var i=0;i<ail.as.length;i++){
+				ail.as[i].name=ail.as[i].name.replace('\'','&#39;').replace('<','&lt;').replace('>','&gt;');
+			}
 			ap.list.add(ail.as);
 			ap.list.switch(ail.index);
 			audio_play();
