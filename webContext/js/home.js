@@ -944,7 +944,7 @@ function createfolder() {
 	var reg = new RegExp("[\/\|\\s\\\\\*\\<\\>\\?\\:\\&\\$" + '"' + "]+", "g");
 	if (fn.length == 0) {
 		showFolderAlert("提示：文件夹名称不能为空。");
-	} else if (fn.length > 20) {
+	} else if (fn.length > 128) {
 		showFolderAlert("提示：文件夹名称太长。");
 	} else if (!reg.test(fn) && fn.indexOf(".") != 0) {
 		$("#folderalert").removeClass("alert");
@@ -1078,7 +1078,7 @@ function renameFolder(folderId) {
 	var reg = new RegExp("[\/\|\\s\\\\\*\\<\\>\\?\\:\\&\\$" + '"' + "]+", "g");
 	if (newName.length == 0) {
 		showRFolderAlert("提示：文件夹名称不能为空。");
-	} else if (newName.length > 20) {
+	} else if (newName.length > 128) {
 		showRFolderAlert("提示：文件夹名称太长。");
 	} else if (!reg.test(newName) && newName.indexOf(".") != 0) {
 		$("#newfolderalert").removeClass("alert");

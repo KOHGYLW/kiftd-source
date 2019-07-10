@@ -59,6 +59,10 @@ public class Txt2PDFUtil {
 			paragraph.add(line + "\n");//将文本逐行写入PDF段落
 		}
 		reader.close();
+		//避免因打开空文档可能造成的打开失败
+		if(paragraph.isEmpty()) {
+			paragraph.add("");
+		}
 		doc.add(paragraph);//写入段落至文档
 		doc.close();//关闭文档
 		pw.flush();
