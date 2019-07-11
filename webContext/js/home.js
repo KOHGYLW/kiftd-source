@@ -31,7 +31,13 @@ $(function() {
 		changeFilesTableStyle();
     }
 	getServerOS();// 得到服务器操作系统信息
-	showFolderView("root");// 显示根节点页面视图
+	//查询是否存在记忆路径，若有，则直接显示记忆路径的内容，否则显示ROOT根路径
+	var arr = document.cookie.match(new RegExp("(^| )folder_id=([^;]*)(;|$)"));
+    if (arr != null){
+    		showFolderView(unescape(arr[2]));// 显示记忆路径页面视图
+    }else{
+    		showFolderView("root");// 显示根节点页面视图
+    }
 	// 点击空白处取消选中文件（已尝试兼容火狐，请期待用户反馈，如不好使再改）
 	$(document).click(function(e) {
 		var filetable = $("#filetable")[0];
@@ -389,11 +395,17 @@ function showFolderView(fid,targetId) {
 				$("#parentlistbox").html("<span class='graytext'>获取失败，请尝试刷新</span>");
 			} else if (result == "mustLogin") {
 				window.location.href = "login.html";
+			} else if(result == "NOT_FOUND") {
+				document.cookie = "folder_id=" + escape("root");//归位记忆路径
+				window.location.href="/";
 			} else if(result == "notAccess"){
+				document.cookie = "folder_id=" + escape("root");//归位记忆路径
 				window.location.href="/";
 			} else {
 				folderView = eval("(" + result + ")");
 				locationpath = folderView.folder.folderId;
+				//存储打开的文件夹路径至Cookie中，以便下次打开时直接显示
+				document.cookie = "folder_id=" + escape(locationpath);
 				parentpath = folderView.folder.folderParent;
 				constraintLevel=folderView.folder.folderConstraint;
 				screenedFoldrView=null;
@@ -2331,6 +2343,7 @@ function selectInCompletePath(keyworld){
 			} else if (result == "mustLogin") {
 				window.location.href = "login.html";
 			} else if(result == "notAccess"){
+				document.cookie = "folder_id=" + escape("root");
 				window.location.href="/";
 			} else {
 				folderView = eval("(" + result + ")");

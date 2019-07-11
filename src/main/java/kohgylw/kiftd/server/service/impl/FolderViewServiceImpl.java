@@ -32,6 +32,9 @@ public class FolderViewServiceImpl implements FolderViewService {
 			return "ERROR";
 		}
 		Folder vf = this.fm.queryById(fid);
+		if(vf == null) {
+			return "NOT_FOUND";//如果用户请求一个不存在的文件夹，则返回“NOT_FOUND”，令页面回到ROOT视图
+		}
 		final String account = (String) session.getAttribute("ACCOUNT");
 		// 检查访问文件夹视图请求是否合法
 		if (!ConfigureReader.instance().accessFolder(vf, account)) {
