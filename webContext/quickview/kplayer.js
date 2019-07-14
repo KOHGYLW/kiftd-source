@@ -3,10 +3,12 @@
  */
 var tReq;
 var tTimer;
+var pingInt;
 $(function() {
 	window.onresize = function(){
 		showCloseBtn();
     }
+	pingInt = setInterval("ping()",60000);
 	var fileId = getFileId();
 	$
 			.ajax({
@@ -112,4 +114,22 @@ function showCloseBtn(){
     }else{
     		$("#closeBtn").removeClass("hidden");
     }
+}
+
+//防止播放视频时会话超时的应答器，每分钟应答一次
+function ping(){
+	$.ajax({
+		url:"homeController/ping.ajax",
+		type:"POST",
+		dataType:"text",
+		data:{},
+		success:function(result){
+			if(result != 'pong'){
+				window.clearInterval(pingInt);
+			}
+		},
+		error:function(){
+			window.clearInterval(pingInt);
+		}
+	});
 }

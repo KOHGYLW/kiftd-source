@@ -215,13 +215,13 @@ public class HomeController {
 	/**
 	 * 
 	 * <h2>应答机制</h2>
-	 * <p>该机制能够有效防止在某些长时间不操作的情况下Session失效的问题。</p>
+	 * <p>该机制旨在防止某些长耗时操作可能导致Session失效的问题（例如上传、视频播放等），方便用户持续操作。</p>
 	 * @author 青阳龙野(kohgylw)
-	 * @return String “pong”
+	 * @return String “pong”或“”
 	 */
 	@RequestMapping(value = { "/ping.ajax" }, produces = { CHARSET_BY_AJAX })
 	@ResponseBody
-	public String pong() {
-		return "pong";
+	public String pong(final HttpServletRequest request) {
+		return as.doPong(request);
 	}
 }

@@ -23,6 +23,7 @@ var pvl;// 预览图片列表的JSON格式对象
 var checkFilesTip="提示：您还未选择任何文件，请先选中一些文件后再执行本操作：<br /><br /><kbd>单击</kbd>：选中某一文件<br /><br /><kbd><kbd>Shift</kbd>+<kbd>单击</kbd></kbd>：选中多个文件<br /><br /><kbd><kbd>Shift</kbd>+<kbd>双击</kbd></kbd>：选中连续的文件<br /><br /><kbd><kbd>Shitf</kbd>+<kbd>A</kbd></kbd>：选中/取消选中所有文件";// 选取文件提示
 var winHeight;// 窗口高度
 var uploadKey;// 上传所用的一次性密钥
+var pingInt;//定时应答器的定时装置
 
 // 界面功能方法定义
 // 页面初始化
@@ -54,6 +55,10 @@ $(function() {
 		if (ap != null) {
 			ap.seek(0);
 			ap.pause();
+		}
+		if(pingInt != null){
+			window.clearInterval(pingInt);
+			pingInt = null;
 		}
 	});
 	// 关闭打包下载模态框自动停止计时
@@ -1337,9 +1342,18 @@ function doupload(count) {
 		// 上面的三个参数分别是：事件名（指定名称）、回调函数、是否冒泡（一般是false即可）
 
 		xhr.send(fd);// 上传FormData对象
+		
+		if(pingInt == null){
+			pingInt = setInterval("ping()",60000);//上传中开始计时应答
+		}
 
 		// 上传结束后执行的回调函数
 		xhr.onloadend = function() {
+			//停止应答计时
+			if(pingInt != null){
+				window.clearInterval(pingInt);
+				pingInt = null;
+			}
 			if (xhr.status === 200) {
 				// TODO 上传成功
 				var result = xhr.responseText;
@@ -1943,6 +1957,9 @@ function deleteAllChecked() {
 // 播放音乐
 function playAudio(fileId) {
 	$('#audioPlayerModal').modal('show');
+	if(pingInt == null){
+		pingInt = setInterval("ping()",60000);//播放中开始计时应答
+	}
 	if (ap == null) {
 		ap = new APlayer({
 			container : document.getElementById('aplayer'),
@@ -1987,8 +2004,6 @@ function playAudio(fileId) {
 // 关闭音乐播放器
 function closeAudioPlayer() {
 	$('#audioPlayerModal').modal('hide');
-	ap.seek(0);
-	ap.pause();
 }
 
 // 切换按钮状态与
@@ -2396,6 +2411,30 @@ function getDownloadURL(){
 		},
 		error:function(){
 			$("#downloadHrefBox").html("<span class='text-muted'>获取失败，请检查网络状态或<a href='javascript:void(0);' onclick='getDownloadURL()'>点此</a>重新获取。</span>");
+		}
+	});
+}
+
+//防止长耗时待机时会话超时的应答器，每分钟应答一次
+function ping(){
+	$.ajax({
+		url:"homeController/ping.ajax",
+		type:"POST",
+		dataType:"text",
+		data:{},
+		success:function(result){
+			if(result != 'pong'){
+				if(pingInt != null){
+					window.clearInterval(pingInt);
+					pingInt = null;
+				}
+			}
+		},
+		error:function(){
+			if(pingInt != null){
+				window.clearInterval(pingInt);
+				pingInt = null;
+			}
 		}
 	});
 }

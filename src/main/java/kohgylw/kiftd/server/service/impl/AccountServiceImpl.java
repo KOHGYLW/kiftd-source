@@ -137,4 +137,13 @@ public class AccountServiceImpl implements AccountService {
 			}
 		}
 	}
+
+	@Override
+	public String doPong(HttpServletRequest request) {
+		if(request.getSession().getAttribute("ACCOUNT") != null) {
+			return "pong";//只有登录了的账户才有必要进行应答
+		}else {
+			return "";//未登录则不返回标准提示，但也做应答（此时，前端应停止后续应答以节省线程开支）
+		}
+	}
 }
