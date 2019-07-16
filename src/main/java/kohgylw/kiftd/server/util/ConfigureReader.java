@@ -299,11 +299,14 @@ public class ConfigureReader {
 		}
 		}
 	}
-	
+
 	/**
 	 * 
 	 * <h2>获得验证码等级</h2>
-	 * <p>返回设置的验证码等级枚举类（kohgylw.kiftd.server.enumeration.VCLevel），包括：关闭（CLOSE）、简单（Simplified）、标准（Standard）</p>
+	 * <p>
+	 * 返回设置的验证码等级枚举类（kohgylw.kiftd.server.enumeration.VCLevel），包括：关闭（CLOSE）、简单（Simplified）、标准（Standard）
+	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
 	 * @return kohgylw.kiftd.server.enumeration.VCLevel 验证码等级
 	 */
@@ -358,15 +361,15 @@ public class ConfigureReader {
 			}
 			this.serverp.setProperty("log", loglevelCode);
 			switch (ss.getVc()) {
-			case Standard:{
+			case Standard: {
 				this.serverp.setProperty("VC.level", "STANDARD");
 				break;
 			}
-			case Close:{
+			case Close: {
 				this.serverp.setProperty("VC.level", "CLOSE");
 				break;
 			}
-			case Simplified:{
+			case Simplified: {
 				this.serverp.setProperty("VC.level", "SIMP");
 				break;
 			}
@@ -817,6 +820,90 @@ public class ConfigureReader {
 
 	public int getHttpsPort() {
 		return httpsPort;
+	}
+
+	/**
+	 * 
+	 * <h2>获得某一账户的上传文件体积限制</h2>
+	 * <p>
+	 * 该方法用于判断指定用户上传的文件是否超过规定值。使用时需传入用户账户名字符串，返回该用户的最大上传限制。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @param account
+	 *            java.lang.String 需要检查的账户名
+	 * @return long 以byte为单位的最大阈值，若返回0则设置错误，若小于0则不限制。
+	 */
+	public long getUploadFileSize(String account) {
+		String defaultMaxSizeP = accountp.getProperty("defaultMaxSize");
+		if (account == null) {
+			return getMaxSizeByString(defaultMaxSizeP);
+		} else {
+			String accountMaxSizeP = accountp.getProperty(account + ".maxSize");
+			return accountMaxSizeP == null ? getMaxSizeByString(defaultMaxSizeP) : getMaxSizeByString(accountMaxSizeP);
+		}
+	}
+
+	/**
+	 * 
+	 * <h2>上传文件大小设置值转化方法</h2>
+	 * <p>
+	 * 该方法用于将配置文件中的设置值转化为long类型的数值，例如当输入字符串“1 KB”时，输出1024，输入“5GB”时，输出5368709120。
+	 * </p>
+	 * <p>
+	 * 输入字符串格式规则：{数值}{存储单位（可选）}。其中，存储单位可使用下列字符串之一指代（不区分大小写）：
+	 * </p>
+	 * <ul>
+	 * <li>KB 或 K</li>
+	 * <li>MB 或 M</li>
+	 * <li>GB 或 G</li>
+	 * </ul>
+	 * <p>
+	 * 当不写存储单位时，则以“B”（byte）为单位进行转换。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @param in
+	 *            java.lang.String 要转换的字符串内容，格式应为“{数值}{存储单位（可选）}”，例如“1024KB”或“10mb”。
+	 * @return long 以Byte为单位计算的体积值，若为0则代表设置错误，若为负数则代表无限制
+	 */
+	private long getMaxSizeByString(String in) {
+		long r = 0L;
+		// 首先，判断是否为null，若是，则直接返回-1。
+		if (in == null || in.length() <= 0) {
+			return -1L;
+		}
+		// 接下来判断是否有单位，若字符串总长小于1，则必无单位，否则可能有单位。
+		try {
+			if (in.length() > 1) {
+				String value = in.substring(0, in.length() - 1).trim();
+				String unit = in.substring(in.length() - 1).toLowerCase();
+				if (in.length() > 2) {
+					if (in.toLowerCase().charAt(in.length() - 1) == 'b') {
+						unit = in.substring(in.length() - 2, in.length() - 1).toLowerCase();
+						value = in.substring(0, in.length() - 2).trim();
+					}
+				}
+				switch (unit) {
+				case "k":
+					r = Integer.parseInt(value) * 1024L;
+					break;
+				case "m":
+					r = Integer.parseInt(value) * 1048576L;
+					break;
+				case "g":
+					r = Integer.parseInt(value) * 1073741824L;
+					break;
+				default:
+					r = Integer.parseInt(in.trim());
+					break;
+				}
+			} else {
+				r = Integer.parseInt(in.trim());
+			}
+		} catch (Exception e) {
+		}
+		return r;
 	}
 
 }

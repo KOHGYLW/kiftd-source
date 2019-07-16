@@ -62,6 +62,8 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
 		final String folderId = request.getParameter("folderId");
 		final String nameList = request.getParameter("namelist");
+		final String maxUploadFileSize = request.getParameter("maxSize");
+		final String maxUploadFileIndex = request.getParameter("maxFileIndex");
 		// 先行权限检查
 		if (!ConfigureReader.instance().authorized(account, AccountAuth.UPLOAD_FILES)) {
 			return NO_AUTHORIZED;
@@ -69,6 +71,27 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		// 获得上传文件名列表
 		final List<String> namelistObj = gson.fromJson(nameList, new TypeToken<List<String>>() {
 		}.getType());
+		// 准备一个检查结果对象
+		CheckUploadFilesRespons cufr = new CheckUploadFilesRespons();
+		// 开始文件上传体积限制检查
+		try {
+			// 获取最大文件体积（以Byte为单位）
+			long mufs = Long.parseLong(maxUploadFileSize);
+			// 获取最大文件的名称
+			String mfname = namelistObj.get(Integer.parseInt(maxUploadFileIndex));
+			long pMaxUploadSize = ConfigureReader.instance().getUploadFileSize(account);
+			if (pMaxUploadSize >= 0) {
+				if (mufs > pMaxUploadSize) {
+					cufr.setCheckResult("fileTooLarge");
+					cufr.setMaxUploadFileSize(formatMaxUploadFileSize(pMaxUploadSize));
+					cufr.setOverSizeFile(mfname);
+					return gson.toJson(cufr);
+				}
+			}
+		} catch (Exception e) {
+			return ERROR_PARAMETER;
+		}
+		// 开始文件命名冲突检查
 		final List<String> pereFileNameList = new ArrayList<>();
 		// 查找目标目录下是否存在与待上传文件同名的文件（或文件夹），如果有，记录在上方的列表中
 		for (final String fileName : namelistObj) {
@@ -86,8 +109,6 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		synchronized (keyEffecMap) {
 			keyEffecMap.put(key, new UploadKeyCertificate(namelistObj.size(), account));
 		}
-		// 装订检查结果
-		CheckUploadFilesRespons cufr = new CheckUploadFilesRespons();
 		cufr.setUploadKey(key);// 分配一个凭证
 		// 如果存在同名文件，则写入同名文件的列表；否则，直接允许上传
 		if (pereFileNameList.size() > 0) {
@@ -98,6 +119,26 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 			cufr.setPereFileNameList(new ArrayList<String>());
 		}
 		return gson.toJson(cufr);// 以JSON格式写回该结果
+	}
+
+	// 格式化存储体积，便于返回上传文件体积的检查提示信息
+	private String formatMaxUploadFileSize(long size) {
+		double result = (double) size;
+		String unit = "B";
+		if (size <= 0) {
+			return "设置无效，请联系管理员";
+		}
+		if (size >= 1024 && size < 1048576) {
+			result = (double) size / 1024;
+			unit = "KB";
+		} else if (size >= 1048576 && size < 1073741824) {
+			result = (double) size / 1048576;
+			unit = "MB";
+		} else if (size >= 1073741824) {
+			result = (double) size / 1073741824;
+			unit = "GB";
+		}
+		return String.format("%.1f", result) + " " + unit;
 	}
 
 	// 执行上传操作，接收文件并存入文件节点
@@ -129,6 +170,11 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 				}
 			}
 		} else {
+			return UPLOADERROR;
+		}
+		// 检查上传文件体积是否超限
+		long mufs = ConfigureReader.instance().getUploadFileSize(account);
+		if (mufs >= 0 && file.getSize() > mufs) {
 			return UPLOADERROR;
 		}
 		// 检查是否存在同名文件。不存在：直接存入新节点；存在：检查repeType代表的上传类型：覆盖、跳过、保留两者。

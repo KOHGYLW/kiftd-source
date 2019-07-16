@@ -23,7 +23,7 @@ var pvl;// 预览图片列表的JSON格式对象
 var checkFilesTip="提示：您还未选择任何文件，请先选中一些文件后再执行本操作：<br /><br /><kbd>单击</kbd>：选中某一文件<br /><br /><kbd><kbd>Shift</kbd>+<kbd>单击</kbd></kbd>：选中多个文件<br /><br /><kbd><kbd>Shift</kbd>+<kbd>双击</kbd></kbd>：选中连续的文件<br /><br /><kbd><kbd>Shitf</kbd>+<kbd>A</kbd></kbd>：选中/取消选中所有文件";// 选取文件提示
 var winHeight;// 窗口高度
 var uploadKey;// 上传所用的一次性密钥
-var pingInt;//定时应答器的定时装置
+var pingInt;// 定时应答器的定时装置
 
 // 界面功能方法定义
 // 页面初始化
@@ -32,7 +32,7 @@ $(function() {
 		changeFilesTableStyle();
     }
 	getServerOS();// 得到服务器操作系统信息
-	//查询是否存在记忆路径，若有，则直接显示记忆路径的内容，否则显示ROOT根路径
+	// 查询是否存在记忆路径，若有，则直接显示记忆路径的内容，否则显示ROOT根路径
 	var arr = document.cookie.match(new RegExp("(^| )folder_id=([^;]*)(;|$)"));
     if (arr != null){
     		showFolderView(unescape(arr[2]));// 显示记忆路径页面视图
@@ -401,15 +401,15 @@ function showFolderView(fid,targetId) {
 			} else if (result == "mustLogin") {
 				window.location.href = "login.html";
 			} else if(result == "NOT_FOUND") {
-				document.cookie = "folder_id=" + escape("root");//归位记忆路径
+				document.cookie = "folder_id=" + escape("root");// 归位记忆路径
 				window.location.href="/";
 			} else if(result == "notAccess"){
-				document.cookie = "folder_id=" + escape("root");//归位记忆路径
+				document.cookie = "folder_id=" + escape("root");// 归位记忆路径
 				window.location.href="/";
 			} else {
 				folderView = eval("(" + result + ")");
 				locationpath = folderView.folder.folderId;
-				//存储打开的文件夹路径至Cookie中，以便下次打开时直接显示
+				// 存储打开的文件夹路径至Cookie中，以便下次打开时直接显示
 				document.cookie = "folder_id=" + escape(locationpath);
 				parentpath = folderView.folder.folderParent;
 				constraintLevel=folderView.folder.folderConstraint;
@@ -1207,8 +1207,14 @@ function checkUploadFile() {
 			$("#uploadFileAlert").removeClass("alert-danger");
 			$("#uploadFileAlert").text("");
 			var filenames = new Array();
+			var maxSize = 0;
+			var maxFileIndex = 0;
 			for (var i = 0; i < fs.length; i++) {
 				filenames[i] = fs[i].name.replace(/^.+?\\([^\\]+?)?$/gi, "$1");
+				if(fs[i].size > maxSize){
+					maxSize = fs[i].size;
+					maxFileIndex = i;
+				}
 			}
 			var namelist = JSON.stringify(filenames);
 			
@@ -1217,7 +1223,9 @@ function checkUploadFile() {
 				dataType : "text",
 				data : {
 					folderId : locationpath,
-					namelist : namelist
+					namelist : namelist,
+					maxSize : maxSize,
+					maxFileIndex : maxFileIndex
 				},
 				url : "homeController/checkUploadFile.ajax",
 				success : function(result) {
@@ -1231,7 +1239,9 @@ function checkUploadFile() {
 						} else {
 							var resp=eval("("+result+")");
 							uploadKey=resp.uploadKey;
-							if(resp.checkResult == "hasExistsNames"){
+							if(resp.checkResult == "fileTooLarge"){
+								showUploadFileAlert("提示：文件["+resp.overSizeFile+"]的体积超过最大限制（"+resp.maxUploadFileSize+"），无法开始上传");
+							}else if(resp.checkResult == "hasExistsNames"){
 								repeList=resp.pereFileNameList;
 								repeIndex=0;
 								selectFileUpLoadModelStart();
@@ -1344,12 +1354,12 @@ function doupload(count) {
 		xhr.send(fd);// 上传FormData对象
 		
 		if(pingInt == null){
-			pingInt = setInterval("ping()",60000);//上传中开始计时应答
+			pingInt = setInterval("ping()",60000);// 上传中开始计时应答
 		}
 
 		// 上传结束后执行的回调函数
 		xhr.onloadend = function() {
-			//停止应答计时
+			// 停止应答计时
 			if(pingInt != null){
 				window.clearInterval(pingInt);
 				pingInt = null;
@@ -1958,7 +1968,7 @@ function deleteAllChecked() {
 function playAudio(fileId) {
 	$('#audioPlayerModal').modal('show');
 	if(pingInt == null){
-		pingInt = setInterval("ping()",60000);//播放中开始计时应答
+		pingInt = setInterval("ping()",60000);// 播放中开始计时应答
 	}
 	if (ap == null) {
 		ap = new APlayer({
@@ -1986,7 +1996,7 @@ function playAudio(fileId) {
 		dataType:'text',
 		success:function(result){
 			var ail=eval("("+result+")");
-			//避免存在恶意标签注入在文件名中
+			// 避免存在恶意标签注入在文件名中
 			for(var i=0;i<ail.as.length;i++){
 				ail.as[i].name=ail.as[i].name.replace('\'','&#39;').replace('<','&lt;').replace('>','&gt;');
 			}
@@ -2415,7 +2425,7 @@ function getDownloadURL(){
 	});
 }
 
-//防止长耗时待机时会话超时的应答器，每分钟应答一次
+// 防止长耗时待机时会话超时的应答器，每分钟应答一次
 function ping(){
 	$.ajax({
 		url:"homeController/ping.ajax",
