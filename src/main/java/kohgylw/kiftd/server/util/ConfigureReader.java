@@ -580,7 +580,7 @@ public class ConfigureReader {
 		dsp.setProperty("FS.path", DEFAULT_FILE_SYSTEM_PATH_SETTING);
 		dsp.setProperty("buff.size", DEFAULT_BUFFER_SIZE + "");
 		if ("true".equals(serverp.getProperty("mysql.enable"))) {
-			dsp.setProperty("mysql.enable", "false");
+			dsp.setProperty("mysql.enable", "true");
 			dsp.setProperty("mysql.url",
 					serverp == null ? "127.0.0.1/kift" : serverp.getProperty("mysql.url", "127.0.0.1/kift"));
 			dsp.setProperty("mysql.user", dbUser == null ? "root" : dbUser);
@@ -588,7 +588,7 @@ public class ConfigureReader {
 			dsp.setProperty("mysql.timezone", timeZone == null ? "GMT%2B8" : timeZone);
 		}
 		if ("true".equals(serverp.getProperty("https.enable"))) {
-			dsp.setProperty("https.enable", "false");
+			dsp.setProperty("https.enable", "true");
 			if (serverp.getProperty("https.keypass") != null) {
 				dsp.setProperty("https.keypass", serverp.getProperty("https.keypass"));
 			}
