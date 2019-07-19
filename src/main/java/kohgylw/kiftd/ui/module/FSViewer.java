@@ -337,17 +337,9 @@ public class FSViewer extends KiftdDynamicWindow {
 						List<File> files = (List<File>) dropTarget;
 						dtde.dropComplete(true);
 						worker.execute(() -> {
-							Runnable doImportThread = new Runnable() {
-								@Override
-								public void run() {
-									// TODO 自动生成的方法存根
-									disableAllButtons();
-									doImport(files.toArray(new File[0]));
-									enableAllButtons();
-								}
-
-							};
-							SwingUtilities.invokeLater(doImportThread);
+							disableAllButtons();
+							doImport(files.toArray(new File[0]));
+							enableAllButtons();
 						});
 					} catch (Exception e) {
 						// TODO 自动生成的 catch 块
@@ -490,10 +482,10 @@ public class FSViewer extends KiftdDynamicWindow {
 		}
 		// 打开进度提示会话框
 		FSProgressDialog fsd = FSProgressDialog.getNewInstance();
-		Thread importListenerDialog = new Thread(() -> {
+		Thread fspt=new Thread(()->{
 			fsd.show();
 		});
-		importListenerDialog.start();
+		fspt.start();
 		try {
 			FileSystemManager.getInstance().importFrom(files, folderId, type);
 		} catch (Exception e1) {
