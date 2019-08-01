@@ -1,6 +1,6 @@
 Manifest-Version: 1.0
 Implementation-Title: kiftd
-Implementation-Version: 1.0.19-RELEASE
+Implementation-Version: 1.0.20-SNAPSHOT
 Built-By: kohgylw
 Implementation-Vendor-Id: kohgylw
 Class-Path: libs/spring-boot-starter-web-2.0.2.RELEASE.jar libs/spring
@@ -34,14 +34,15 @@ Class-Path: libs/spring-boot-starter-web-2.0.2.RELEASE.jar libs/spring
  k14-138.jar libs/bctsp-jdk14-1.38.jar libs/bcprov-jdk14-1.38.jar libs
  /bcmail-jdk14-1.38.jar libs/org.apache.poi.xwpf.converter.pdf-1.0.6.j
  ar libs/org.apache.poi.xwpf.converter.core-1.0.6.jar libs/poi-ooxml-3
- .10-FINAL.jar libs/poi-3.10-FINAL.jar libs/dom4j-1.6.1.jar libs/xml-a
- pis-1.4.01.jar libs/ooxml-schemas-1.1.jar libs/xmlbeans-2.3.0.jar lib
- s/stax-api-1.0.1.jar libs/fr.opensagres.xdocreport.itext.extension-1.
- 0.6.jar libs/jchardet-1.0.jar libs/jave-all-deps-2.5.0.jar libs/jave-
- core-2.5.0.jar libs/commons-logging-api-1.1.jar libs/jave-nativebin-w
- in32-2.5.0.jar libs/jave-nativebin-win64-2.5.0.jar libs/jave-nativebi
- n-linux32-2.5.0.jar libs/jave-nativebin-linux64-2.5.0.jar libs/jave-n
- ativebin-osx64-2.5.0.jar libs/commons-codec-1.11.jar
+ .10-FINAL.jar libs/dom4j-1.6.1.jar libs/xml-apis-1.4.01.jar libs/ooxm
+ l-schemas-1.1.jar libs/xmlbeans-2.3.0.jar libs/stax-api-1.0.1.jar lib
+ s/fr.opensagres.xdocreport.itext.extension-1.0.6.jar libs/jchardet-1.
+ 0.jar libs/poi-scratchpad-3.10-FINAL.jar libs/poi-3.10-FINAL.jar libs
+ /jave-all-deps-2.5.0.jar libs/jave-core-2.5.0.jar libs/commons-loggin
+ g-api-1.1.jar libs/jave-nativebin-win32-2.5.0.jar libs/jave-nativebin
+ -win64-2.5.0.jar libs/jave-nativebin-linux32-2.5.0.jar libs/jave-nati
+ vebin-linux64-2.5.0.jar libs/jave-nativebin-osx64-2.5.0.jar libs/comm
+ ons-codec-1.11.jar
 Build-Jdk: 1.8.0_131
 Implementation-URL: https://kohgylw.gitee.io
 Created-By: Maven Integration for Eclipse

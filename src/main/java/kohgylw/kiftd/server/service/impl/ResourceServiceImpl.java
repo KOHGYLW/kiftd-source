@@ -14,6 +14,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Service;
 
 import kohgylw.kiftd.server.enumeration.AccountAuth;
+import kohgylw.kiftd.server.enumeration.PowerPointType;
 import kohgylw.kiftd.server.mapper.NodeMapper;
 import kohgylw.kiftd.server.model.Node;
 import kohgylw.kiftd.server.pojo.VideoTranscodeThread;
@@ -22,6 +23,7 @@ import kohgylw.kiftd.server.util.ConfigureReader;
 import kohgylw.kiftd.server.util.Docx2PDFUtil;
 import kohgylw.kiftd.server.util.FileBlockUtil;
 import kohgylw.kiftd.server.util.LogUtil;
+import kohgylw.kiftd.server.util.PowerPoint2PDFUtil;
 import kohgylw.kiftd.server.util.Txt2PDFUtil;
 import kohgylw.kiftd.server.util.VideoTranscodeUtil;
 
@@ -41,6 +43,8 @@ public class ResourceServiceImpl implements ResourceService {
 	private Txt2PDFUtil t2pu;
 	@Resource
 	private VideoTranscodeUtil vtu;
+	@Resource
+	private PowerPoint2PDFUtil p2pu;
 
 	// 提供资源的输出流，原理与下载相同，但是个别细节有区别
 	@Override
@@ -266,6 +270,45 @@ public class ResourceServiceImpl implements ResourceService {
 			}
 		}
 		return "ERROR";
+	}
+	
+	//对PPT预览的实现
+	@Override
+	public void getPPTView(String fileId, HttpServletRequest request, HttpServletResponse response) {
+		final String account = (String) request.getSession().getAttribute("ACCOUNT");
+		// 权限检查
+		if (ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES)) {
+			if (fileId != null) {
+				Node n = nm.queryById(fileId);
+				if (n != null) {
+					File file = fbu.getFileFromBlocks(n);
+					// 后缀检查
+					String suffix = "";
+					if (n.getFileName().indexOf(".") >= 0) {
+						suffix = n.getFileName().substring(n.getFileName().lastIndexOf(".")).trim().toLowerCase();
+					}
+					switch (suffix) {
+					case ".ppt":
+					case ".pptx":
+						String contentType = "application/octet-stream";
+						response.setContentType(contentType);
+						// 执行转换并写出输出流
+						try {
+							p2pu.convertPdf(new FileInputStream(file), response.getOutputStream(), ".ppt".equals(suffix)?PowerPointType.PPT:PowerPointType.PPTX);
+							return;
+						} catch (Exception e) {
+						}
+						break;
+					default:
+						break;
+					}
+				}
+			}
+		}
+		try {
+			response.sendError(500);
+		} catch (Exception e1) {
+		}
 	}
 
 }

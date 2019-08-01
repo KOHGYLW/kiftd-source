@@ -4,7 +4,7 @@
 
 	<groupId>kohgylw</groupId>
 	<artifactId>kiftd</artifactId>
-	<version>1.0.19-RELEASE</version>
+	<version>1.0.20-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<name>kiftd</name>
@@ -52,7 +52,7 @@
 		</dependency>
 		<!-- end file -->
 
-		<!-- h2内嵌数据库 + spring +mybatis -->
+		<!-- h2内嵌数据库 + spring + mybatis -->
 		<dependency>
 			<groupId>org.mybatis</groupId>
 			<artifactId>mybatis</artifactId>
@@ -114,7 +114,7 @@
 		</dependency>
 		<!-- end 图片处理 -->
 
-		<!-- txt/word转PDF处理工具整合资源 -->
+		<!-- txt/word/ppt转PDF处理工具整合资源 -->
 		<!-- https://mvnrepository.com/artifact/org.freemarker/freemarker -->
 		<dependency>
 			<groupId>org.freemarker</groupId>
@@ -138,8 +138,14 @@
 			<artifactId>jchardet</artifactId>
 			<version>1.0</version>
 		</dependency>
-		<!-- end txt/word -->
-		
+		<!-- https://mvnrepository.com/artifact/org.apache.poi/poi-scratchpad -->
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi-scratchpad</artifactId>
+			<version>3.10-FINAL</version>
+		</dependency>
+		<!-- end txt/word/ppt -->
+
 		<!-- JAVE 多媒体解析器（全平台） -->
 		<dependency>
 			<groupId>ws.schild</groupId>
@@ -147,14 +153,14 @@
 			<version>2.5.0</version>
 		</dependency>
 		<!-- end JAVE -->
-		
+
 		<!-- 文件MD5计算工具 -->
 		<dependency>
 			<groupId>commons-codec</groupId>
 			<artifactId>commons-codec</artifactId>
 		</dependency>
 		<!-- end MD5 -->
-		
+
 	</dependencies>
 	<!-- end 外部资源 -->
 
@@ -186,23 +192,23 @@
 				</configuration>
 			</plugin>
 			<plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>copy-dependencies</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>copy-dependencies</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>
-                                libs/
-                            </outputDirectory>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>copy-dependencies</id>
+						<phase>package</phase>
+						<goals>
+							<goal>copy-dependencies</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>
+								libs/
+							</outputDirectory>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 	<!-- end 项目基本配置 -->

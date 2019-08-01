@@ -896,6 +896,15 @@ function showFolderTable(folderView) {
 								+ '"'
 								+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-eye-open'></span> 预览</button>";
 								break;
+							case "ppt":
+							case "pptx":
+								fileRow = fileRow
+								+ "<button onclick='pptView("
+								+ '"'
+								+ fi.fileId
+								+ '"'
+								+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-eye-open'></span> 预览</button>";
+								break;
 							default:
 								break;
 							}
@@ -1615,6 +1624,11 @@ function docxView(fileId){
 // 预览TXT文档
 function txtView(fileId){
 	window.open("/pdfview/web/viewer.html?file=/resourceController/getTxtView/" + fileId);
+}
+
+// 预览PPT文档
+function pptView(fileId){
+	window.open("/pdfview/web/viewer.html?file=/resourceController/getPPTView/" + fileId);
 }
 
 // 查看图片

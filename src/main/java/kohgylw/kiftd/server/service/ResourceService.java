@@ -46,6 +46,17 @@ public interface ResourceService {
 	
 	/**
 	 * 
+	 * <h2>获取PPT资源，以PDF流格式写回</h2>
+	 * <p>获取指定ID的PPT文档资源，并转化为PDF流提供前端预览，方式同预览PDF。</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @param fileId java.lang.String 要读取的文件节点ID
+	 * @param request javax.servlet.http.HttpServletRequest 请求对象
+	 * @param response javax.servlet.http.HttpServletResponse 响应对象
+	 */
+	public void getPPTView(String fileId,HttpServletRequest request,HttpServletResponse response);
+	
+	/**
+	 * 
 	 * <h2>获取视频解码状态</h2>
 	 * <p>获得指定视频的解码状态，并根据返回信息提示界面下一步操作。</p>
 	 * @author 青阳龙野(kohgylw)

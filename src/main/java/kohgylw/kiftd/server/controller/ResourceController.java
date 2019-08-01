@@ -37,6 +37,12 @@ public class ResourceController {
 		rs.getTxtView(fileId, request, response);
 	}
 	
+	//以PDF格式获取PPT预览视图
+	@RequestMapping("/getPPTView/{fileId}")
+	public void getPPTView(@PathVariable("fileId") String fileId,HttpServletRequest request,HttpServletResponse response) {
+		rs.getPPTView(fileId, request, response);
+	}
+	
 	//获取视频转码状态，如指定视频未开始转码则开始，如已经开始则返回进度，如已经完成则返回FIN
 	@RequestMapping("/getVideoTranscodeStatus.ajax")
 	public @ResponseBody String getVideoTranscodeStatus(HttpServletRequest request) {
