@@ -138,45 +138,48 @@ public class FileBlockUtil {
 		try {
 			File file = null;
 			if (f.getFilePath().startsWith("file_")) {// 存放于主文件系统中
-				//直接从主文件系统的文件块存放区获得对应的文件块
+				// 直接从主文件系统的文件块存放区获得对应的文件块
 				file = new File(ConfigureReader.instance().getFileBlockPath(), f.getFilePath());
 			} else {// 存放于扩展存储区
 				short index = Short.parseShort(f.getFilePath().substring(0, f.getFilePath().indexOf('_')));
-				//根据编号查到对应的扩展存储区路径，进而获取对应的文件块
+				// 根据编号查到对应的扩展存储区路径，进而获取对应的文件块
 				file = new File(ConfigureReader.instance().getExtendStores().parallelStream()
 						.filter((e) -> e.getIndex() == index).findAny().get().getPath(), f.getFilePath());
 			}
-			if (file.exists() && file.isFile()) {
+			if (file.isFile()) {
 				return file;
 			}
 		} catch (Exception e) {
 		}
 		return null;
 	}
-	
+
 	/**
 	 * 
 	 * <h2>校对文件块与文件节点</h2>
-	 * <p>将文件系统中不可用的文件块移除，以便保持文件系统的整洁。该操作应在服务器启动或出现问题时执行。</p>
+	 * <p>
+	 * 将文件系统中不可用的文件块移除，以便保持文件系统的整洁。该操作应在服务器启动或出现问题时执行。
+	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
 	 */
 	public void checkFileBlocks() {
 		Thread checkThread = new Thread(() -> {
-			//检查是否存在未正确对应文件块的文件节点信息，若有则删除
+			// 检查是否存在未正确对应文件块的文件节点信息，若有则删除
 			List<Node> nodes = fm.queryAll();
 			for (Node node : nodes) {
 				File block = getFileFromBlocks(node);
-				if (!block.exists()) {
+				if (block == null || !block.exists()) {
 					fm.deleteById(node.getFileId());
 				}
 			}
-			//反向检查是否存在未应文件节点信息的文件块，如有则删除
-			List<File> paths=new ArrayList<>();
+			// 反向检查是否存在未应文件节点信息的文件块，如有则删除
+			List<File> paths = new ArrayList<>();
 			paths.add(new File(ConfigureReader.instance().getFileBlockPath()));
-			for(ExtendStores es:ConfigureReader.instance().getExtendStores()) {
+			for (ExtendStores es : ConfigureReader.instance().getExtendStores()) {
 				paths.add(es.getPath());
 			}
-			for(File p:paths) {
+			for (File p : paths) {
 				String[] bn = p.list();
 				for (String n : bn) {
 					Node node = fm.queryByPath(n);

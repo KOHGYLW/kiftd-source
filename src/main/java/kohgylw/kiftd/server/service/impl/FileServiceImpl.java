@@ -309,12 +309,14 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 				if (f != null) {
 					// 执行写出
 					final File fo = this.fbu.getFileFromBlocks(f);
-					writeRangeFileStream(request, response, fo, f.getFileName(), CONTENT_TYPE);
-					// 日志记录（仅针对一次下载）
-					if (request.getHeader("Range") == null) {
-						this.lu.writeDownloadFileEvent(request, f);
+					if (fo != null) {
+						writeRangeFileStream(request, response, fo, f.getFileName(), CONTENT_TYPE);
+						// 日志记录（仅针对一次下载）
+						if (request.getHeader("Range") == null) {
+							this.lu.writeDownloadFileEvent(request, f);
+						}
+						return;
 					}
-					return;
 				}
 			}
 		}
@@ -474,7 +476,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 				for (final String fid : idList) {
 					final Node n = this.fm.queryById(fid);
 					final File f = fbu.getFileFromBlocks(n);
-					if (f.exists()) {
+					if (f != null && f.exists()) {
 						packTime += f.length() / 25000000L;
 					}
 				}

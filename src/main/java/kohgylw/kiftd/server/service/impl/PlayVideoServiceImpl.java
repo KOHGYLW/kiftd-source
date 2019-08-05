@@ -6,6 +6,9 @@ import org.springframework.stereotype.*;
 import com.google.gson.Gson;
 
 import kohgylw.kiftd.server.mapper.*;
+
+import java.io.File;
+
 import javax.annotation.*;
 import javax.servlet.http.*;
 import kohgylw.kiftd.server.model.*;
@@ -38,7 +41,11 @@ public class PlayVideoServiceImpl implements PlayVideoService {
 					case "mp4":
 					case "mov":
 						// 对于mp4后缀的视频，进一步检查其编码是否为h264，如果是，则设定无需转码直接播放
-						MultimediaObject mo = new MultimediaObject(fbu.getFileFromBlocks(f));
+						File target=fbu.getFileFromBlocks(f);
+						if(target == null || !target.isFile()) {
+							return null;
+						}
+						MultimediaObject mo = new MultimediaObject(target);
 						try {
 							if (mo.getInfo().getVideo().getDecoder().indexOf("h264") >= 0) {
 								vi.setNeedEncode("N");

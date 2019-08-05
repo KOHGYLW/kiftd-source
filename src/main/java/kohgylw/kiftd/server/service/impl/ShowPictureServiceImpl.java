@@ -92,7 +92,7 @@ public class ShowPictureServiceImpl implements ShowPictureService {
 				Node node = fm.queryById(fileId);
 				if (node != null) {
 					File pBlock = fbu.getFileFromBlocks(node);
-					if (pBlock.exists()) {
+					if (pBlock != null && pBlock.exists()) {
 						try {
 							int pSize = Integer.parseInt(node.getFileSize());
 							if (pSize < 3) {

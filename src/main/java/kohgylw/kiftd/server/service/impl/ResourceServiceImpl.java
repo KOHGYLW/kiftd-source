@@ -57,51 +57,53 @@ public class ResourceServiceImpl implements ResourceService {
 				Node n = nm.queryById(fid);
 				if (n != null) {
 					File file = fbu.getFileFromBlocks(n);
-					String suffix = "";
-					if (n.getFileName().indexOf(".") >= 0) {
-						suffix = n.getFileName().substring(n.getFileName().lastIndexOf(".")).trim().toLowerCase();
-					}
-					String contentType = "application/octet-stream";
-					switch (suffix) {
-					case ".mp4":
-					case ".webm":
-					case ".mov":
-					case ".avi":
-					case ".wmv":
-					case ".mkv":
-					case ".flv":
-						contentType = "video/mp4";
-						synchronized (VideoTranscodeUtil.videoTranscodeThreads) {
-							VideoTranscodeThread vtt = VideoTranscodeUtil.videoTranscodeThreads.get(fid);
-							if (vtt != null) {// 针对需要转码的视频（在转码列表中存在）
-								File f = new File(ConfigureReader.instance().getTemporaryfilePath(),
-										vtt.getOutputFileName());
-								if (f.isFile() && vtt.getProgress().equals("FIN")) {// 判断是否转码成功
-									file = f;// 成功，则播放它
-								} else {
-									try {
-										response.sendError(500);// 否则，返回处理失败
-									} catch (IOException e) {
+					if (file != null && file.isFile()) {
+						String suffix = "";
+						if (n.getFileName().indexOf(".") >= 0) {
+							suffix = n.getFileName().substring(n.getFileName().lastIndexOf(".")).trim().toLowerCase();
+						}
+						String contentType = "application/octet-stream";
+						switch (suffix) {
+						case ".mp4":
+						case ".webm":
+						case ".mov":
+						case ".avi":
+						case ".wmv":
+						case ".mkv":
+						case ".flv":
+							contentType = "video/mp4";
+							synchronized (VideoTranscodeUtil.videoTranscodeThreads) {
+								VideoTranscodeThread vtt = VideoTranscodeUtil.videoTranscodeThreads.get(fid);
+								if (vtt != null) {// 针对需要转码的视频（在转码列表中存在）
+									File f = new File(ConfigureReader.instance().getTemporaryfilePath(),
+											vtt.getOutputFileName());
+									if (f.isFile() && vtt.getProgress().equals("FIN")) {// 判断是否转码成功
+										file = f;// 成功，则播放它
+									} else {
+										try {
+											response.sendError(500);// 否则，返回处理失败
+										} catch (IOException e) {
+										}
+										return;
 									}
-									return;
 								}
 							}
+							break;
+						case ".mp3":
+							contentType = "audio/mpeg";
+							break;
+						case ".ogg":
+							contentType = "audio/ogg";
+							break;
+						default:
+							break;
 						}
-						break;
-					case ".mp3":
-						contentType = "audio/mpeg";
-						break;
-					case ".ogg":
-						contentType = "audio/ogg";
-						break;
-					default:
-						break;
+						sendResource(file, n.getFileName(), contentType, request, response);
+						if (request.getHeader("Range") == null) {
+							this.lu.writeDownloadFileEvent(request, n);
+						}
+						return;
 					}
-					sendResource(file, n.getFileName(), contentType, request, response);
-					if (request.getHeader("Range") == null) {
-						this.lu.writeDownloadFileEvent(request, n);
-					}
-					return;
 				}
 			}
 		}
@@ -197,19 +199,21 @@ public class ResourceServiceImpl implements ResourceService {
 				Node n = nm.queryById(fileId);
 				if (n != null) {
 					File file = fbu.getFileFromBlocks(n);
-					// 后缀检查
-					String suffix = "";
-					if (n.getFileName().indexOf(".") >= 0) {
-						suffix = n.getFileName().substring(n.getFileName().lastIndexOf(".")).trim().toLowerCase();
-					}
-					if (".docx".equals(suffix)) {
-						String contentType = "application/octet-stream";
-						response.setContentType(contentType);
-						// 执行转换并写出输出流
-						try {
-							d2pu.convertPdf(new FileInputStream(file), response.getOutputStream());
-							return;
-						} catch (Exception e) {
+					if (file != null && file.isFile()) {
+						// 后缀检查
+						String suffix = "";
+						if (n.getFileName().indexOf(".") >= 0) {
+							suffix = n.getFileName().substring(n.getFileName().lastIndexOf(".")).trim().toLowerCase();
+						}
+						if (".docx".equals(suffix)) {
+							String contentType = "application/octet-stream";
+							response.setContentType(contentType);
+							// 执行转换并写出输出流
+							try {
+								d2pu.convertPdf(new FileInputStream(file), response.getOutputStream());
+								return;
+							} catch (Exception e) {
+							}
 						}
 					}
 				}
@@ -231,19 +235,21 @@ public class ResourceServiceImpl implements ResourceService {
 				Node n = nm.queryById(fileId);
 				if (n != null) {
 					File file = fbu.getFileFromBlocks(n);
-					// 后缀检查
-					String suffix = "";
-					if (n.getFileName().indexOf(".") >= 0) {
-						suffix = n.getFileName().substring(n.getFileName().lastIndexOf(".")).trim().toLowerCase();
-					}
-					if (".txt".equals(suffix)) {
-						String contentType = "application/octet-stream";
-						response.setContentType(contentType);
-						// 执行转换并写出输出流
-						try {
-							t2pu.convertPdf(file, response.getOutputStream());
-							return;
-						} catch (Exception e) {
+					if(file != null && file.isFile()) {
+						// 后缀检查
+						String suffix = "";
+						if (n.getFileName().indexOf(".") >= 0) {
+							suffix = n.getFileName().substring(n.getFileName().lastIndexOf(".")).trim().toLowerCase();
+						}
+						if (".txt".equals(suffix)) {
+							String contentType = "application/octet-stream";
+							response.setContentType(contentType);
+							// 执行转换并写出输出流
+							try {
+								t2pu.convertPdf(file, response.getOutputStream());
+								return;
+							} catch (Exception e) {
+							}
 						}
 					}
 				}
@@ -271,8 +277,8 @@ public class ResourceServiceImpl implements ResourceService {
 		}
 		return "ERROR";
 	}
-	
-	//对PPT预览的实现
+
+	// 对PPT预览的实现
 	@Override
 	public void getPPTView(String fileId, HttpServletRequest request, HttpServletResponse response) {
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
@@ -282,25 +288,28 @@ public class ResourceServiceImpl implements ResourceService {
 				Node n = nm.queryById(fileId);
 				if (n != null) {
 					File file = fbu.getFileFromBlocks(n);
-					// 后缀检查
-					String suffix = "";
-					if (n.getFileName().indexOf(".") >= 0) {
-						suffix = n.getFileName().substring(n.getFileName().lastIndexOf(".")).trim().toLowerCase();
-					}
-					switch (suffix) {
-					case ".ppt":
-					case ".pptx":
-						String contentType = "application/octet-stream";
-						response.setContentType(contentType);
-						// 执行转换并写出输出流
-						try {
-							p2pu.convertPdf(new FileInputStream(file), response.getOutputStream(), ".ppt".equals(suffix)?PowerPointType.PPT:PowerPointType.PPTX);
-							return;
-						} catch (Exception e) {
+					if(file != null && file.isFile()) {
+						// 后缀检查
+						String suffix = "";
+						if (n.getFileName().indexOf(".") >= 0) {
+							suffix = n.getFileName().substring(n.getFileName().lastIndexOf(".")).trim().toLowerCase();
 						}
-						break;
-					default:
-						break;
+						switch (suffix) {
+						case ".ppt":
+						case ".pptx":
+							String contentType = "application/octet-stream";
+							response.setContentType(contentType);
+							// 执行转换并写出输出流
+							try {
+								p2pu.convertPdf(new FileInputStream(file), response.getOutputStream(),
+										".ppt".equals(suffix) ? PowerPointType.PPT : PowerPointType.PPTX);
+								return;
+							} catch (Exception e) {
+							}
+							break;
+						default:
+							break;
+						}
 					}
 				}
 			}
