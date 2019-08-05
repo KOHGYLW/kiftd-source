@@ -473,7 +473,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 				long packTime = 0L;
 				for (final String fid : idList) {
 					final Node n = this.fm.queryById(fid);
-					final File f = new File(ConfigureReader.instance().getFileBlockPath(), n.getFilePath());
+					final File f = fbu.getFileFromBlocks(n);
 					if (f.exists()) {
 						packTime += f.length() / 25000000L;
 					}

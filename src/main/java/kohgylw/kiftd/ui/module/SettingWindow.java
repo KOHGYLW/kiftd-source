@@ -1,14 +1,20 @@
 package kohgylw.kiftd.ui.module;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 
 import kohgylw.kiftd.printer.Printer;
 import kohgylw.kiftd.server.enumeration.LogLevel;
 import kohgylw.kiftd.server.enumeration.VCLevel;
+import kohgylw.kiftd.server.pojo.ExtendStores;
 import kohgylw.kiftd.server.pojo.ServerSetting;
 import kohgylw.kiftd.ui.callback.*;
+import kohgylw.kiftd.ui.pojo.FileSystemPath;
+
 import javax.swing.*;
 import javax.swing.border.*;
+
 import java.awt.*;
 import java.awt.event.*;
 
@@ -23,7 +29,7 @@ import java.awt.event.*;
  * @version 1.0
  */
 public class SettingWindow extends KiftdDynamicWindow {
-	private static JDialog window;
+	protected static JDialog window;
 	private static JTextField portinput;
 	private static JTextField bufferinput;
 	private static JComboBox<String> mlinput;
@@ -32,9 +38,8 @@ public class SettingWindow extends KiftdDynamicWindow {
 	private static JButton cancel;
 	private static JButton update;
 	private static JButton changeFileSystemPath;
-	private static JFileChooser changeFileSystemPathChooser;
-	private static File chooserPath;
-	private static JTextArea fileSystemPathArea;
+	protected static File chooserPath;
+	protected static List<FileSystemPath> extendStores;
 	private static SettingWindow sw;
 	private static final String ML_OPEN = "是(YES)";
 	private static final String ML_CLOSE = "否(CLOSE)";
@@ -43,12 +48,13 @@ public class SettingWindow extends KiftdDynamicWindow {
 	private static final String VC_CLOSE = "关闭(CLOSE)";
 	protected static GetServerStatus st;
 	protected static UpdateSetting us;
+	private static FileSystemPathViewer fspv;
 
 	private SettingWindow() {
 		setUIFont();// 全局字体设置
 		// 窗口主体相关设置
 		(SettingWindow.window = new JDialog(ServerUIModule.window, "kiftd-设置")).setModal(true);
-		SettingWindow.window.setSize(410, 400);
+		SettingWindow.window.setSize(410, 360);
 		SettingWindow.window.setLocation(150, 150);
 		SettingWindow.window.setDefaultCloseOperation(1);
 		SettingWindow.window.setResizable(false);
@@ -111,11 +117,8 @@ public class SettingWindow extends KiftdDynamicWindow {
 		final JPanel filePathBox = new JPanel(new FlowLayout(1));
 		filePathBox.setBorder(new EmptyBorder(interval, 0, interval, 0));
 		final JLabel filePathtitle = new JLabel("文件系统路径(file system path)：");
-		SettingWindow.changeFileSystemPath = new JButton("修改(Change)");
+		SettingWindow.changeFileSystemPath = new JButton("管理(Manage)");
 		changeFileSystemPath.setPreferredSize(new Dimension((int) (140 * proportion), (int) (32 * proportion)));
-		(fileSystemPathArea = new JTextArea()).setLineWrap(true);
-		fileSystemPathArea.setRows(2 + (int) (proportion));
-		fileSystemPathArea.setEditable(false);
 		filePathBox.add(filePathtitle);
 		filePathBox.add(SettingWindow.changeFileSystemPath);
 		settingbox.add(portbox);
@@ -125,7 +128,6 @@ public class SettingWindow extends KiftdDynamicWindow {
 		settingbox.add(logbox);
 		settingbox.add(filePathBox);
 		SettingWindow.window.add(settingbox);
-		window.add(new JScrollPane(fileSystemPathArea));
 		final JPanel buttonbox = new JPanel(new FlowLayout(1));
 		buttonbox.setBorder(new EmptyBorder((int) (0 * proportion), 0, (int) (5 * proportion), 0));
 		SettingWindow.update = new JButton("应用(Update)");
@@ -135,8 +137,6 @@ public class SettingWindow extends KiftdDynamicWindow {
 		buttonbox.add(SettingWindow.update);
 		buttonbox.add(SettingWindow.cancel);
 		SettingWindow.window.add(buttonbox);
-		changeFileSystemPathChooser = new JFileChooser();
-		changeFileSystemPathChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 		SettingWindow.cancel.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -162,6 +162,14 @@ public class SettingWindow extends KiftdDynamicWindow {
 								if (chooserPath.isDirectory()) {
 									ss.setFsPath(chooserPath.getAbsolutePath());
 								}
+								List<ExtendStores> ess=new ArrayList<>();
+								for(FileSystemPath fsp:extendStores) {
+									ExtendStores es=new ExtendStores();
+									es.setIndex(fsp.getIndex());
+									es.setPath(fsp.getPath());
+									ess.add(es);
+								}
+								ss.setExtendStores(ess);
 								switch (logLevelinput.getSelectedIndex()) {
 								case 0:
 									ss.setLog(LogLevel.Event);
@@ -222,12 +230,8 @@ public class SettingWindow extends KiftdDynamicWindow {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				// TODO 自动生成的方法存根
-				changeFileSystemPathChooser.setPreferredSize(fileChooerSize);
-				changeFileSystemPathChooser.setDialogTitle("请选择...");
-				if (changeFileSystemPathChooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
-					chooserPath = changeFileSystemPathChooser.getSelectedFile();
-				}
+				fspv=FileSystemPathViewer.getInstance();
+				fspv.show();
 			}
 		});
 		modifyComponentSize(window);
@@ -243,11 +247,8 @@ public class SettingWindow extends KiftdDynamicWindow {
 			if (SettingWindow.st != null) {
 				SettingWindow.bufferinput.setText(SettingWindow.st.getBufferSize() / 1024 + "");
 				SettingWindow.portinput.setText(SettingWindow.st.getPort() + "");
-				SettingWindow.fileSystemPathArea.setText("当前文件系统存储路径：" + SettingWindow.st.getFileSystemPath());
 				chooserPath = new File(SettingWindow.st.getFileSystemPath());
-				if (chooserPath.isDirectory()) {
-					changeFileSystemPathChooser.setCurrentDirectory(chooserPath);
-				}
+				extendStores = SettingWindow.st.getExtendStores();
 				switch (st.getLogLevel()) {
 				case Event: {
 					SettingWindow.logLevelinput.setSelectedIndex(0);

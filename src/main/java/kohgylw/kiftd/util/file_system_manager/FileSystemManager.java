@@ -12,11 +12,14 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
 import kohgylw.kiftd.printer.Printer;
 import kohgylw.kiftd.server.model.Node;
+import kohgylw.kiftd.server.pojo.ExtendStores;
 import kohgylw.kiftd.server.util.ConfigureReader;
 import kohgylw.kiftd.server.util.FileNodeUtil;
 import kohgylw.kiftd.server.util.ServerTimeUtil;
@@ -403,9 +406,7 @@ public class FileSystemManager {
 			message = "正在导入文件：" + name;
 			List<Node> nodes = selectNodesByFolderId(folderId);
 			Node node = null;
-			File target;
 			long size = f.length();
-			String fileBlocks = ConfigureReader.instance().getFileBlockPath();
 			if (nodes.parallelStream().anyMatch((e) -> e.getFileName().equals(name))) {
 				switch (type) {
 				case COVER:
@@ -434,11 +435,11 @@ public class FileSystemManager {
 				node.setFileName(newName);
 				node.setFileId(UUID.randomUUID().toString());
 				node.setFileParentFolder(folderId);
-				String id = UUID.randomUUID().toString().replace("-", "");
-				String path = "file_" + id + ".block";
-				node.setFilePath(path);
-				target = new File(fileBlocks, path);
-				target.createNewFile();
+				String result = saveToFileBlocks(f);
+				if("ERROR".equals(result)) {
+					return;
+				}
+				node.setFilePath(result);
 				node.setFileCreationDate(ServerTimeUtil.accurateToDay());
 				node.setFileCreator("SYS_IN");
 				int mb = (int) (size / 1024L / 1024L);
@@ -459,26 +460,8 @@ public class FileSystemManager {
 					}
 				}
 			} else {
-				target = new File(fileBlocks, node.getFilePath());
+				transferFile(f, getFileFormBlocks(node));
 			}
-			FileOutputStream fileOutputStream = new FileOutputStream(target);
-			FileInputStream fileInputStream = new FileInputStream(f);
-			FileChannel out = fileOutputStream.getChannel();
-			FileChannel in = fileInputStream.getChannel();
-			ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
-			int length = 0;
-			long finishLength = 0;
-			while ((length = in.read(buffer)) != -1 && gono) {
-				buffer.flip();
-				out.write(buffer);
-				buffer.clear();
-				finishLength += length;
-				per = (int) (((double) finishLength / (double) size) * 100);
-			}
-			in.close();
-			out.close();
-			fileInputStream.close();
-			fileOutputStream.close();
 			return;
 		}
 		throw new IllegalArgumentException();
@@ -627,7 +610,7 @@ public class FileSystemManager {
 		message = "正在删除文件：" + n.getFileName();
 		if (n != null) {
 			// 删除文件节点对应的数据块
-			if (new File(ConfigureReader.instance().getFileBlockPath(), n.getFilePath()).delete()) {
+			if (getFileFormBlocks(n).delete()) {
 				per = 80;
 				// 删除节点信息
 				if (deleteNodeById(nodeId) > 0) {
@@ -666,7 +649,7 @@ public class FileSystemManager {
 				target = new File(path, new String(node.getFileName().getBytes()));
 				target.createNewFile();
 			}
-			File block = new File(ConfigureReader.instance().getFileBlockPath(), node.getFilePath());
+			File block = getFileFormBlocks(node);
 			long size = block.length();
 			FileInputStream in = new FileInputStream(block);
 			FileOutputStream out = new FileOutputStream(target);
@@ -753,5 +736,88 @@ public class FileSystemManager {
 	public void cannel() {
 		message = "正在终止，请稍候...";
 		gono = false;
+	}
+
+	private File getFileFormBlocks(Node f) {
+		// 检查该节点对应的文件块存放于哪个位置（主文件系统/扩展存储区）
+		try {
+			File file = null;
+			if (f.getFilePath().startsWith("file_")) {// 存放于主文件系统中
+				// 直接从主文件系统的文件块存放区获得对应的文件块
+				file = new File(ConfigureReader.instance().getFileBlockPath(), f.getFilePath());
+			} else {// 存放于扩展存储区
+				short index = Short.parseShort(f.getFilePath().substring(0, f.getFilePath().indexOf('_')));
+				// 根据编号查到对应的扩展存储区路径，进而获取对应的文件块
+				file = new File(ConfigureReader.instance().getExtendStores().parallelStream()
+						.filter((e) -> e.getIndex() == index).findAny().get().getPath(), f.getFilePath());
+			}
+			if (file.exists() && file.isFile()) {
+				return file;
+			}
+		} catch (Exception e) {
+		}
+		return null;
+	}
+	
+	public String saveToFileBlocks(final File f) {
+		// 如果存在扩展存储区，则优先在最大的扩展存储区中存放文件（避免占用主文件系统）
+		List<ExtendStores> ess = ConfigureReader.instance().getExtendStores();// 得到全部扩展存储区
+		if (ess.size() > 0) {// 如果存在
+			// 找到剩余容量最大的一个
+			ExtendStores maxExtendStores = Collections.max(ConfigureReader.instance().getExtendStores(),
+					new Comparator<ExtendStores>() {
+						@Override
+						public int compare(ExtendStores o1, ExtendStores o2) {
+							// TODO 自动生成的方法存根
+							return (int) (o1.getPath().getFreeSpace() - o2.getPath().getFreeSpace());
+						}
+					});
+			// 如果该存储区的空余容量大于要存放的文件
+			if (maxExtendStores.getPath().getFreeSpace() > f.length()) {
+				final String id = UUID.randomUUID().toString().replace("-", "");
+				final String path = maxExtendStores.getIndex() + "_" + id + ".block";
+				final File target = new File(maxExtendStores.getPath(), path);
+				try {
+					transferFile(f, target);// 则执行存放，并将文件命名为“{存储区编号}_{UUID}.block”的形式
+					return path;
+				} catch (Exception e) {
+
+				}
+			}
+		}
+		// 如果不存在扩展存储区或者最大的扩展存储区无法存放目标文件，则尝试将其存放至主文件系统路径下
+		final String fileBlocks = ConfigureReader.instance().getFileBlockPath();
+		final String id = UUID.randomUUID().toString().replace("-", "");
+		final String path = "file_" + id + ".block";
+		final File target = new File(fileBlocks, path);
+		try {
+			transferFile(f, target);// 执行存放，并肩文件命名为“file_{UUID}.block”的形式
+			return path;
+		} catch (Exception e) {
+			return "ERROR";
+		}
+	}
+	
+	private void transferFile(File f,File target) throws Exception{
+		long size = f.length();
+		FileOutputStream fileOutputStream = new FileOutputStream(target);
+		FileInputStream fileInputStream = new FileInputStream(f);
+		FileChannel out = fileOutputStream.getChannel();
+		FileChannel in = fileInputStream.getChannel();
+		ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
+		int length = 0;
+		long finishLength = 0;
+		while ((length = in.read(buffer)) != -1 && gono) {
+			buffer.flip();
+			out.write(buffer);
+			buffer.clear();
+			finishLength += length;
+			per = (int) (((double) finishLength / (double) size) * 100);
+		}
+		in.close();
+		out.close();
+		fileInputStream.close();
+		fileOutputStream.close();
+		return;
 	}
 }

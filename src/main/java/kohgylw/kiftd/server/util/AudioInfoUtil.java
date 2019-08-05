@@ -4,17 +4,22 @@ import org.springframework.stereotype.*;
 import kohgylw.kiftd.server.model.*;
 import kohgylw.kiftd.server.pojo.*;
 import java.util.*;
+
+import javax.annotation.Resource;
+
 import java.io.*;
 
 @Component
 public class AudioInfoUtil {
-	private static String fileBlocks;
+	
+	@Resource
+	private FileBlockUtil fbu;
+	
 	private static final String ERROR_ARTIST = "\u7fa4\u661f";
 	private static final String DEFAULT_LRC = "css/audio_default.lrc";
 	private static final String DEFAULT_COVER = "css/audio_default.png";
 
 	public AudioInfoUtil() {
-		AudioInfoUtil.fileBlocks = ConfigureReader.instance().getFileBlockPath();
 	}
 
 	public AudioInfoList transformToAudioInfoList(final List<Node> nodes, final String fileId) {
@@ -44,7 +49,7 @@ public class AudioInfoUtil {
 	}
 
 	private void getAudioArtistAndName(final AudioInfo ai, final Node n) {
-		final File f = new File(AudioInfoUtil.fileBlocks, n.getFilePath());
+		final File f = fbu.getFileFromBlocks(n);
 		ai.setName(this.getFileName(n.getFileName()).trim());
 		try (final RandomAccessFile raf = new RandomAccessFile(f, "r")) {
 			final byte[] buf = new byte[128];

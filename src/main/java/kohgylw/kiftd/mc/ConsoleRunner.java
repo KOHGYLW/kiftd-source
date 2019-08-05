@@ -104,8 +104,6 @@ public class ConsoleRunner {
 			Printer.instance.print("正在初始化服务器...");
 			if (ConfigureReader.instance().getPropertiesStatus() == 0) {
 				this.awaiting();
-			} else {
-				Printer.instance.print("服务器参数配置错误，无法启动kiftd，请检查。");
 			}
 			return;
 		});

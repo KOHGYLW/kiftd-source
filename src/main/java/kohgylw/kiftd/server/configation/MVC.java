@@ -6,8 +6,13 @@ import com.google.gson.Gson;
 
 import org.springframework.beans.factory.annotation.*;
 import org.springframework.web.servlet.config.annotation.*;
+
+import kohgylw.kiftd.server.pojo.ExtendStores;
 import kohgylw.kiftd.server.util.*;
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.servlet.*;
 import org.springframework.boot.web.servlet.*;
 import org.springframework.context.annotation.*;
@@ -27,18 +32,27 @@ import org.springframework.context.annotation.*;
 @ServletComponentScan({ "kohgylw.kiftd.server.listener", "kohgylw.kiftd.server.filter" })
 @Import({ DataAccess.class })
 public class MVC extends ResourceHttpRequestHandler implements WebMvcConfigurer {
-	
+
 	@Override
 	public void configureDefaultServletHandling(DefaultServletHandlerConfigurer configurer) {
 		// TODO 自动生成的方法存根
 		configurer.enable();
 	}
-	
+
 	public void addResourceHandlers(final ResourceHandlerRegistry registry) {
+		// 将静态页面资源所在文件夹加入至资源路径中
 		registry.addResourceHandler(new String[] { "/**" }).addResourceLocations(new String[] {
 				"file:" + ConfigureReader.instance().getPath() + File.separator + "webContext" + File.separator });
+		// 将所有文件块的保存路径加入至资源路径中（提供某些预览服务）
+		List<String> paths = new ArrayList<>();
+		paths.add("file:" + ConfigureReader.instance().getFileBlockPath());
+		for (ExtendStores es : ConfigureReader.instance().getExtendStores()) {
+			paths.add(
+					"file:" + (es.getPath().getAbsolutePath().endsWith(File.separator) ? es.getPath().getAbsolutePath()
+							: es.getPath().getAbsolutePath() + File.separator));
+		}
 		registry.addResourceHandler(new String[] { "/fileblocks/**" })
-				.addResourceLocations(new String[] { "file:" + ConfigureReader.instance().getFileBlockPath() });
+				.addResourceLocations(paths.toArray(new String[0]));
 	}
 
 	@Bean

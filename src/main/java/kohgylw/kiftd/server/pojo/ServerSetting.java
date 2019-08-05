@@ -1,5 +1,7 @@
 package kohgylw.kiftd.server.pojo;
 
+import java.util.List;
+
 import kohgylw.kiftd.server.enumeration.*;
 
 public class ServerSetting {
@@ -9,6 +11,7 @@ public class ServerSetting {
 	private LogLevel log;
 	private int port;
 	private String fsPath;
+	private List<ExtendStores> extendStores;
 
 	public boolean isMustLogin() {
 		return this.mustLogin;
@@ -56,5 +59,13 @@ public class ServerSetting {
 
 	public void setVc(VCLevel vc) {
 		this.vc = vc;
+	}
+
+	public List<ExtendStores> getExtendStores() {
+		return extendStores;
+	}
+
+	public void setExtendStores(List<ExtendStores> extendStores) {
+		this.extendStores = extendStores;
 	}
 }

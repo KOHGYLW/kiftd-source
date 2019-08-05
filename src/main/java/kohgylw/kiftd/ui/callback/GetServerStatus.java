@@ -1,6 +1,9 @@
 package kohgylw.kiftd.ui.callback;
 
+import java.util.List;
+
 import kohgylw.kiftd.server.enumeration.*;
+import kohgylw.kiftd.ui.pojo.FileSystemPath;
 
 public interface GetServerStatus
 {
@@ -19,4 +22,6 @@ public interface GetServerStatus
     String getFileSystemPath();
     
     boolean getMustLogin();
+    
+    List<FileSystemPath> getExtendStores();
 }

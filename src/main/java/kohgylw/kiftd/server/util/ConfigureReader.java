@@ -27,10 +27,11 @@ import java.sql.DriverManager;
  * @version 1.0
  */
 public class ConfigureReader {
-	private static ConfigureReader cr;
-	private Properties serverp;
-	private Properties accountp;
-	private int propertiesStatus;
+
+	private static ConfigureReader cr;// 自体实体
+	private Properties serverp;// 配置设置
+	private Properties accountp;// 账户设置
+	private int propertiesStatus;// 当前配置检查结果
 	private String path;
 	private String fileSystemPath;
 	private String confdir;
@@ -39,6 +40,7 @@ public class ConfigureReader {
 	private String log;
 	private String vc;
 	private String FSPath;
+	private List<ExtendStores> extendStores;
 	private int bufferSize;
 	private String fileBlockPath;
 	private String fileNodePath;
@@ -94,6 +96,7 @@ public class ConfigureReader {
 		this.confdir = this.path + File.separator + "conf" + File.separator;
 		this.serverp = new Properties();
 		this.accountp = new Properties();
+		extendStores = new ArrayList<>();
 		final File serverProp = new File(this.confdir + SERVER_PROPERTIES_FILE);
 		if (!serverProp.isFile()) {
 			Printer.instance.print("服务器配置文件不存在，需要初始化服务器配置。");
@@ -266,6 +269,17 @@ public class ConfigureReader {
 	public String getFileBlockPath() {
 		return this.fileBlockPath;
 	}
+	
+	/**
+	 * 
+	 * <h2>获取全部扩展存储区</h2>
+	 * <p>得到全部扩展存储区列表，以便进行文件块的存取操作。</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @return java.util.List<kohgylw.kiftd.server.pojo.ExtendStores> 所有扩展存储区对象的列表
+	 */
+	public List<ExtendStores> getExtendStores(){
+		return extendStores;
+	}
 
 	public String getFileNodePath() {
 		return this.fileNodePath;
@@ -342,6 +356,7 @@ public class ConfigureReader {
 	public boolean doUpdate(final ServerSetting ss) {
 		if (ss != null) {
 			Printer.instance.print("正在更新服务器配置...");
+			this.serverp.clear();
 			this.serverp.setProperty("mustLogin", ss.isMustLogin() ? "N" : "O");
 			this.serverp.setProperty("buff.size", ss.getBuffSize() + "");
 			String loglevelCode = "E";
@@ -378,6 +393,9 @@ public class ConfigureReader {
 			this.serverp.setProperty("FS.path",
 					(ss.getFsPath() + File.separator).equals(this.DEFAULT_FILE_SYSTEM_PATH) ? "DEFAULT"
 							: ss.getFsPath());
+			for(ExtendStores es:ss.getExtendStores()) {
+				this.serverp.setProperty("FS.extend."+es.getIndex(), es.getPath().getAbsolutePath());
+			}
 			if (this.testServerPropertiesAndEffect() == 0) {
 				try {
 					this.serverp.store(new FileOutputStream(this.confdir + SERVER_PROPERTIES_FILE),
@@ -478,10 +496,32 @@ public class ConfigureReader {
 		if (!fileSystemPath.endsWith(File.separator)) {
 			fileSystemPath = fileSystemPath + File.separator;
 		}
+		for(short i=1;i<32;i++) {
+			if(serverp.getProperty("FS.extend."+i)!=null) {
+				ExtendStores es=new ExtendStores();
+				es.setPath(new File(serverp.getProperty("FS.extend."+i)));
+				es.setIndex(i);
+				extendStores.add(es);
+			}
+		}
 		final File fsFile = new File(this.fileSystemPath);
 		if (!fsFile.isDirectory() || !fsFile.canRead() || !fsFile.canWrite()) {
 			Printer.instance.print("错误：文件系统路径[" + this.fileSystemPath + "]无效，该路径必须指向一个具备读写权限的文件夹。");
 			return 3;
+		}
+		for(ExtendStores es:extendStores) {
+			if(!es.getPath().isDirectory() || !es.getPath().canRead() || !es.getPath().canWrite()) {
+				Printer.instance.print("错误：扩展存储区路径[" + es.getPath().getAbsolutePath() + "]无效，该路径必须指向一个具备读写权限的文件夹。");
+				return 3;
+			}
+		}
+		for(int i=0;i<extendStores.size()-1;i++) {
+			for(int j=i+1;j<extendStores.size();j++) {
+				if(extendStores.get(i).getPath().equals(extendStores.get(j).getPath())) {
+					Printer.instance.print("错误：扩展存储区路径[" + extendStores.get(j).getPath().getAbsolutePath() + "]无效，该路径已被其他扩展存储区占用。");
+					return 3;
+				}
+			}
 		}
 		this.fileBlockPath = this.fileSystemPath + "fileblocks" + File.separator;
 		final File fbFile = new File(this.fileBlockPath);
@@ -501,6 +541,8 @@ public class ConfigureReader {
 			Printer.instance.print("错误：无法创建临时文件存放区[" + this.TFPath + "]。");
 			return 7;
 		}
+		
+		
 		if ("true".equals(serverp.getProperty("mysql.enable"))) {
 			dbDriver = "com.mysql.cj.jdbc.Driver";
 			String url = serverp.getProperty("mysql.url", "127.0.0.1/kift");
@@ -520,7 +562,6 @@ public class ConfigureReader {
 				Connection testConn = DriverManager.getConnection(dbURL, dbUser, dbPwd);
 				testConn.close();
 			} catch (Exception e) {
-				// TODO 自动生成的 catch 块
 				Printer.instance.print(
 						"错误：无法连接至自定义数据库：" + dbURL + "（user=" + dbUser + ",password=" + dbPwd + "），请确重新配置MySQL数据库相关项。");
 				return 8;
@@ -579,23 +620,6 @@ public class ConfigureReader {
 		dsp.setProperty("VC.level", DEFAULT_VC_LEVEL);
 		dsp.setProperty("FS.path", DEFAULT_FILE_SYSTEM_PATH_SETTING);
 		dsp.setProperty("buff.size", DEFAULT_BUFFER_SIZE + "");
-		if ("true".equals(serverp.getProperty("mysql.enable"))) {
-			dsp.setProperty("mysql.enable", "true");
-			dsp.setProperty("mysql.url",
-					serverp == null ? "127.0.0.1/kift" : serverp.getProperty("mysql.url", "127.0.0.1/kift"));
-			dsp.setProperty("mysql.user", dbUser == null ? "root" : dbUser);
-			dsp.setProperty("mysql.password", dbPwd == null ? "" : dbPwd);
-			dsp.setProperty("mysql.timezone", timeZone == null ? "GMT%2B8" : timeZone);
-		}
-		if ("true".equals(serverp.getProperty("https.enable"))) {
-			dsp.setProperty("https.enable", "true");
-			if (serverp.getProperty("https.keypass") != null) {
-				dsp.setProperty("https.keypass", serverp.getProperty("https.keypass"));
-			}
-			if (serverp.getProperty("https.port") != null) {
-				dsp.setProperty("https.port", serverp.getProperty("https.port"));
-			}
-		}
 		try {
 			dsp.store(new FileOutputStream(this.confdir + SERVER_PROPERTIES_FILE),
 					"<This is the default kiftd server setting file. >");
