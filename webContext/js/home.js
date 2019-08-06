@@ -761,192 +761,190 @@ function showFolderTable(folderView) {
 	if (checkAuth(authList, "O")){
 		aO = true;
 	}
-	$
-			.each(
-					folderView.folderList,
-					function(n, f) {
-						f.folderName = f.folderName.replace('\'','&#39;').replace('<','&lt;').replace('>','&gt;');
-						var folderRow = "<tr id='"+f.folderId+"' onclick='checkfile(event,"+'"'+f.folderId+'"'+")' ondblclick='checkConsFile(event,"+'"'+f.folderId+'"'+")' class='filerow' iskfolder='true' ><td><button onclick='entryFolder("
-								+ '"' + f.folderId + '"'
-								+ ")' class='btn btn-link btn-xs'>/"
-								+ f.folderName + "</button></td><td class='hiddenColumn'>"
-								+ f.folderCreationDate + "</td><td>--</td><td class='hiddenColumn'>"
-								+ f.folderCreator + "</td><td>";
-						if (aD) {
-							folderRow = folderRow
-									+ "<button onclick='showDeleteFolderModel("
-									+ '"'
-									+ f.folderId
-									+ '","'
-									+ f.folderName
-									+ '"'
-									+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-remove'></span> 删除</button>";
-						}
-						if (aR) {
-							folderRow = folderRow
-									+ "<button onclick='showRenameFolderModel("
-									+ '"'
-									+ f.folderId
-									+ '","'
-									+ f.folderName
-									+ '",'
-									+ f.folderConstraint
-									+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-wrench'></span> 编辑</button>";
-						}
-						if (aO) {
-							folderRow = folderRow
-									+ "<button onclick='showFolderView("
-									+ '"'
-									+ f.folderParent
-									+ '","'
-									+ f.folderId
-									+ '"'
-									+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-sunglasses'></span> 定位</button>";
-						}
-						if (!aR && !aD && !aO) {
-							folderRow = folderRow + "--";
-						}
-						folderRow = folderRow + "</td></tr>";
-						$("#foldertable").append(folderRow);
-					});
-	$
-			.each(
-					folderView.fileList,
-					function(n, fi) {
-						fi.fileName = fi.fileName.replace('\'','&#39;').replace('<','&lt;').replace('>','&gt;');
-						var fileRow = "<tr id=" + fi.fileId + " onclick='checkfile(event," + '"'
-								+ fi.fileId + '"' + ")' ondblclick='checkConsFile(event,"+'"'+fi.fileId+'"'+")' id='" + fi.fileId
-								+ "' class='filerow'><td>" + fi.fileName
-								+ "</td><td class='hiddenColumn'>" + fi.fileCreationDate + "</td>";
-						if(fi.fileSize=="0"){
-							fileRow=fileRow+"<td>&lt;1MB</td>";
-						}else{
-							fileRow=fileRow+"<td>" + fi.fileSize + "MB</td>";
-						}
-						fileRow=fileRow +"<td class='hiddenColumn'>" + fi.fileCreator + "</td><td>";
-						if (aL) {
-							fileRow = fileRow
-									+ "<button onclick='showDownloadModel("
-									+ '"'
-									+ fi.fileId
-									+ '","'
-									+ fi.fileName
-									+ '"'
-									+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-cloud-download'></span> 下载</button>";
-							// 对于各种特殊格式文件提供的预览和播放功能
-							var suffix=getSuffix(fi.fileName);
-							switch (suffix) {
-							case "mp4":
-							case "webm":
-							case "mov":
-							case "avi":
-							case "wmv":
-							case "mkv":
-							case "flv":
-								fileRow = fileRow
-								+ "<button onclick='playVideo("
-								+ '"'
-								+ fi.fileId
-								+ '"'
-								+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-play'></span> 播放</button>";
-								break;
-							case "pdf":
-								fileRow = fileRow
-								+ "<button onclick='pdfView("
-								+ '"'
-								+ fi.filePath
-								+ '"'
-								+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-eye-open'></span> 预览</button>";
-								break;
-							case "jpg":
-							case "jpeg":
-							case "gif":
-							case "png":
-							case "bmp":
-								fileRow = fileRow
-								+ "<button onclick='showPicture("
-								+ '"'
-								+ fi.fileId
-								+ '"'
-								+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-picture'></span> 查看</button>";
-								break;
-							case "mp3":
-							case "wav":
-							case "ogg":
-								fileRow = fileRow
-								+ "<button onclick='playAudio("
-								+ '"'
-								+ fi.fileId
-								+ '"'
-								+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-play'></span> 播放</button>";
-								break;
-							case "docx":
-								fileRow = fileRow
-								+ "<button onclick='docxView("
-								+ '"'
-								+ fi.fileId
-								+ '"'
-								+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-eye-open'></span> 预览</button>";
-								break;
-							case "txt":
-								fileRow = fileRow
-								+ "<button onclick='txtView("
-								+ '"'
-								+ fi.fileId
-								+ '"'
-								+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-eye-open'></span> 预览</button>";
-								break;
-							case "ppt":
-							case "pptx":
-								fileRow = fileRow
-								+ "<button onclick='pptView("
-								+ '"'
-								+ fi.fileId
-								+ '"'
-								+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-eye-open'></span> 预览</button>";
-								break;
-							default:
-								break;
-							}
-						}
-						if (aD) {
-							fileRow = fileRow
-									+ "<button onclick='showDeleteFileModel("
-									+ '"'
-									+ fi.fileId
-									+ '","'
-									+ fi.fileName
-									+ '"'
-									+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-remove'></span> 删除</button>";
-						}
-						if (aR) {
-							fileRow = fileRow
-									+ "<button onclick='showRenameFileModel("
-									+ '"'
-									+ fi.fileId
-									+ '"'
-									+ ","
-									+ '"'
-									+ fi.fileName
-									+ '"'
-									+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-wrench'></span> 重命名</button>";
-						}
-						if (aO) {
-							fileRow = fileRow
-									+ "<button onclick='showFolderView("
-									+ '"'
-									+ fi.fileParentFolder
-									+ '","'
-									+ fi.fileId
-									+ '"'
-									+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-sunglasses'></span> 定位</button>";
-						}
-						if (!aR && !aD && !aL && !aO) {
-							fileRow = fileRow + "--";
-						}
-						fileRow = fileRow + "</td></tr>";
-						$("#foldertable").append(fileRow);
-					});
+	// 遍历并倒序显示文件夹列表
+	for(var i1=folderView.folderList.length;i1>0;i1--){
+		var f=folderView.folderList[i1-1];
+		f.folderName = f.folderName.replace('\'','&#39;').replace('<','&lt;').replace('>','&gt;');
+		var folderRow = "<tr id='"+f.folderId+"' onclick='checkfile(event,"+'"'+f.folderId+'"'+")' ondblclick='checkConsFile(event,"+'"'+f.folderId+'"'+")' class='filerow' iskfolder='true' ><td><button onclick='entryFolder("
+				+ '"' + f.folderId + '"'
+				+ ")' class='btn btn-link btn-xs'>/"
+				+ f.folderName + "</button></td><td class='hiddenColumn'>"
+				+ f.folderCreationDate + "</td><td>--</td><td class='hiddenColumn'>"
+				+ f.folderCreator + "</td><td>";
+		if (aD) {
+			folderRow = folderRow
+					+ "<button onclick='showDeleteFolderModel("
+					+ '"'
+					+ f.folderId
+					+ '","'
+					+ f.folderName
+					+ '"'
+					+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-remove'></span> 删除</button>";
+		}
+		if (aR) {
+			folderRow = folderRow
+					+ "<button onclick='showRenameFolderModel("
+					+ '"'
+					+ f.folderId
+					+ '","'
+					+ f.folderName
+					+ '",'
+					+ f.folderConstraint
+					+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-wrench'></span> 编辑</button>";
+		}
+		if (aO) {
+			folderRow = folderRow
+					+ "<button onclick='showFolderView("
+					+ '"'
+					+ f.folderParent
+					+ '","'
+					+ f.folderId
+					+ '"'
+					+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-sunglasses'></span> 定位</button>";
+		}
+		if (!aR && !aD && !aO) {
+			folderRow = folderRow + "--";
+		}
+		folderRow = folderRow + "</td></tr>";
+		$("#foldertable").append(folderRow);
+	}
+	// 遍历并倒序显示文件列表
+	for(var i2=folderView.fileList.length;i2>0;i2--){
+		var fi = folderView.fileList[i2-1];
+		fi.fileName = fi.fileName.replace('\'','&#39;').replace('<','&lt;').replace('>','&gt;');
+		var fileRow = "<tr id=" + fi.fileId + " onclick='checkfile(event," + '"'
+				+ fi.fileId + '"' + ")' ondblclick='checkConsFile(event,"+'"'+fi.fileId+'"'+")' id='" + fi.fileId
+				+ "' class='filerow'><td>" + fi.fileName
+				+ "</td><td class='hiddenColumn'>" + fi.fileCreationDate + "</td>";
+		if(fi.fileSize=="0"){
+			fileRow=fileRow+"<td>&lt;1MB</td>";
+		}else{
+			fileRow=fileRow+"<td>" + fi.fileSize + "MB</td>";
+		}
+		fileRow=fileRow +"<td class='hiddenColumn'>" + fi.fileCreator + "</td><td>";
+		if (aL) {
+			fileRow = fileRow
+					+ "<button onclick='showDownloadModel("
+					+ '"'
+					+ fi.fileId
+					+ '","'
+					+ fi.fileName
+					+ '"'
+					+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-cloud-download'></span> 下载</button>";
+			// 对于各种特殊格式文件提供的预览和播放功能
+			var suffix=getSuffix(fi.fileName);
+			switch (suffix) {
+			case "mp4":
+			case "webm":
+			case "mov":
+			case "avi":
+			case "wmv":
+			case "mkv":
+			case "flv":
+				fileRow = fileRow
+				+ "<button onclick='playVideo("
+				+ '"'
+				+ fi.fileId
+				+ '"'
+				+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-play'></span> 播放</button>";
+				break;
+			case "pdf":
+				fileRow = fileRow
+				+ "<button onclick='pdfView("
+				+ '"'
+				+ fi.filePath
+				+ '"'
+				+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-eye-open'></span> 预览</button>";
+				break;
+			case "jpg":
+			case "jpeg":
+			case "gif":
+			case "png":
+			case "bmp":
+				fileRow = fileRow
+				+ "<button onclick='showPicture("
+				+ '"'
+				+ fi.fileId
+				+ '"'
+				+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-picture'></span> 查看</button>";
+				break;
+			case "mp3":
+			case "wav":
+			case "ogg":
+				fileRow = fileRow
+				+ "<button onclick='playAudio("
+				+ '"'
+				+ fi.fileId
+				+ '"'
+				+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-play'></span> 播放</button>";
+				break;
+			case "docx":
+				fileRow = fileRow
+				+ "<button onclick='docxView("
+				+ '"'
+				+ fi.fileId
+				+ '"'
+				+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-eye-open'></span> 预览</button>";
+				break;
+			case "txt":
+				fileRow = fileRow
+				+ "<button onclick='txtView("
+				+ '"'
+				+ fi.fileId
+				+ '"'
+				+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-eye-open'></span> 预览</button>";
+				break;
+			case "ppt":
+			case "pptx":
+				fileRow = fileRow
+				+ "<button onclick='pptView("
+				+ '"'
+				+ fi.fileId
+				+ '"'
+				+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-eye-open'></span> 预览</button>";
+				break;
+			default:
+				break;
+			}
+		}
+		if (aD) {
+			fileRow = fileRow
+					+ "<button onclick='showDeleteFileModel("
+					+ '"'
+					+ fi.fileId
+					+ '","'
+					+ fi.fileName
+					+ '"'
+					+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-remove'></span> 删除</button>";
+		}
+		if (aR) {
+			fileRow = fileRow
+					+ "<button onclick='showRenameFileModel("
+					+ '"'
+					+ fi.fileId
+					+ '"'
+					+ ","
+					+ '"'
+					+ fi.fileName
+					+ '"'
+					+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-wrench'></span> 重命名</button>";
+		}
+		if (aO) {
+			fileRow = fileRow
+					+ "<button onclick='showFolderView("
+					+ '"'
+					+ fi.fileParentFolder
+					+ '","'
+					+ fi.fileId
+					+ '"'
+					+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-sunglasses'></span> 定位</button>";
+		}
+		if (!aR && !aD && !aL && !aO) {
+			fileRow = fileRow + "--";
+		}
+		fileRow = fileRow + "</td></tr>";
+		$("#foldertable").append(fileRow);
+	}
 	changeFilesTableStyle();
 }
 
@@ -2072,10 +2070,10 @@ function sortbyfn(){
 	$("#sortByFS").removeClass();
 	$("#sortByCN").removeClass();
 	folderView.fileList.sort(function(v1,v2){
-		return v1.fileName.localeCompare(v2.fileName,"zh");
+		return v2.fileName.localeCompare(v1.fileName,"zh");
 	});
 	folderView.folderList.sort(function(v1,v2){
-		return v1.folderName.localeCompare(v2.folderName,"zh");
+		return v2.folderName.localeCompare(v1.folderName,"zh");
 	});
 	showFolderTable(folderView);
 }
@@ -2090,13 +2088,13 @@ function sortbycd(){
 		var v1DateStr=v1.fileCreationDate.replace("年","-").replace("月","-").replace("日","");
 		var v2DateStr=v2.fileCreationDate.replace("年","-").replace("月","-").replace("日","");
 		var res=((new Date(Date.parse(v1DateStr)).getTime())-(new Date(Date.parse(v2DateStr)).getTime()));
-		return -1*res;
+		return res;
 	});
 	folderView.folderList.sort(function(v1,v2){
 		var v1DateStr=v1.folderCreationDate.replace("年","-").replace("月","-").replace("日","");
 		var v2DateStr=v2.folderCreationDate.replace("年","-").replace("月","-").replace("日","");
 		var res=((new Date(Date.parse(v1DateStr)).getTime())-(new Date(Date.parse(v2DateStr)).getTime()));
-		return -1*res;
+		return res;
 	});
 	showFolderTable(folderView);
 }
@@ -2108,7 +2106,7 @@ function sortbyfs(){
 	$("#sortByFS").addClass("glyphicon glyphicon-triangle-bottom");
 	$("#sortByCN").removeClass();
 	folderView.fileList.sort(function(v1,v2){
-		return v2.fileSize-v1.fileSize;
+		return v1.fileSize - v2.fileSize;
 	});
 	showFolderTable(folderView);
 }
@@ -2120,10 +2118,10 @@ function sortbycn(){
 	$("#sortByFS").removeClass();
 	$("#sortByCN").addClass("glyphicon glyphicon-triangle-bottom");
 	folderView.fileList.sort(function(v1,v2){
-		return v1.fileCreator.localeCompare(v2.fileCreator,"zh");
+		return v2.fileCreator.localeCompare(v1.fileCreator,"zh");
 	});
 	folderView.folderList.sort(function(v1,v2){
-		return v1.folderCreator.localeCompare(v2.folderCreator,"zh");
+		return v2.folderCreator.localeCompare(v1.folderCreator,"zh");
 	});
 	showFolderTable(folderView);
 }
