@@ -46,7 +46,7 @@ public class KiftdCtl {
 	 * @return boolean 启动结果
 	 */
 	public boolean start() {
-		Printer.instance.print("正在启动服务器...");
+		Printer.instance.print("正在初始化服务器设置...");
 		final String[] args = new String[0];
 		if (!KiftdCtl.run) {
 			ConfigureReader.instance().testServerPropertiesAndEffect();//启动服务器前重新检查各项设置并加载
