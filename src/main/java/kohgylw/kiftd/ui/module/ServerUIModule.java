@@ -12,6 +12,7 @@ import java.text.*;
 import java.util.*;
 
 import kohgylw.kiftd.printer.Printer;
+import kohgylw.kiftd.server.util.ConfigureReader;
 import kohgylw.kiftd.ui.callback.*;
 
 public class ServerUIModule extends KiftdDynamicWindow {
@@ -68,49 +69,48 @@ public class ServerUIModule extends KiftdDynamicWindow {
 		if (SystemTray.isSupported()) {
 			ServerUIModule.window.setDefaultCloseOperation(1);
 			ServerUIModule.tray = SystemTray.getSystemTray();
-			String iconType="/kohgylw/kiftd/ui/resource/icon_tray.png";
-			if(System.getProperty("os.name").toLowerCase().indexOf("window")>=0) {
-				iconType="/kohgylw/kiftd/ui/resource/icon_tray_w.png";
+			String iconType = "/kohgylw/kiftd/ui/resource/icon_tray.png";
+			if (System.getProperty("os.name").toLowerCase().indexOf("window") >= 0) {
+				iconType = "/kohgylw/kiftd/ui/resource/icon_tray_w.png";
 			}
 			try {
-				(ServerUIModule.trayIcon = new TrayIcon(
-						ImageIO.read(this.getClass().getResourceAsStream(iconType))))
-								.setToolTip("青阳网络文件系统-kiftd");
+				(ServerUIModule.trayIcon = new TrayIcon(ImageIO.read(this.getClass().getResourceAsStream(iconType))))
+						.setToolTip("青阳网络文件系统-kiftd");
 				trayIcon.setImageAutoSize(true);
 				final PopupMenu pMenu = new PopupMenu();
 				final MenuItem exit = new MenuItem("退出(Exit)");
 				filesViewer = new MenuItem("文件...(Files)");
 				final MenuItem show = new MenuItem("显示主窗口(Show)");
 				trayIcon.addMouseListener(new MouseListener() {
-					
+
 					@Override
 					public void mouseReleased(MouseEvent e) {
 						// TODO 自动生成的方法存根
-						
+
 					}
-					
+
 					@Override
 					public void mousePressed(MouseEvent e) {
 						// TODO 自动生成的方法存根
-						
+
 					}
-					
+
 					@Override
 					public void mouseExited(MouseEvent e) {
 						// TODO 自动生成的方法存根
-						
+
 					}
-					
+
 					@Override
 					public void mouseEntered(MouseEvent e) {
 						// TODO 自动生成的方法存根
-						
+
 					}
-					
+
 					@Override
 					public void mouseClicked(MouseEvent e) {
 						// TODO 自动生成的方法存根
-						if(e.getClickCount()==2) {
+						if (e.getClickCount() == 2) {
 							show();
 						}
 					}
@@ -276,7 +276,30 @@ public class ServerUIModule extends KiftdDynamicWindow {
 								printMessage("KIFT服务器未能成功启动，请检查设置或查看异常信息。");
 							}
 						} else {
-							printMessage("KIFT无法启动，请检查设置。");
+							if(ConfigureReader.instance().getPropertiesStatus() != 0) {
+								switch (ConfigureReader.instance().getPropertiesStatus()) {
+								case ConfigureReader.INVALID_PORT:
+									printMessage("KIFT无法启动：端口设置无效。");
+									break;
+								case ConfigureReader.INVALID_BUFFER_SIZE:
+									printMessage("KIFT无法启动：缓存设置无效。");
+									break;
+								case ConfigureReader.INVALID_FILE_SYSTEM_PATH:
+									printMessage("KIFT无法启动：文件系统路径或某一扩展存储区设置无效。");
+									break;
+								case ConfigureReader.INVALID_LOG:
+									printMessage("KIFT无法启动：日志设置无效。");
+									break;
+								case ConfigureReader.INVALID_VC:
+									printMessage("KIFT无法启动：登录验证码设置无效。");
+									break;
+								default:
+									printMessage("KIFT无法启动，请检查设置或查看异常信息。");
+									break;
+								}
+							}else {
+								printMessage("KIFT无法启动，请检查设置或查看异常信息。");
+							}
 							serverStatusLab.setText(S_STOP);
 						}
 						updateServerStatus();
@@ -381,6 +404,7 @@ public class ServerUIModule extends KiftdDynamicWindow {
 
 	public void show() {
 		ServerUIModule.window.setVisible(true);
+		updateServerStatus();
 	}
 
 	public static void setOnCloseServer(final OnCloseServer cs) {
@@ -404,8 +428,8 @@ public class ServerUIModule extends KiftdDynamicWindow {
 	}
 
 	public void updateServerStatus() {
-		final Thread t = new Thread(() -> {
-			if (ServerUIModule.st != null) {
+		if (ServerUIModule.st != null) {
+			Thread t = new Thread(() -> {
 				if (ServerUIModule.st.getServerStatus()) {
 					ServerUIModule.serverStatusLab.setText(S_START);
 					ServerUIModule.start.setEnabled(false);
@@ -422,29 +446,30 @@ public class ServerUIModule extends KiftdDynamicWindow {
 				fileIOUtil.setEnabled(true);
 				filesViewer.setEnabled(true);
 				ServerUIModule.portStatusLab.setText(ServerUIModule.st.getPort() + "");
-				switch (st.getLogLevel()) {
-				case Event: {
-					ServerUIModule.logLevelLab.setText(L_ALL);
-					break;
-				}
-				case None: {
-					ServerUIModule.logLevelLab.setText(L_NONE);
-					break;
-				}
-				case Runtime_Exception: {
-					ServerUIModule.logLevelLab.setText(L_EXCEPTION);
-					break;
-				}
-				default: {
-					ServerUIModule.logLevelLab.setText("无法获取(?)");
-					break;
-				}
+				if (ServerUIModule.st.getLogLevel() != null) {
+					switch (ServerUIModule.st.getLogLevel()) {
+					case Event: {
+						ServerUIModule.logLevelLab.setText(L_ALL);
+						break;
+					}
+					case None: {
+						ServerUIModule.logLevelLab.setText(L_NONE);
+						break;
+					}
+					case Runtime_Exception: {
+						ServerUIModule.logLevelLab.setText(L_EXCEPTION);
+						break;
+					}
+					default: {
+						ServerUIModule.logLevelLab.setText("无法获取(?)");
+						break;
+					}
+					}
 				}
 				ServerUIModule.bufferSizeLab.setText(ServerUIModule.st.getBufferSize() / 1024 + " KB");
-			}
-			return;
-		});
-		t.start();
+			});
+			t.start();
+		}
 	}
 
 	private void exit() {

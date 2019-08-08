@@ -210,6 +210,14 @@ public class ConfigureReader {
 		return this.bufferSize;
 	}
 
+	public String getInitBuffSize() {
+		if (this.serverp != null && serverp.getProperty("buff.size") != null) {
+			return serverp.getProperty("buff.size");
+		} else {
+			return DEFAULT_BUFFER_SIZE + "";
+		}
+	}
+
 	public boolean inspectLogLevel(final LogLevel l) {
 		int o = 0;
 		int m = 0;
@@ -266,18 +274,30 @@ public class ConfigureReader {
 		return this.fileSystemPath;
 	}
 
+	public String getInitFileSystemPath() {
+		if (this.serverp != null && serverp.getProperty("FS.path") != null) {
+			return serverp.getProperty("FS.path").equals("DEFAULT") ? DEFAULT_FILE_SYSTEM_PATH
+					: serverp.getProperty("FS.path");
+		} else {
+			return DEFAULT_FILE_SYSTEM_PATH;
+		}
+	}
+
 	public String getFileBlockPath() {
 		return this.fileBlockPath;
 	}
-	
+
 	/**
 	 * 
 	 * <h2>获取全部扩展存储区</h2>
-	 * <p>得到全部扩展存储区列表，以便进行文件块的存取操作。</p>
+	 * <p>
+	 * 得到全部扩展存储区列表，以便进行文件块的存取操作。
+	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
 	 * @return java.util.List<kohgylw.kiftd.server.pojo.ExtendStores> 所有扩展存储区对象的列表
 	 */
-	public List<ExtendStores> getExtendStores(){
+	public List<ExtendStores> getExtendStores() {
 		return extendStores;
 	}
 
@@ -314,6 +334,26 @@ public class ConfigureReader {
 		}
 	}
 
+	public LogLevel getInitLogLevel() {
+		if (serverp != null && serverp.getProperty("log") != null) {
+			switch (serverp.getProperty("log")) {
+			case "N": {
+				return LogLevel.None;
+			}
+			case "R": {
+				return LogLevel.Runtime_Exception;
+			}
+			case "E": {
+				return LogLevel.Event;
+			}
+			default:
+				return LogLevel.Event;
+			}
+		} else {
+			return LogLevel.Event;
+		}
+	}
+
 	/**
 	 * 
 	 * <h2>获得验证码等级</h2>
@@ -345,8 +385,33 @@ public class ConfigureReader {
 		}
 	}
 
+	public VCLevel getInitVCLevel() {
+		if (serverp != null && serverp.getProperty("VC.level") != null) {
+			switch (serverp.getProperty("VC.level")) {
+			case "STANDARD":
+				return VCLevel.Standard;
+			case "SIMP":
+				return VCLevel.Simplified;
+			case "CLOSE":
+				return VCLevel.Close;
+			default:
+				return VCLevel.Standard;
+			}
+		} else {
+			return VCLevel.Standard;
+		}
+	}
+
 	public int getPort() {
 		return this.port;
+	}
+
+	public String getInitPort() {
+		if (this.serverp != null && serverp.getProperty("port") != null) {
+			return serverp.getProperty("port");
+		} else {
+			return DEFAULT_PORT + "";
+		}
 	}
 
 	public int getPropertiesStatus() {
@@ -356,7 +421,6 @@ public class ConfigureReader {
 	public boolean doUpdate(final ServerSetting ss) {
 		if (ss != null) {
 			Printer.instance.print("正在更新服务器配置...");
-			this.serverp.clear();
 			this.serverp.setProperty("mustLogin", ss.isMustLogin() ? "N" : "O");
 			this.serverp.setProperty("buff.size", ss.getBuffSize() + "");
 			String loglevelCode = "E";
@@ -393,8 +457,11 @@ public class ConfigureReader {
 			this.serverp.setProperty("FS.path",
 					(ss.getFsPath() + File.separator).equals(this.DEFAULT_FILE_SYSTEM_PATH) ? "DEFAULT"
 							: ss.getFsPath());
-			for(ExtendStores es:ss.getExtendStores()) {
-				this.serverp.setProperty("FS.extend."+es.getIndex(), es.getPath().getAbsolutePath());
+			for (short i = 1; i < 32; i++) {
+				this.serverp.remove("FS.extend." + i);// 清空旧的扩展存储区设置
+			}
+			for (ExtendStores es : ss.getExtendStores()) {
+				this.serverp.setProperty("FS.extend." + es.getIndex(), es.getPath().getAbsolutePath());
 			}
 			if (this.testServerPropertiesAndEffect() == 0) {
 				try {
@@ -496,10 +563,11 @@ public class ConfigureReader {
 		if (!fileSystemPath.endsWith(File.separator)) {
 			fileSystemPath = fileSystemPath + File.separator;
 		}
-		for(short i=1;i<32;i++) {
-			if(serverp.getProperty("FS.extend."+i)!=null) {
-				ExtendStores es=new ExtendStores();
-				es.setPath(new File(serverp.getProperty("FS.extend."+i)));
+		extendStores.clear();
+		for (short i = 1; i < 32; i++) {
+			if (serverp.getProperty("FS.extend." + i) != null) {
+				ExtendStores es = new ExtendStores();
+				es.setPath(new File(serverp.getProperty("FS.extend." + i)));
 				es.setIndex(i);
 				extendStores.add(es);
 			}
@@ -509,16 +577,17 @@ public class ConfigureReader {
 			Printer.instance.print("错误：文件系统路径[" + this.fileSystemPath + "]无效，该路径必须指向一个具备读写权限的文件夹。");
 			return 3;
 		}
-		for(ExtendStores es:extendStores) {
-			if(!es.getPath().isDirectory() || !es.getPath().canRead() || !es.getPath().canWrite()) {
+		for (ExtendStores es : extendStores) {
+			if (!es.getPath().isDirectory() || !es.getPath().canRead() || !es.getPath().canWrite()) {
 				Printer.instance.print("错误：扩展存储区路径[" + es.getPath().getAbsolutePath() + "]无效，该路径必须指向一个具备读写权限的文件夹。");
 				return 3;
 			}
 		}
-		for(int i=0;i<extendStores.size()-1;i++) {
-			for(int j=i+1;j<extendStores.size();j++) {
-				if(extendStores.get(i).getPath().equals(extendStores.get(j).getPath())) {
-					Printer.instance.print("错误：扩展存储区路径[" + extendStores.get(j).getPath().getAbsolutePath() + "]无效，该路径已被其他扩展存储区占用。");
+		for (int i = 0; i < extendStores.size() - 1; i++) {
+			for (int j = i + 1; j < extendStores.size(); j++) {
+				if (extendStores.get(i).getPath().equals(extendStores.get(j).getPath())) {
+					Printer.instance.print(
+							"错误：扩展存储区路径[" + extendStores.get(j).getPath().getAbsolutePath() + "]无效，该路径已被其他扩展存储区占用。");
 					return 3;
 				}
 			}
@@ -541,8 +610,7 @@ public class ConfigureReader {
 			Printer.instance.print("错误：无法创建临时文件存放区[" + this.TFPath + "]。");
 			return 7;
 		}
-		
-		
+
 		if ("true".equals(serverp.getProperty("mysql.enable"))) {
 			dbDriver = "com.mysql.cj.jdbc.Driver";
 			String url = serverp.getProperty("mysql.url", "127.0.0.1/kift");
@@ -929,5 +997,4 @@ public class ConfigureReader {
 		}
 		return r;
 	}
-
 }

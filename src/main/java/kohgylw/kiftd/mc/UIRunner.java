@@ -45,9 +45,9 @@ public class UIRunner {
 			}
 
 			@Override
-			public boolean getPropertiesStatus() {
+			public int getPropertiesStatus() {
 				// TODO 自动生成的方法存根
-				return ConfigureReader.instance().getPropertiesStatus() == ConfigureReader.LEGAL_PROPERTIES;
+				return ConfigureReader.instance().getPropertiesStatus();
 			}
 
 			@Override
@@ -98,6 +98,37 @@ public class UIRunner {
 				}
 				return fsps;
 			}
+
+
+			@Override
+			public LogLevel getInitLogLevel() {
+				// TODO 自动生成的方法存根
+				return ConfigureReader.instance().getInitLogLevel();
+			}
+
+			@Override
+			public VCLevel getInitVCLevel() {
+				// TODO 自动生成的方法存根
+				return ConfigureReader.instance().getInitVCLevel();
+			}
+
+			@Override
+			public String getInitFileSystemPath() {
+				// TODO 自动生成的方法存根
+				return ConfigureReader.instance().getInitFileSystemPath();
+			}
+
+			@Override
+			public String getInitProt() {
+				// TODO 自动生成的方法存根
+				return ConfigureReader.instance().getInitPort();
+			}
+
+			@Override
+			public String getInitBufferSize() {
+				// TODO 自动生成的方法存根
+				return ConfigureReader.instance().getInitBuffSize();
+			}
 		});
 		ServerUIModule.setUpdateSetting(new UpdateSetting() {
 
@@ -108,12 +139,6 @@ public class UIRunner {
 			}
 		});
 		ui.show();
-		final Thread t = new Thread(() -> {
-			if (ConfigureReader.instance().getPropertiesStatus() == ConfigureReader.LEGAL_PROPERTIES) {
-				ui.updateServerStatus();
-			}
-		});
-		t.start();
 	}
 
 	/**

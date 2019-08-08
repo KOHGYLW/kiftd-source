@@ -162,9 +162,9 @@ public class SettingWindow extends KiftdDynamicWindow {
 								if (chooserPath.isDirectory()) {
 									ss.setFsPath(chooserPath.getAbsolutePath());
 								}
-								List<ExtendStores> ess=new ArrayList<>();
-								for(FileSystemPath fsp:extendStores) {
-									ExtendStores es=new ExtendStores();
+								List<ExtendStores> ess = new ArrayList<>();
+								for (FileSystemPath fsp : extendStores) {
+									ExtendStores es = new ExtendStores();
 									es.setIndex(fsp.getIndex());
 									es.setPath(fsp.getPath());
 									ess.add(es);
@@ -200,11 +200,11 @@ public class SettingWindow extends KiftdDynamicWindow {
 									ss.setVc(VCLevel.Standard);
 									break;
 								}
-								case 1:{
+								case 1: {
 									ss.setVc(VCLevel.Simplified);
 									break;
 								}
-								case 2:{
+								case 2: {
 									ss.setVc(VCLevel.Close);
 									break;
 								}
@@ -216,6 +216,7 @@ public class SettingWindow extends KiftdDynamicWindow {
 									window.setVisible(false);
 								}
 							} catch (Exception exc) {
+								exc.printStackTrace();
 								Printer.instance.print("错误：无法应用设置");
 							}
 						} else {
@@ -230,7 +231,7 @@ public class SettingWindow extends KiftdDynamicWindow {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				fspv=FileSystemPathViewer.getInstance();
+				fspv = FileSystemPathViewer.getInstance();
 				fspv.show();
 			}
 		});
@@ -245,42 +246,83 @@ public class SettingWindow extends KiftdDynamicWindow {
 	private void getServerStatus() {
 		final Thread t = new Thread(() -> {
 			if (SettingWindow.st != null) {
-				SettingWindow.bufferinput.setText(SettingWindow.st.getBufferSize() / 1024 + "");
-				SettingWindow.portinput.setText(SettingWindow.st.getPort() + "");
-				chooserPath = new File(SettingWindow.st.getFileSystemPath());
+				SettingWindow.bufferinput
+						.setText(SettingWindow.st.getBufferSize() == 0 ? SettingWindow.st.getInitBufferSize()
+								: SettingWindow.st.getBufferSize() / 1024 + "");
+				SettingWindow.portinput.setText(SettingWindow.st.getPort() == 0 ? SettingWindow.st.getInitProt() + ""
+						: SettingWindow.st.getPort() + "");
+				if (SettingWindow.st.getFileSystemPath() != null) {
+					chooserPath = new File(SettingWindow.st.getFileSystemPath());
+				} else {
+					chooserPath = new File(SettingWindow.st.getInitFileSystemPath());
+				}
 				extendStores = SettingWindow.st.getExtendStores();
-				switch (st.getLogLevel()) {
-				case Event: {
-					SettingWindow.logLevelinput.setSelectedIndex(0);
-					break;
-				}
-				case Runtime_Exception: {
-					SettingWindow.logLevelinput.setSelectedIndex(1);
-					break;
-				}
-				case None: {
-					SettingWindow.logLevelinput.setSelectedIndex(2);
-					break;
-				}
+				if (st.getLogLevel() != null) {
+					switch (st.getLogLevel()) {
+					case Event: {
+						SettingWindow.logLevelinput.setSelectedIndex(0);
+						break;
+					}
+					case Runtime_Exception: {
+						SettingWindow.logLevelinput.setSelectedIndex(1);
+						break;
+					}
+					case None: {
+						SettingWindow.logLevelinput.setSelectedIndex(2);
+						break;
+					}
+					}
+				} else {
+					switch (st.getInitLogLevel()) {
+					case Event: {
+						SettingWindow.logLevelinput.setSelectedIndex(0);
+						break;
+					}
+					case Runtime_Exception: {
+						SettingWindow.logLevelinput.setSelectedIndex(1);
+						break;
+					}
+					case None: {
+						SettingWindow.logLevelinput.setSelectedIndex(2);
+						break;
+					}
+					}
 				}
 				if (SettingWindow.st.getMustLogin()) {
 					SettingWindow.mlinput.setSelectedIndex(0);
 				} else {
 					SettingWindow.mlinput.setSelectedIndex(1);
 				}
-				switch (SettingWindow.st.getVCLevel()) {
-				case Standard: {
-					SettingWindow.vcinput.setSelectedIndex(0);
-					break;
-				}
-				case Simplified: {
-					SettingWindow.vcinput.setSelectedIndex(1);
-					break;
-				}
-				case Close: {
-					SettingWindow.vcinput.setSelectedIndex(2);
-					break;
-				}
+				if (SettingWindow.st.getVCLevel() != null) {
+					switch (SettingWindow.st.getVCLevel()) {
+					case Standard: {
+						SettingWindow.vcinput.setSelectedIndex(0);
+						break;
+					}
+					case Simplified: {
+						SettingWindow.vcinput.setSelectedIndex(1);
+						break;
+					}
+					case Close: {
+						SettingWindow.vcinput.setSelectedIndex(2);
+						break;
+					}
+					}
+				} else {
+					switch (SettingWindow.st.getInitVCLevel()) {
+					case Standard: {
+						SettingWindow.vcinput.setSelectedIndex(0);
+						break;
+					}
+					case Simplified: {
+						SettingWindow.vcinput.setSelectedIndex(1);
+						break;
+					}
+					case Close: {
+						SettingWindow.vcinput.setSelectedIndex(2);
+						break;
+					}
+					}
 				}
 			}
 			return;
