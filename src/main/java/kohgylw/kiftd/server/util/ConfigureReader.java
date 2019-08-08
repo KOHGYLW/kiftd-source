@@ -417,6 +417,16 @@ public class ConfigureReader {
 	public int getPropertiesStatus() {
 		return this.propertiesStatus;
 	}
+	
+	/**
+	 * 
+	 * <h2>重新检查各项设置</h2>
+	 * <p>在服务器启动前再次检查各设置，实现某些设置的“即插即用”。</p>
+	 * @author 青阳龙野(kohgylw)
+	 */
+	public void reTestServerPropertiesAndEffect() {
+		this.propertiesStatus = testServerPropertiesAndEffect();
+	}
 
 	public boolean doUpdate(final ServerSetting ss) {
 		if (ss != null) {
@@ -487,7 +497,7 @@ public class ConfigureReader {
 	 * @author 青阳龙野(kohgylw)
 	 * @return int 验证结果代码
 	 */
-	public int testServerPropertiesAndEffect() {
+	private int testServerPropertiesAndEffect() {
 		Printer.instance.print("正在检查服务器配置...");
 		this.mustLogin = this.serverp.getProperty("mustLogin");
 		if (this.mustLogin == null) {
