@@ -487,7 +487,7 @@ public class ConfigureReader {
 	 * @author 青阳龙野(kohgylw)
 	 * @return int 验证结果代码
 	 */
-	private int testServerPropertiesAndEffect() {
+	public int testServerPropertiesAndEffect() {
 		Printer.instance.print("正在检查服务器配置...");
 		this.mustLogin = this.serverp.getProperty("mustLogin");
 		if (this.mustLogin == null) {
