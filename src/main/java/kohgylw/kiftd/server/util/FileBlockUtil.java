@@ -193,8 +193,19 @@ public class FileBlockUtil {
 				for (String n : bn) {
 					Node node = fm.queryByPath(n);
 					if (node == null) {
-						File f = getFileFromBlocks(node);
-						f.delete();
+						File file = null;
+						if (n.startsWith("file_")) {// 存放于主文件系统中
+							// 直接从主文件系统的文件块存放区获得对应的文件块
+							file = new File(ConfigureReader.instance().getFileBlockPath(), n);
+						} else {// 存放于扩展存储区
+							short index = Short.parseShort(n.substring(0, n.indexOf('_')));
+							// 根据编号查到对应的扩展存储区路径，进而获取对应的文件块
+							file = new File(ConfigureReader.instance().getExtendStores().parallelStream()
+									.filter((e) -> e.getIndex() == index).findAny().get().getPath(), n);
+						}
+						if (file != null && file.isFile()) {
+							file.delete();
+						}
 					}
 				}
 			}
