@@ -3,9 +3,13 @@ package kohgylw.kiftd.server.util;
 import org.springframework.stereotype.*;
 import javax.annotation.*;
 import kohgylw.kiftd.server.mapper.*;
+import kohgylw.kiftd.printer.Printer;
 import kohgylw.kiftd.server.enumeration.*;
 import javax.servlet.http.*;
 import java.util.*;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+
 import kohgylw.kiftd.server.model.*;
 
 import java.io.*;
@@ -20,12 +24,15 @@ public class LogUtil {
 	@Resource
 	private NodeMapper fim;
 
+	private Executor writerThread;
+
 	private String sep = "";
 	private String logs = "";
 
 	public LogUtil() {
 		sep = File.separator;
 		logs = ConfigureReader.instance().getPath() + sep + "logs";
+		writerThread = Executors.newSingleThreadExecutor();
 		File l = new File(logs);
 		if (!l.exists()) {
 			l.mkdir();
@@ -215,13 +222,17 @@ public class LogUtil {
 			t.start();
 		}
 	}
-	
+
 	/**
 	 * 
 	 * <h2>简述</h2>
-	 * <p>详细描述</p>
+	 * <p>
+	 * 详细描述
+	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param xxx 参数描述
+	 * @param xxx
+	 *            参数描述
 	 * @return xxx
 	 */
 	public void writeDownloadFileByKeyEvent(Node f) {
@@ -233,18 +244,21 @@ public class LogUtil {
 				for (Folder i : l) {
 					pl = pl + i.getFolderName() + "/";
 				}
-				String content = ">OPERATE [Download file By Shared URL]\r\n>PATH [" + pl
-						+ folder.getFolderName() + "]\r\n>NAME [" + f.getFileName() + "]";
+				String content = ">OPERATE [Download file By Shared URL]\r\n>PATH [" + pl + folder.getFolderName()
+						+ "]\r\n>NAME [" + f.getFileName() + "]";
 				writeToLog("Event", content);
 			});
 			t.start();
 		}
 	}
-	
+
 	/**
 	 * 
 	 * <h2>记录分享下载链接事件</h2>
-	 * <p>当用户试图获取一个资源的下载链接时，记录此事件。</p>
+	 * <p>
+	 * 当用户试图获取一个资源的下载链接时，记录此事件。
+	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
 	 */
 	public void writeShareFileURLEvent(HttpServletRequest request, Node f) {
@@ -357,28 +371,38 @@ public class LogUtil {
 	}
 
 	private void writeToLog(String type, String content) {
-		String t = ServerTimeUtil.accurateToLogName();
-		File f = new File(logs, t + ".klog");
-		FileWriter fw = null;
-		if (f.exists()) {
-			try {
-				fw = new FileWriter(f, true);
-				fw.write("\r\n\r\nTIME:\r\n" + ServerTimeUtil.accurateToSecond() + "\r\nTYPE:\r\n" + type
-						+ "\r\nCONTENT:\r\n" + content);
-				fw.close();
-			} catch (Exception e1) {
-				System.out.println("KohgylwIFT:[Log]Cannt write to file,message:" + e1.getMessage());
+		writerThread.execute(()->{
+			String t = ServerTimeUtil.accurateToLogName();
+			File f = new File(logs, t + ".klog");
+			FileWriter fw = null;
+			if (f.exists()) {
+				try {
+					fw = new FileWriter(f, true);
+					fw.write("\r\n\r\nTIME:\r\n" + ServerTimeUtil.accurateToSecond() + "\r\nTYPE:\r\n" + type
+							+ "\r\nCONTENT:\r\n" + content);
+					fw.close();
+				} catch (Exception e1) {
+					if (Printer.instance != null) {
+						Printer.instance.print("KohgylwIFT:[Log]Cannt write to file,message:" + e1.getMessage());
+					} else {
+						System.out.println("KohgylwIFT:[Log]Cannt write to file,message:" + e1.getMessage());
+					}
+				}
+			} else {
+				try {
+					fw = new FileWriter(f, false);
+					fw.write("TIME:\r\n" + ServerTimeUtil.accurateToSecond() + "\r\nTYPE:\r\n" + type + "\r\nCONTENT:\r\n"
+							+ content);
+					fw.close();
+				} catch (IOException e1) {
+					if (Printer.instance != null) {
+						Printer.instance.print("KohgylwIFT:[Log]Cannt write to file,message:" + e1.getMessage());
+					} else {
+						System.out.println("KohgylwIFT:[Log]Cannt write to file,message:" + e1.getMessage());
+					}
+				}
 			}
-		} else {
-			try {
-				fw = new FileWriter(f, false);
-				fw.write("TIME:\r\n" + ServerTimeUtil.accurateToSecond() + "\r\nTYPE:\r\n" + type + "\r\nCONTENT:\r\n"
-						+ content);
-				fw.close();
-			} catch (IOException e1) {
-				System.out.println("KohgylwIFT:[Log]Cannt write to file,message:" + e1.getMessage());
-			}
-		}
+		});
 	}
 
 	/**

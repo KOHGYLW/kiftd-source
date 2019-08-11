@@ -1,6 +1,8 @@
 package kohgylw.kiftd.server.util;
 
 import org.springframework.stereotype.*;
+
+import kohgylw.kiftd.printer.Printer;
 import kohgylw.kiftd.server.mapper.*;
 import javax.annotation.*;
 import org.springframework.web.multipart.*;
@@ -29,6 +31,8 @@ public class FileBlockUtil {
 	private NodeMapper fm;// 节点映射，用于遍历
 	@Resource
 	private FolderMapper flm;// 文件夹映射，同样用于遍历
+	@Resource
+	private LogUtil lu;// 日志工具
 
 	/**
 	 * 
@@ -65,7 +69,8 @@ public class FileBlockUtil {
 					f.transferTo(file);// 则执行存放，并将文件命名为“{存储区编号}_{UUID}.block”的形式
 					return path;
 				} catch (Exception e) {
-
+					lu.writeException(e);
+					Printer.instance.print(e.getMessage());
 				}
 			}
 		}
@@ -78,6 +83,8 @@ public class FileBlockUtil {
 			f.transferTo(file);// 执行存放，并肩文件命名为“file_{UUID}.block”的形式
 			return path;
 		} catch (Exception e) {
+			lu.writeException(e);
+			Printer.instance.print(e.getMessage());
 			return "ERROR";
 		}
 	}
@@ -150,6 +157,8 @@ public class FileBlockUtil {
 				return file;
 			}
 		} catch (Exception e) {
+			lu.writeException(e);
+			Printer.instance.print(e.getMessage());
 		}
 		return null;
 	}
@@ -271,6 +280,8 @@ public class FileBlockUtil {
 			ZipUtil.pack(zs.toArray(new ZipEntrySource[0]), f);
 			return zipname;
 		} catch (Exception e) {
+			lu.writeException(e);
+			Printer.instance.print(e.getMessage());
 			return null;
 		}
 	}

@@ -14,6 +14,8 @@ public class AudioInfoUtil {
 	
 	@Resource
 	private FileBlockUtil fbu;
+	@Resource
+	private LogUtil lu;
 	
 	private static final String ERROR_ARTIST = "\u7fa4\u661f";
 	private static final String DEFAULT_LRC = "css/audio_default.lrc";
@@ -124,6 +126,7 @@ public class AudioInfoUtil {
 				}
 			}
 		} catch (UnsupportedEncodingException ex) {
+			lu.writeException(ex);
 		}
 		return "";
 	}

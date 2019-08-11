@@ -13,6 +13,7 @@ import javax.annotation.*;
 import javax.servlet.http.*;
 import kohgylw.kiftd.server.model.*;
 import kohgylw.kiftd.server.pojo.VideoInfo;
+import kohgylw.kiftd.printer.Printer;
 import kohgylw.kiftd.server.enumeration.*;
 import kohgylw.kiftd.server.util.*;
 import ws.schild.jave.MultimediaObject;
@@ -25,6 +26,8 @@ public class PlayVideoServiceImpl implements PlayVideoService {
 	private Gson gson;
 	@Resource
 	private FileBlockUtil fbu;
+	@Resource
+	private LogUtil lu;
 
 	private VideoInfo foundVideo(final HttpServletRequest request) {
 		final String fileId = request.getParameter("fileId");
@@ -52,7 +55,8 @@ public class PlayVideoServiceImpl implements PlayVideoService {
 								return vi;
 							}
 						} catch (Exception e) {
-
+							Printer.instance.print(e.getMessage());
+							lu.writeException(e);
 						}
 						// 对于其他编码格式，则设定需要转码
 						vi.setNeedEncode("Y");

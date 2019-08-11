@@ -13,6 +13,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.stereotype.Service;
 
+import kohgylw.kiftd.printer.Printer;
 import kohgylw.kiftd.server.enumeration.AccountAuth;
 import kohgylw.kiftd.server.enumeration.PowerPointType;
 import kohgylw.kiftd.server.mapper.NodeMapper;
@@ -212,7 +213,10 @@ public class ResourceServiceImpl implements ResourceService {
 							try {
 								d2pu.convertPdf(new FileInputStream(file), response.getOutputStream());
 								return;
+							} catch (IOException e) {
 							} catch (Exception e) {
+								Printer.instance.print(e.getMessage());
+								lu.writeException(e);
 							}
 						}
 					}
@@ -235,7 +239,7 @@ public class ResourceServiceImpl implements ResourceService {
 				Node n = nm.queryById(fileId);
 				if (n != null) {
 					File file = fbu.getFileFromBlocks(n);
-					if(file != null && file.isFile()) {
+					if (file != null && file.isFile()) {
 						// 后缀检查
 						String suffix = "";
 						if (n.getFileName().indexOf(".") >= 0) {
@@ -248,7 +252,10 @@ public class ResourceServiceImpl implements ResourceService {
 							try {
 								t2pu.convertPdf(file, response.getOutputStream());
 								return;
+							} catch (IOException e) {
 							} catch (Exception e) {
+								Printer.instance.print(e.getMessage());
+								lu.writeException(e);
 							}
 						}
 					}
@@ -270,7 +277,7 @@ public class ResourceServiceImpl implements ResourceService {
 				try {
 					return vtu.getTranscodeProcess(fId);
 				} catch (Exception e) {
-					e.printStackTrace();
+					Printer.instance.print(e.getMessage());
 					lu.writeException(e);
 				}
 			}
@@ -288,7 +295,7 @@ public class ResourceServiceImpl implements ResourceService {
 				Node n = nm.queryById(fileId);
 				if (n != null) {
 					File file = fbu.getFileFromBlocks(n);
-					if(file != null && file.isFile()) {
+					if (file != null && file.isFile()) {
 						// 后缀检查
 						String suffix = "";
 						if (n.getFileName().indexOf(".") >= 0) {
@@ -304,7 +311,10 @@ public class ResourceServiceImpl implements ResourceService {
 								p2pu.convertPdf(new FileInputStream(file), response.getOutputStream(),
 										".ppt".equals(suffix) ? PowerPointType.PPT : PowerPointType.PPTX);
 								return;
+							} catch (IOException e) {
 							} catch (Exception e) {
+								Printer.instance.print(e.getMessage());
+								lu.writeException(e);
 							}
 							break;
 						default:
