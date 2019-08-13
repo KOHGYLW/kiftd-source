@@ -820,84 +820,11 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 				pathsKeys.add(pathskey);
 			}
 		}
-		for (String pName : paths) {
-			try {
-				Folder target = flm.queryByParentId(folderId).parallelStream()
-						.filter((e) -> e.getFolderName().equals(pName)).findAny().get();
-				if (ConfigureReader.instance().accessFolder(target, account)) {
-					folderId = target.getFolderId();// 向下迭代直至将父路径全部迭代完毕并找到最终路径
-				} else {
-					synchronized (pathsKeys) {
-						pathsKeys.remove(pathskey);//解除安全锁，便于下一次上传
-					}
-					return UPLOADERROR;
-				}
-			} catch (NoSuchElementException e) {
-				Folder newFolder = fu.createNewFolder(flm.queryById(folderId), account, pName, folderConstraint);
-				if (newFolder != null) {
-					folderId = newFolder.getFolderId();
-				} else {
-					synchronized (pathsKeys) {
-						pathsKeys.remove(pathskey);//解除安全锁，便于下一次上传
-					}
-					return UPLOADERROR;
-				}
-			}
-		}
-		String fileName = getFileNameFormPath(originalFileName);
-		// 检查是否存在同名文件。存在则直接失败（确保上传的文件夹内容的原始性）
-		final List<Node> files = this.fm.queryByParentFolderId(folderId);
-		if (files.parallelStream().anyMatch((e) -> e.getFileName().equals(fileName))) {
-			synchronized (pathsKeys) {
-				pathsKeys.remove(pathskey);//解除安全锁，便于下一次上传
-			}
-			return UPLOADERROR;
-		}
-		// 将文件存入节点并获取其存入生成路径，型如“UUID.block”形式。
-		final String path = this.fbu.saveToFileBlocks(file);
-		if (path.equals("ERROR")) {
-			synchronized (pathsKeys) {
-				pathsKeys.remove(pathskey);//解除安全锁，便于下一次上传
-			}
-			return UPLOADERROR;
-		}
-		final String fsize = this.fbu.getFileSize(file);
-		final Node f2 = new Node();
-		f2.setFileId(UUID.randomUUID().toString());
-		if (account != null) {
-			f2.setFileCreator(account);
-		} else {
-			f2.setFileCreator("\u533f\u540d\u7528\u6237");
-		}
-		f2.setFileCreationDate(ServerTimeUtil.accurateToDay());
-		f2.setFileName(fileName);
-		f2.setFileParentFolder(folderId);
-		f2.setFilePath(path);
-		f2.setFileSize(fsize);
-		int i = 0;
-		// 尽可能避免UUID重复的情况发生，重试10次
-		while (true) {
-			try {
-				if (this.fm.insert(f2) > 0) {
-					this.lu.writeUploadFileEvent(f2, account);
-					synchronized (pathsKeys) {
-						pathsKeys.remove(pathskey);//解除安全锁，便于下一次上传
-					}
-					return UPLOADSUCCESS;
-				}
-				break;
-			} catch (Exception e) {
-				f2.setFileId(UUID.randomUUID().toString());
-				i++;
-			}
-			if (i >= 10) {
-				break;
-			}
-		}
+		String result = protectImportFolder(paths, folderId, account, folderConstraint, originalFileName, file);
 		synchronized (pathsKeys) {
 			pathsKeys.remove(pathskey);
 		}
-		return UPLOADERROR;
+		return result;
 	}
 
 	/**
@@ -955,6 +882,69 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 			}
 		}
 		return null;
+	}
+	
+	private String protectImportFolder(String[] paths,String folderId,String account,String folderConstraint,String originalFileName,MultipartFile file) {
+		for (String pName : paths) {
+			try {
+				Folder target = flm.queryByParentId(folderId).parallelStream()
+						.filter((e) -> e.getFolderName().equals(pName)).findAny().get();
+				if (ConfigureReader.instance().accessFolder(target, account)) {
+					folderId = target.getFolderId();// 向下迭代直至将父路径全部迭代完毕并找到最终路径
+				} else {
+					return UPLOADERROR;
+				}
+			} catch (NoSuchElementException e) {
+				Folder newFolder = fu.createNewFolder(flm.queryById(folderId), account, pName, folderConstraint);
+				if (newFolder != null) {
+					folderId = newFolder.getFolderId();
+				} else {
+					return UPLOADERROR;
+				}
+			}
+		}
+		String fileName = getFileNameFormPath(originalFileName);
+		// 检查是否存在同名文件。存在则直接失败（确保上传的文件夹内容的原始性）
+		final List<Node> files = this.fm.queryByParentFolderId(folderId);
+		if (files.parallelStream().anyMatch((e) -> e.getFileName().equals(fileName))) {
+			return UPLOADERROR;
+		}
+		// 将文件存入节点并获取其存入生成路径，型如“UUID.block”形式。
+		final String path = this.fbu.saveToFileBlocks(file);
+		if (path.equals("ERROR")) {
+			return UPLOADERROR;
+		}
+		final String fsize = this.fbu.getFileSize(file);
+		final Node f2 = new Node();
+		f2.setFileId(UUID.randomUUID().toString());
+		if (account != null) {
+			f2.setFileCreator(account);
+		} else {
+			f2.setFileCreator("\u533f\u540d\u7528\u6237");
+		}
+		f2.setFileCreationDate(ServerTimeUtil.accurateToDay());
+		f2.setFileName(fileName);
+		f2.setFileParentFolder(folderId);
+		f2.setFilePath(path);
+		f2.setFileSize(fsize);
+		int i = 0;
+		// 尽可能避免UUID重复的情况发生，重试10次
+		while (true) {
+			try {
+				if (this.fm.insert(f2) > 0) {
+					this.lu.writeUploadFileEvent(f2, account);
+					return UPLOADSUCCESS;
+				}
+				break;
+			} catch (Exception e) {
+				f2.setFileId(UUID.randomUUID().toString());
+				i++;
+			}
+			if (i >= 10) {
+				break;
+			}
+		}
+		return UPLOADERROR;
 	}
 
 }
