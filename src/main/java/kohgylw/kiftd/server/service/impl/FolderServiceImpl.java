@@ -42,52 +42,10 @@ public class FolderServiceImpl implements FolderService {
 		if (fm.queryByParentId(parentId).parallelStream().anyMatch((e) -> e.getFolderName().equals(folderName))) {
 			return "nameOccupied";
 		}
-		Folder f = new Folder();
-		// 设置子文件夹约束等级，不允许子文件夹的约束等级比父文件夹低
-		int pc = parentFolder.getFolderConstraint();
-		if (folderConstraint != null) {
-			try {
-				int ifc = Integer.parseInt(folderConstraint);
-				if (ifc > 0 && account == null) {
-					return "errorParameter";
-				}
-				if (ifc < pc) {
-					return "errorParameter";
-				} else {
-					f.setFolderConstraint(ifc);
-				}
-			} catch (Exception e) {
-				// TODO: handle exception
-				return "errorParameter";
-			}
-		} else {
-			return "errorParameter";
-		}
-		f.setFolderId(UUID.randomUUID().toString());
-		f.setFolderName(folderName);
-		f.setFolderCreationDate(ServerTimeUtil.accurateToDay());
-		if (account != null) {
-			f.setFolderCreator(account);
-		} else {
-			f.setFolderCreator("匿名用户");
-		}
-		f.setFolderParent(parentId);
-		int i = 0;
-		while (true) {
-			try {
-				final int r = this.fm.insertNewFolder(f);
-				if (r > 0) {
-					this.lu.writeCreateFolderEvent(request, f);
-					return "createFolderSuccess";
-				}
-				break;
-			} catch (Exception e) {
-				f.setFolderId(UUID.randomUUID().toString());
-				i++;
-			}
-			if (i >= 10) {
-				break;
-			}
+		Folder f=fu.createNewFolder(parentFolder, account, folderName, folderConstraint);
+		if(f!=null) {
+			lu.writeCreateFolderEvent(request, f);
+			return "createFolderSuccess";
 		}
 		return "cannotCreateFolder";
 	}

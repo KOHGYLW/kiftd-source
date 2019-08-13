@@ -10,11 +10,13 @@ var zipTimer;// 打包下载计时器
 var folderView;// 返回的文件系统视图对象
 var originFolderView;// 保存原始的文件视图对象
 var fs;// 选中的要上传的文件列表
+var ifs;// 选中的要上传的文件夹内的文件列表
 var checkedMovefiles;// 移动文件的存储列表
 var constraintLevel;// 当前文件夹限制等级
 var account;// 用户账户
-var isUpLoading=false;// 是否正在执行其他上传操作
-var xhr;// 文件上传请求对象
+var isUpLoading=false;// 是否正在执行上传操作
+var isImporting=false;// 是否正在执行上传文件夹操作
+var xhr;// 文件或文件夹上传请求对象
 var viewerPageSize = 15; // 显示图片页的最大长度，注意最好是奇数
 var viewer; // viewer对象，用于预览图片功能
 var viewerPageIndex; // 分页预览图片——已浏览图片页号
@@ -22,7 +24,6 @@ var viewerTotal; // 分页预览图片——总页码数
 var pvl;// 预览图片列表的JSON格式对象
 var checkFilesTip="提示：您还未选择任何文件，请先选中一些文件后再执行本操作：<br /><br /><kbd>单击</kbd>：选中某一文件<br /><br /><kbd><kbd>Shift</kbd>+<kbd>单击</kbd></kbd>：选中多个文件<br /><br /><kbd><kbd>Shift</kbd>+<kbd>双击</kbd></kbd>：选中连续的文件<br /><br /><kbd><kbd>Shitf</kbd>+<kbd>A</kbd></kbd>：选中/取消选中所有文件";// 选取文件提示
 var winHeight;// 窗口高度
-var uploadKey;// 上传所用的一次性密钥
 var pingInt;// 定时应答器的定时装置
 
 // 界面功能方法定义
@@ -128,8 +129,8 @@ $(function() {
 		$("#foldername").focus();
 	});
 	// 关闭上传模态框时自动提示如何查看上传进度
-	$('#uploadFileModal').on('hidden.bs.modal', function(e) {
-		if(isUpLoading){
+	$('#uploadFileModal,#importFolderModal').on('hidden.bs.modal', function(e) {
+		if(isUpLoading || isImporting){
 			$('#operationMenuBox').attr("data-placement", "top");
 			$('#operationMenuBox').attr("data-trigger", "focus");
 			$('#operationMenuBox').attr("data-title", "上传中");
@@ -148,10 +149,10 @@ $(function() {
 	});
 	// 开启编辑文件夹框自动初始化状态
 	$('#renameFolderModal').on('show.bs.modal', function(e) {
-		$("#newfolderalert").removeClass("alert");
-		$("#newfolderalert").removeClass("alert-danger");
+		$("#editfolderalert").removeClass("alert");
+		$("#editfolderalert").removeClass("alert-danger");
 		$("#folderrenamebox").removeClass("has-error");
-		$("#newfolderalert").text("");
+		$("#editfolderalert").text("");
 		$("#editfoldertypelist").html("");
 		if(account!=null){
 			for(var i=constraintLevel;i<folderTypes.length;i++){
@@ -181,7 +182,7 @@ $(function() {
 		}
 		if (folderView.authList != null) {
 			if (checkAuth(folderView.authList, "U")) {// 如果有上传权限且未进行其他上传
-				if(isUpLoading){
+				if(isUpLoading || isImporting){
 					alert("提示：您正在执行另一项上传任务，请在上传窗口关闭后再试。");
 				}else{
 					if (!(window.ActiveXObject||"ActiveXObject" in window)){// 判断是否为IE
@@ -241,7 +242,7 @@ $(function() {
 			alert("提示：您不具备上传权限，无法上传文件。");
 		}
 	}
-	// Shift+A全选文件/反选文件，Shift+N新建文件夹，Shift+U上传文件，Shift+C&V剪切粘贴，Shift+D批量删除
+	// Shift+A全选文件/反选文件，Shift+N新建文件夹，Shift+U上传文件，Shift+F导入文件夹，Shift+C&V剪切粘贴，Shift+D批量删除
 	$(document).keypress(function (e) {
 		if($('.modal.shown').length == 0 || ($('.modal.shown').length == 1 && $('.modal.shown').attr('id') == 'loadingModal')){
 			var keyCode = e.keyCode ? e.keyCode : e.which ? e.which : e.charCode;
@@ -258,6 +259,9 @@ $(function() {
 					break;
 				case 68:
 					$('#deleteSeelectFileButtonLi a').click();
+					break;
+				case 70:
+					$('#uploadFolderButtonLi a').click();
 					break;
 				case 67:
 					if((!$("#cutSignTx").hasClass("cuted"))&&checkedMovefiles==undefined){
@@ -672,6 +676,10 @@ function showAccountView(folderView) {
 		if (checkAuth(authList, "U")) {
 			$("#uploadFileButtonLi").removeClass("disabled");
 			$("#uploadFileButtonLi a").attr("onclick","showUploadFileModel()");
+			if(isSupportWebkitdirectory()){// 若浏览器支持文件夹选择，则允许进行文件夹导入
+				$("#uploadFolderButtonLi").removeClass("disabled");
+				$("#uploadFolderButtonLi a").attr("onclick","showUploadFolderModel()");
+			}
 		}
 		if (checkAuth(authList, "L")) {
 			$("#packageDownloadBox")
@@ -1147,16 +1155,15 @@ function renameFolder(folderId) {
 
 // 显示重命名文件夹状态提示
 function showRFolderAlert(txt) {
-	$("#newfolderalert").addClass("alert");
-	$("#newfolderalert").addClass("alert-danger");
+	$("#editfolderalert").addClass("alert");
+	$("#editfolderalert").addClass("alert-danger");
 	$("#folderrenamebox").addClass("has-error");
-	$("#newfolderalert").text(txt);
+	$("#editfolderalert").text(txt);
 }
 
 // 显示上传文件模态框
 function showUploadFileModel() {
-	$("#uploadFileAlert").removeClass("alert");
-	$("#uploadFileAlert").removeClass("alert-danger");
+	$("#uploadFileAlert").hide();
 	$("#uploadFileAlert").text("");
 	if(isUpLoading==false){
 		$("#filepath").removeAttr("disabled");
@@ -1166,7 +1173,7 @@ function showUploadFileModel() {
 		$("#pros").attr('aria-valuenow','0');
 		$("#umbutton").attr('disabled', false);
 		$("#filecount").text("");
-		$("#uploadstatus").text("");
+		$("#uploadstatus").html("");
 		$("#selectcount").text("");
 		$("#selectFileUpLoadModelAsAll").removeAttr("checked");
 		$("#selectFileUpLoadModelAlert").hide();
@@ -1202,16 +1209,15 @@ function showfilepath() {
 	$("#filepath").val(filename);
 }
 
-// 检查是否能够上传
+// 检查文件是否能够上传
 function checkUploadFile() {
-	if(isUpLoading==false){
+	if(isUpLoading==false && isImporting == false){
 		if(fs!=null&&fs.length>0){
 			$("#filepath").attr("disabled","disabled");
 			$("#umbutton").attr('disabled', true);
 			isUpLoading=true;
 			repeModelList=null;
-			$("#uploadFileAlert").removeClass("alert");
-			$("#uploadFileAlert").removeClass("alert-danger");
+			$("#uploadFileAlert").hide();
 			$("#uploadFileAlert").text("");
 			var filenames = new Array();
 			var maxSize = 0;
@@ -1245,7 +1251,6 @@ function checkUploadFile() {
 							showUploadFileAlert("提示：您的操作未被授权，无法开始上传");
 						} else {
 							var resp=eval("("+result+")");
-							uploadKey=resp.uploadKey;
 							if(resp.checkResult == "fileTooLarge"){
 								showUploadFileAlert("提示：文件["+resp.overSizeFile+"]的体积超过最大限制（"+resp.maxUploadFileSize+"），无法开始上传");
 							}else if(resp.checkResult == "hasExistsNames"){
@@ -1267,6 +1272,8 @@ function checkUploadFile() {
 		}else{
 			showUploadFileAlert("提示：您未选择任何文件，无法开始上传");
 		}
+	}else{
+		showUploadFileAlert("提示：另一项上传文件或文件夹的任务尚未完成，无法开始上传");
 	}
 }
 
@@ -1286,6 +1293,7 @@ function selectFileUpLoadModelStart(){
 	$("#repeFileName").text(repeList[repeIndex]);
 }
 
+// 设定重名文件的处理方法
 function selectFileUpLoadModelEnd(t){
 	if(repeModelList == null){
 		repeModelList={};
@@ -1327,7 +1335,6 @@ function doupload(count) {
 
 		fd.append("file", uploadfile);// 将文件对象添加到FormData对象中，字段名为uploadfile
 		fd.append("folderId", locationpath);
-		fd.append("uploadKey", uploadKey);
 		if(repeModelList != null && repeModelList[fname] != null){
 			if(repeModelList[fname] == 'skip'){
 				$("#uls_" + count).text("[已完成]");
@@ -1414,6 +1421,7 @@ function doupload(count) {
 	}
 }
 
+// 显示上传文件进度
 function uploadProgress(evt) {
 	if (evt.lengthComputable) {
 		// evt.loaded：文件上传的大小 evt.total：文件总的大小
@@ -1428,10 +1436,19 @@ function uploadProgress(evt) {
 function showUploadFileAlert(txt) {
 	isUpLoading=false;
 	$("#filepath").removeAttr("disabled");
-	$("#uploadFileAlert").addClass("alert");
-	$("#uploadFileAlert").addClass("alert-danger");
+	$("#uploadFileAlert").show();
 	$("#uploadFileAlert").text(txt);
 	$("#umbutton").attr('disabled', false);
+}
+
+// 取消上传文件
+function abortUpload() {
+	isUpLoading=false;
+	if (xhr != null) {
+		xhr.abort();
+	}
+	$('#uploadFileModal').modal('hide');
+	showFolderView(locationpath);
 }
 
 // 显示下载文件模态框
@@ -1576,24 +1593,6 @@ function showRFileAlert(txt) {
 	$("#newFileNamealert").addClass("alert-danger");
 	$("#filerenamebox").addClass("has-error");
 	$("#newFileNamealert").text(txt);
-}
-
-// 取消上传
-function abortUpload() {
-	isUpLoading=false;
-	if (xhr != null) {
-		xhr.abort();
-		$("#umbutton").attr('disabled', false);
-		$("#pros").width("0%");
-		$("#pros").attr('aria-valuenow',"0");
-		$("#filecount").text("");
-	}
-	$("#uploadfile").val("");
-	$("#filepath").val("");
-	$("#uploadstatus").html("");
-	$("#selectcount").text("");
-	$('#uploadFileModal').modal('hide');
-	showFolderView(locationpath);
 }
 
 // 获取文件名的后缀名，以小写形式输出
@@ -2120,7 +2119,7 @@ function sortbyfs(){
 	$("#sortByFN").removeClass();
 	$("#sortByCD").removeClass();
 	$("#sortByCN").removeClass();
-	//正倒序判断
+	// 正倒序判断
 	if($("#sortByFS").hasClass("glyphicon-triangle-bottom")){
 		$("#sortByFS").removeClass();
 		$("#sortByFS").addClass("glyphicon glyphicon-triangle-top");
@@ -2494,3 +2493,268 @@ function ping(){
 		}
 	});
 }
+
+// 判断浏览器是否支持webkitdirectory属性（是否能进行文件夹上传）
+function isSupportWebkitdirectory() {
+	var testWebkitdirectory = document.createElement("input");
+	if("webkitdirectory" in testWebkitdirectory) {
+		return true;
+	} else {
+		return false;
+	}
+};
+
+// 显示上传文件夹模态框
+function showUploadFolderModel(){
+	$("#importFolderAlert").hide();
+	$("#importFolderAlert").text("");
+	if(isImporting == false){// 如果未进行上传，则还原上传文件夹的基本状态
+		$("#folderpath").val("");
+		$("#importfolder").val("");
+		$("#importpros").width("0%");
+		$("#importpros").attr('aria-valuenow','0');
+		$("#importstatus").html("");
+		$("#folderpath").attr("disabled",false);
+		$("#importFolderLevelBtn").attr("disabled",false);
+		$("#importcount").text("");
+		$("#importbutton").attr('disabled', false);
+		$("#selectFolderImportModelAlert").hide();
+		$("#importfoldertypelist").html("");
+		if(account!=null){
+			$("#folderpath").attr("folderConstraintLevel",constraintLevel+"");
+			$("#importfoldertype").text(folderTypes[constraintLevel]);
+			if(checkAuth(folderView.authList, "C")){
+				for(var i=constraintLevel;i<folderTypes.length;i++){
+					$("#importfoldertypelist").append("<li><a onclick='changeImportFolderType("+i+")'>"+folderTypes[i]+"</a></li>");
+				}
+			}else{
+				$("#importfoldertypelist").append("<li><a onclick='changeImportFolderType("+constraintLevel+")'>"+folderTypes[constraintLevel]+"</a></li>");
+			}
+		}else{
+			$("#importfoldertypelist").append("<li><a onclick='changeImportFolderType(0)'>"+folderTypes[0]+"</a></li>");
+		}
+	}
+	$("#importFolderModal").modal('show');
+}
+
+// 点击上传路径文本框时弹出文件夹选择窗口
+function checkimportpath(){
+	$('#importfolder').click();
+}
+
+// 用户选择文件夹后回填路径
+function getInputImport(){
+	ifs = $("#importfolder")[0].files;
+	if(ifs.length > 0) {
+		var folderName = ifs[0].webkitRelativePath.substring(0, ifs[0].webkitRelativePath.indexOf("/"));
+		$("#folderpath").val(folderName);
+	}
+}
+
+// 检查文件夹是否能够上传
+function checkImportFolder(){
+	if(isUpLoading == false && isImporting ==false){
+		if(ifs != null && ifs.length > 0){// 必须选中文件
+			$("#folderpath").attr("disabled",true);
+			$("#importFolderLevelBtn").attr("disabled",true);
+			$("#importbutton").attr('disabled', true);
+			$("#importFolderAlert").hide();
+			$("#importFolderAlert").text("");
+			isImporting = true;
+			var folderName = ifs[0].webkitRelativePath.substring(0, ifs[0].webkitRelativePath.indexOf("/"));
+			var maxSize = 0;
+			var maxFileIndex = 0;
+			// 找出最大体积的文件避免服务器进行效验
+			for (var i = 0; i < ifs.length; i++) {
+				if(ifs[i].size > maxSize){
+					maxSize = ifs[i].size;
+					maxFileIndex = i;
+				}
+			}
+			// 发送合法性检查请求
+			$.ajax({
+				url:'homeController/checkImportFolder.ajax',
+				type:'POST',
+				dataType:'text',
+				data:{
+					folderName : folderName,
+					maxSize : maxSize,
+					folderId : locationpath
+				},
+				success:function(result){
+					var resJson = eval("("+result+")");
+					switch (resJson.result) {
+					case 'noAuthorized':
+						showImportFolderAlert("提示：您的操作未被授权，无法开始上传");
+						break;
+					case 'errorParameter':
+						showImportFolderAlert("提示：参数不正确，无法开始上传");
+						break;
+					case 'fileOverSize':
+						showImportFolderAlert("提示：文件["+ifs[maxFileIndex].webkitRelativePath+"]的体积超过最大限制（"+resJson.maxSize+"），无法开始上传");
+						break;
+					case 'coverOrBoth':
+						$("#importcoverbtn").show();
+						$("#selectFolderImportModelAlert").show();
+						$("#repeFolderName").text(folderName);
+						break;
+					case 'onlyBoth':
+						$("#importcoverbtn").hide();
+						$("#selectFolderImportModelAlert").show();
+						$("#repeFolderName").text(folderName);
+						break;
+					case 'permitUpload':
+						doImportFolder('none');// 直接允许上传
+						break;
+					default:
+						showImportFolderAlert("提示：出现意外错误，无法开始上传");
+						break;
+					}
+				},
+				error:function(){
+					showImportFolderAlert("提示：出现意外错误，无法开始上传");
+				}
+			});
+		}else{
+			showImportFolderAlert("提示：您未选择任何文件夹，无法开始上传");
+		}
+	}else{
+		showImportFolderAlert("提示：另一项上传文件或文件夹的任务尚未完成，无法开始上传");
+	}
+}
+
+// 显示上传文件夹错误提示
+function showImportFolderAlert(txt) {
+	isImporting=false;
+	$("#folderpath").attr("disabled",false);
+	$("#importFolderLevelBtn").attr("disabled",false);
+	$("#importFolderAlert").show();
+	$("#importFolderAlert").text(txt);
+	$("#importbutton").attr('disabled', false);
+}
+
+// 执行上传文件夹操作，包括前置操作和迭代操作
+function doImportFolder(type) {
+	// 前置操作，用于处理存在同名文件夹的情况
+	if(type == 'both'){
+		// 保留两者时，则预先创建一个新的空文件夹作为上传目标
+		
+	}else if(type == 'cover'){
+		// 覆盖时，则删除原同名文件夹后再进行上传
+		
+	}
+	// 执行迭代上传操作
+	iteratorImport(0);
+}
+
+// 显示上传文件夹进度
+function importProgress(evt) {
+	if (evt.lengthComputable) {
+		// evt.loaded：文件上传的大小 evt.total：文件总的大小
+		var percentComplete = Math.round((evt.loaded) * 100 / evt.total);
+		// 加载进度条，同时显示信息
+		$("#importpros").width(percentComplete + "%");
+		$("#importpros").attr('aria-valuenow',""+percentComplete);
+	}
+}
+
+// 迭代上传文件夹内的文件
+function iteratorImport(i){
+	$("#importpros").width("0%");// 先将进度条置0
+	$("#importpros").attr('aria-valuenow',"0");
+	var uploadfile = ifs[i];// 获取要上传的文件
+	var fcount = ifs.length;
+	var fc=$("#folderpath").attr("folderConstraintLevel");// 文件夹访问级别
+	if (uploadfile != null) {
+		var fname = uploadfile.webkitRelativePath;
+		if (fcount > 1) {
+			$("#importcount").text("（" + (i+1) + "/" + fcount + "）");// 显示当前进度
+		}
+		$("#importstatus").prepend(
+				"<p>" + fname + "<span id='ils_" + i
+				+ "'>[正在上传...]</span></p>");
+		xhr = new XMLHttpRequest();// 这东西类似于servlet里面的request
+		
+		var fd = new FormData();// 用于封装文件数据的对象
+		
+		fd.append("file", uploadfile);// 将文件对象添加到FormData对象中，字段名为uploadfile
+		fd.append("folderId", locationpath);
+		fd.append("folderConstraint",fc);
+		xhr.open("POST", "homeController/doImportFolder.ajax", true);// 上传目标
+		
+		xhr.upload.addEventListener("progress", importProgress, false);// 这个是对上传进度的监听
+		// 上面的三个参数分别是：事件名（指定名称）、回调函数、是否冒泡（一般是false即可）
+		
+		xhr.send(fd);// 上传FormData对象
+		
+		if(pingInt == null){
+			pingInt = setInterval("ping()",60000);// 上传中开始计时应答
+		}
+		
+		// 上传结束后执行的回调函数
+		xhr.onloadend = function() {
+			// 停止应答计时
+			if(pingInt != null){
+				window.clearInterval(pingInt);
+				pingInt = null;
+			}
+			if (xhr.status === 200) {
+				// TODO 上传成功
+				var result = xhr.responseText;
+				if (result == "uploadsuccess") {
+					$("#ils_" + i).text("[已完成]");
+					var ni=i+1;
+					if(ni < fcount){
+						iteratorImport(ni);
+					}else{
+						// 完成全部上传后，清空所有提示信息，并还原上传窗口
+						isImporting=false;
+						$("#folderpath").removeAttr("disabled");
+						$("#importFolderLevelBtn").removeAttr("disabled");
+						$("#importfolder").val("");
+						$("#folderpath").val("");
+						$("#importpros").width("0%");
+						$("#importpros").attr('aria-valuenow',"0");
+						$("#importbutton").attr('disabled', false);
+						$("#importcount").text("");
+						$("#importstatus").text("");
+						$('#importFolderModal').modal('hide');
+						showFolderView(locationpath);
+					}
+				} else if (result == "uploaderror") {
+					showImportFolderAlert("提示：出现意外错误，文件：[" + fname
+							+ "]上传失败，上传被中断。");
+					$("#ils_" + i).text("[失败]");
+				} else {
+					showImportFolderAlert("提示：出现意外错误，文件：[" + fname
+							+ "]上传失败，上传被中断。");
+					$("#ils_" + i).text("[失败]");
+				}
+			} else {
+				showImportFolderAlert("提示：出现意外错误，文件：[" + fname + "]上传失败，上传被中断。");
+				$("#ils_" + i).text("[失败]");
+			}
+		};
+	} else {
+		showImportFolderAlert("提示：要上传的文件不存在。");
+		$("#importstatus").prepend(
+				"<p>未找到要上传的文件<span id='ils_" + i + "'>[失败]</span></p>");
+	}
+}
+
+// 取消文件夹上传
+function abortImport(){
+	isImporting=false;
+	if (xhr != null) {
+		xhr.abort();
+	}
+	$('#importFolderModal').modal('hide');
+	showFolderView(locationpath);
+}
+
+// 修改上传文件夹约束等级
+function changeImportFolderType(type){
+	$("#importfoldertype").text(folderTypes[type]);
+	$("#folderpath").attr("folderConstraintLevel",type+"");
+}
+
