@@ -2,6 +2,8 @@ package kohgylw.kiftd.server.util;
 
 import org.springframework.stereotype.*;
 import javax.annotation.*;
+
+import kohgylw.kiftd.server.enumeration.AccountAuth;
 import kohgylw.kiftd.server.mapper.*;
 import kohgylw.kiftd.server.model.*;
 import java.util.*;
@@ -51,7 +53,23 @@ public class FolderUtil {
 		this.fm.deleteById(folderId);
 	}
 	
-	public Folder createNewFolder(Folder parentFolder,String account,String folderName,String folderConstraint) {
+	public Folder createNewFolder(final String parentId,String account,String folderName,String folderConstraint) {
+		if (!ConfigureReader.instance().authorized(account, AccountAuth.CREATE_NEW_FOLDER)) {
+			return null;
+		}
+		if (parentId == null || folderName == null || parentId.length() <= 0 || folderName.length() <= 0) {
+			return null;
+		}
+		if (!TextFormateUtil.instance().matcherFolderName(folderName) || folderName.indexOf(".") == 0) {
+			return null;
+		}
+		final Folder parentFolder = this.fm.queryById(parentId);
+		if (parentFolder == null) {
+			return null;
+		}
+		if (fm.queryByParentId(parentId).parallelStream().anyMatch((e) -> e.getFolderName().equals(folderName))) {
+			return null;
+		}
 		Folder f = new Folder();
 		// 设置子文件夹约束等级，不允许子文件夹的约束等级比父文件夹低
 		int pc = parentFolder.getFolderConstraint();
@@ -81,7 +99,7 @@ public class FolderUtil {
 		} else {
 			f.setFolderCreator("匿名用户");
 		}
-		f.setFolderParent(parentFolder.getFolderId());
+		f.setFolderParent(parentId);
 		int i = 0;
 		while (true) {
 			try {

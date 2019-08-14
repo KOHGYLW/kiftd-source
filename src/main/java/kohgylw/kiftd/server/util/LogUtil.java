@@ -182,6 +182,9 @@ public class LogUtil {
 			String a = account;
 			Thread t = new Thread(() -> {
 				Folder folder = fm.queryById(f.getFileParentFolder());
+				if(folder == null) {
+					return;
+				}
 				List<Folder> l = fu.getParentList(folder.getFolderId());
 				String pl = new String();
 				for (Folder i : l) {

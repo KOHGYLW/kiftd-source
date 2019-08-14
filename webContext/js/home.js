@@ -2494,10 +2494,10 @@ function ping(){
 	});
 }
 
-// 判断浏览器是否支持webkitdirectory属性（是否能进行文件夹上传）
+// 判断浏览器是否支持webkitdirectory属性且不为ios系统（判断是否能进行文件夹上传）
 function isSupportWebkitdirectory() {
 	var testWebkitdirectory = document.createElement("input");
-	if("webkitdirectory" in testWebkitdirectory) {
+	if("webkitdirectory" in testWebkitdirectory && !(/(iPhone|iPad|iPod|iOS)/i.test(navigator.userAgent))) {
 		return true;
 	} else {
 		return false;
@@ -2518,7 +2518,6 @@ function showUploadFolderModel(){
 		$("#importFolderLevelBtn").attr("disabled",false);
 		$("#importcount").text("");
 		$("#importbutton").attr('disabled', false);
-		$("#selectFolderImportModelAlert").hide();
 		$("#importfoldertypelist").html("");
 		if(account!=null){
 			$("#folderpath").attr("folderConstraintLevel",constraintLevel+"");
@@ -2590,21 +2589,17 @@ function checkImportFolder(){
 					case 'errorParameter':
 						showImportFolderAlert("提示：参数不正确，无法开始上传");
 						break;
+					case 'mustLogin':
+						window.location.href = "login.html";
+						break;
 					case 'fileOverSize':
 						showImportFolderAlert("提示：文件["+ifs[maxFileIndex].webkitRelativePath+"]的体积超过最大限制（"+resJson.maxSize+"），无法开始上传");
 						break;
-					case 'coverOrBoth':
-						$("#importcoverbtn").show();
-						$("#selectFolderImportModelAlert").show();
-						$("#repeFolderName").text(folderName);
-						break;
-					case 'onlyBoth':
-						$("#importcoverbtn").hide();
-						$("#selectFolderImportModelAlert").show();
-						$("#repeFolderName").text(folderName);
+					case 'repeatFolder':
+						showImportFolderAlert("提示：路径下已存在同名文件夹，无法开始上传（为确保数据的完整性和安全性，本操作不提供覆盖及保留两者选项。您可以进行如下操作后再试：1.将上传文件夹的换用其他名称；2.修改冲突文件夹的名称；3.删除冲突的文件夹）");
 						break;
 					case 'permitUpload':
-						doImportFolder('none');// 直接允许上传
+						iteratorImport(0);// 直接允许上传
 						break;
 					default:
 						showImportFolderAlert("提示：出现意外错误，无法开始上传");
@@ -2631,20 +2626,6 @@ function showImportFolderAlert(txt) {
 	$("#importFolderAlert").show();
 	$("#importFolderAlert").text(txt);
 	$("#importbutton").attr('disabled', false);
-}
-
-// 执行上传文件夹操作，包括前置操作和迭代操作
-function doImportFolder(type) {
-	// 前置操作，用于处理存在同名文件夹的情况
-	if(type == 'both'){
-		// 保留两者时，则预先创建一个新的空文件夹作为上传目标
-		
-	}else if(type == 'cover'){
-		// 覆盖时，则删除原同名文件夹后再进行上传
-		
-	}
-	// 执行迭代上传操作
-	iteratorImport(0);
 }
 
 // 显示上传文件夹进度
@@ -2757,4 +2738,3 @@ function changeImportFolderType(type){
 	$("#importfoldertype").text(folderTypes[type]);
 	$("#folderpath").attr("folderConstraintLevel",type+"");
 }
-
