@@ -114,10 +114,24 @@ public class HomeController {
 	}
 
 	// 执行文件夹上传操作
-	@RequestMapping(value = { "doImportFolder.ajax" }, produces = { CHARSET_BY_AJAX })
+	@RequestMapping(value = { "/doImportFolder.ajax" }, produces = { CHARSET_BY_AJAX })
 	@ResponseBody
 	public String doImportFolder(final HttpServletRequest request, final MultipartFile file) {
 		return fis.doImportFolder(request, file);
+	}
+
+	// 上传文件夹时，若存在同名文件夹并选择覆盖，则应先执行该方法，执行成功后再上传新的文件夹
+	@RequestMapping(value = { "/deleteFolderByName.ajax" }, produces = { CHARSET_BY_AJAX })
+	@ResponseBody
+	public String deleteFolderByName(final HttpServletRequest request) {
+		return fs.deleteFolderByName(request);
+	}
+
+	// 上传文件夹时，若存在同名文件夹并选择保留两者，则应先执行该方法，执行成功后使用返回的新文件夹名进行上传
+	@RequestMapping(value = { "/createNewFolderByName.ajax" }, produces = { CHARSET_BY_AJAX })
+	@ResponseBody
+	public String createNewFolderByName(final HttpServletRequest request) {
+		return fs.createNewFolderByName(request);
 	}
 
 	@RequestMapping({ "/deleteFile.ajax" })

@@ -246,8 +246,12 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		while (true) {
 			try {
 				if (this.fm.insert(f2) > 0) {
-					this.lu.writeUploadFileEvent(f2, account);
-					return UPLOADSUCCESS;
+					if (hasRepeatNode(f2)) {
+						return UPLOADERROR;
+					} else {
+						this.lu.writeUploadFileEvent(f2, account);
+						return UPLOADSUCCESS;
+					}
 				}
 				break;
 			} catch (Exception e) {
@@ -733,8 +737,26 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		final String folderName = request.getParameter("folderName");
 		final String maxUploadFileSize = request.getParameter("maxSize");
 		CheckImportFolderRespons cifr = new CheckImportFolderRespons();
+		// 基本文件夹名称合法性检查
+		if (folderName == null || folderName.length() == 0) {
+			cifr.setResult(ERROR_PARAMETER);
+			return gson.toJson(cifr);
+		}
+		// 上传目标参数检查
+		if (folderId == null || folderId.length() == 0) {
+			cifr.setResult(ERROR_PARAMETER);
+			return gson.toJson(cifr);
+		}
+		// 检查上传的目标文件夹是否存在
+		Folder folder = flm.queryById(folderId);
+		if (folder == null) {
+			cifr.setResult(ERROR_PARAMETER);
+			return gson.toJson(cifr);
+		}
 		// 先行权限检查
-		if (!ConfigureReader.instance().authorized(account, AccountAuth.UPLOAD_FILES)) {
+		if (!ConfigureReader.instance().authorized(account, AccountAuth.UPLOAD_FILES)
+				|| !ConfigureReader.instance().authorized(account, AccountAuth.CREATE_NEW_FOLDER)
+				|| !ConfigureReader.instance().accessFolder(folder, account)) {
 			cifr.setResult(NO_AUTHORIZED);
 			return gson.toJson(cifr);
 		}
@@ -754,14 +776,19 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 			cifr.setResult(ERROR_PARAMETER);
 			return gson.toJson(cifr);
 		}
-		// 开始文件夹命名冲突检查，若无重名则允许上传。
+		// 开始文件夹命名冲突检查，若无重名则允许上传。否则检查该文件夹是否具备覆盖条件（具备该文件夹的访问权限且具备删除权限），如无则可选择保留两者或取消
 		final List<Folder> folders = flm.queryByParentId(folderId);
 		try {
-			folders.stream().parallel()
-			.filter((n) -> n.getFolderName().equals(
-					new String(folderName.getBytes(Charset.forName("UTF-8")), Charset.forName("UTF-8"))))
-			.findAny().get();
-			cifr.setResult("repeatFolder");
+			Folder testFolder = folders.stream().parallel()
+					.filter((n) -> n.getFolderName().equals(
+							new String(folderName.getBytes(Charset.forName("UTF-8")), Charset.forName("UTF-8"))))
+					.findAny().get();
+			if (ConfigureReader.instance().accessFolder(testFolder, account)
+					&& ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER)) {
+				cifr.setResult("repeatFolder_coverOrBoth");
+			} else {
+				cifr.setResult("repeatFolder_Both");
+			}
 			return gson.toJson(cifr);
 		} catch (NoSuchElementException e) {
 			// 通过所有检查，允许上传
@@ -777,16 +804,19 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		final String originalFileName = new String(file.getOriginalFilename().getBytes(Charset.forName("UTF-8")),
 				Charset.forName("UTF-8"));
 		String folderConstraint = request.getParameter("folderConstraint");
+		String newFolderName = request.getParameter("newFolderName");
 		// 再次检查上传文件名与目标目录ID
 		if (folderId == null || folderId.length() <= 0 || originalFileName == null || originalFileName.length() <= 0) {
 			return UPLOADERROR;
 		}
+		// 检查上传的目标文件夹是否存在
 		Folder folder = flm.queryById(folderId);
 		if (folder == null) {
 			return UPLOADERROR;
 		}
 		// 检查上传权限
 		if (!ConfigureReader.instance().authorized(account, AccountAuth.UPLOAD_FILES)
+				|| !ConfigureReader.instance().authorized(account, AccountAuth.CREATE_NEW_FOLDER)
 				|| !ConfigureReader.instance().accessFolder(folder, account)) {
 			return UPLOADERROR;
 		}
@@ -797,10 +827,10 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		}
 		// 检查是否具备创建文件夹权限，若有则使用请求中提供的文件夹访问级别，否则使用默认访问级别
 		int pc = folder.getFolderConstraint();
-		if (ConfigureReader.instance().authorized(account, AccountAuth.CREATE_NEW_FOLDER)) {
+		if (folderConstraint != null) {
 			try {
 				int ifc = Integer.parseInt(folderConstraint);
-				if (ifc > 0 && account == null) {
+				if (ifc != 0 && account == null) {
 					return UPLOADERROR;
 				}
 				if (ifc < pc) {
@@ -810,13 +840,88 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 				return UPLOADERROR;
 			}
 		} else {
-			folderConstraint = pc + "";
+			return UPLOADERROR;
 		}
 		// 计算相对路径的文件夹ID（即真正要保存的文件夹目标）
 		String[] paths = getParentPath(originalFileName);
-		// 将当前操作的文件夹路径加入到安全锁中，确保同一时间内无法对该文件夹进行重复导入，避免发生文件冲突的问题。
-		String result = protectImportFolder(paths, folderId, account, folderConstraint, originalFileName, file);
-		return result;
+		// 检查上传路径是否正确（必须包含至少一层文件夹）
+		if (paths.length == 0) {
+			return UPLOADERROR;
+		}
+		// 若声明了替代文件夹名称，则使用替代文件夹名称作为最上级文件夹名称
+		if (newFolderName != null && newFolderName.length() > 0) {
+			paths[0] = newFolderName;
+		}
+		// 执行创建文件夹和上传文件操作
+		for (String pName : paths) {
+			Folder newFolder = fu.createNewFolder(folderId, account, pName, folderConstraint);
+			if (newFolder == null) {
+				Map<String, String> key = new HashMap<String, String>();
+				key.put("parentId", folderId);
+				key.put("folderName", pName);
+				try {
+					Folder target = flm.queryByParentIdAndFolderName(key);
+					if (target != null) {
+						folderId = target.getFolderId();// 向下迭代直至将父路径全部迭代完毕并找到最终路径
+					} else {
+						return UPLOADERROR;
+					}
+				} catch (MyBatisSystemException e) {
+					return UPLOADERROR;
+				}
+			} else {
+				if (fu.hasRepeatFolder(newFolder)) {
+					return UPLOADERROR;
+				}
+				folderId = newFolder.getFolderId();
+			}
+		}
+		String fileName = getFileNameFormPath(originalFileName);
+		// 检查是否存在同名文件。存在则直接失败（确保上传的文件夹内容的原始性）
+		final List<Node> files = this.fm.queryByParentFolderId(folderId);
+		if (files.parallelStream().anyMatch((e) -> e.getFileName().equals(fileName))) {
+			return UPLOADERROR;
+		}
+		// 将文件存入节点并获取其存入生成路径，型如“UUID.block”形式。
+		final String path = this.fbu.saveToFileBlocks(file);
+		if (path.equals("ERROR")) {
+			return UPLOADERROR;
+		}
+		final String fsize = this.fbu.getFileSize(file);
+		final Node f2 = new Node();
+		f2.setFileId(UUID.randomUUID().toString());
+		if (account != null) {
+			f2.setFileCreator(account);
+		} else {
+			f2.setFileCreator("\u533f\u540d\u7528\u6237");
+		}
+		f2.setFileCreationDate(ServerTimeUtil.accurateToDay());
+		f2.setFileName(fileName);
+		f2.setFileParentFolder(folderId);
+		f2.setFilePath(path);
+		f2.setFileSize(fsize);
+		int i = 0;
+		// 尽可能避免UUID重复的情况发生，重试10次
+		while (true) {
+			try {
+				if (this.fm.insert(f2) > 0) {
+					if (hasRepeatNode(f2)) {
+						return UPLOADERROR;
+					} else {
+						this.lu.writeUploadFileEvent(f2, account);
+						return UPLOADSUCCESS;
+					}
+				}
+				break;
+			} catch (Exception e) {
+				f2.setFileId(UUID.randomUUID().toString());
+				i++;
+			}
+			if (i >= 10) {
+				break;
+			}
+		}
+		return UPLOADERROR;
 	}
 
 	/**
@@ -876,84 +981,16 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		return null;
 	}
 
-	private String protectImportFolder(String[] paths, String folderId, String account, String folderConstraint,
-			String originalFileName, MultipartFile file) {
-		for (String pName : paths) {
-			Folder newFolder = fu.createNewFolder(folderId, account, pName, folderConstraint);
-			if (newFolder == null) {
-				Map<String, String> key = new HashMap<String, String>();
-				key.put("parentId", folderId);
-				key.put("folderName", pName);
-				try {
-					Folder target = flm.queryByParentIdAndFolderName(key);
-					if (target != null) {
-						folderId = target.getFolderId();// 向下迭代直至将父路径全部迭代完毕并找到最终路径
-					} else {
-						return UPLOADERROR;
-					}
-				} catch (MyBatisSystemException e) {
-					cleanRepeatFolder(folderId, pName);
-					return UPLOADERROR;
-				}
-			} else {
-				if (cleanRepeatFolder(folderId, pName)) {
-					return UPLOADERROR;
-				}
-				folderId = newFolder.getFolderId();
-			}
-		}
-		String fileName = getFileNameFormPath(originalFileName);
-		// 检查是否存在同名文件。存在则直接失败（确保上传的文件夹内容的原始性）
-		final List<Node> files = this.fm.queryByParentFolderId(folderId);
-		if (files.parallelStream().anyMatch((e) -> e.getFileName().equals(fileName))) {
-			return UPLOADERROR;
-		}
-		// 将文件存入节点并获取其存入生成路径，型如“UUID.block”形式。
-		final String path = this.fbu.saveToFileBlocks(file);
-		if (path.equals("ERROR")) {
-			return UPLOADERROR;
-		}
-		final String fsize = this.fbu.getFileSize(file);
-		final Node f2 = new Node();
-		f2.setFileId(UUID.randomUUID().toString());
-		if (account != null) {
-			f2.setFileCreator(account);
-		} else {
-			f2.setFileCreator("\u533f\u540d\u7528\u6237");
-		}
-		f2.setFileCreationDate(ServerTimeUtil.accurateToDay());
-		f2.setFileName(fileName);
-		f2.setFileParentFolder(folderId);
-		f2.setFilePath(path);
-		f2.setFileSize(fsize);
-		int i = 0;
-		// 尽可能避免UUID重复的情况发生，重试10次
-		while (true) {
-			try {
-				if (this.fm.insert(f2) > 0) {
-					this.lu.writeUploadFileEvent(f2, account);
-					return UPLOADSUCCESS;
-				}
-				break;
-			} catch (Exception e) {
-				f2.setFileId(UUID.randomUUID().toString());
-				i++;
-			}
-			if (i >= 10) {
-				break;
-			}
-		}
-		return UPLOADERROR;
-	}
-
-	// 当文件夹出现同名问题时，删除同名文件夹并返回是否进行了该操作（旨在确保上传文件夹操作不被重复上传干扰）
-	private boolean cleanRepeatFolder(String folderId, String pName) {
-		Folder[] repeats = flm.queryByParentId(folderId).parallelStream().filter((f) -> f.getFolderName().equals(pName))
-				.toArray(Folder[]::new);
+	// 检查新增的文件是否存在同名问题
+	private boolean hasRepeatNode(Node n) {
+		Node[] repeats = fm.queryByParentFolderId(n.getFileParentFolder()).parallelStream()
+				.filter((e) -> e.getFileName().equals(n.getFileName())).toArray(Node[]::new);
 		if (repeats.length > 1) {
-			for (Folder r : repeats) {
-				flm.deleteById(r.getFolderId());
+			File f = fbu.getFileFromBlocks(n);
+			if (f != null) {
+				f.delete();
 			}
+			fm.deleteById(n.getFileId());
 			return true;
 		} else {
 			return false;

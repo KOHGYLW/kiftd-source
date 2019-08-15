@@ -458,6 +458,22 @@
 						</div>
 					</div>
 					<div id="importFolderAlert" class="alert alert-danger" role="alert"></div>
+					<div id="selectFolderImportModelAlert" class="alert alert-danger"
+						role="alert">
+						<h4>提示：存在同名文件夹！</h4>
+						<p>
+							您要上传的文件夹“<span id="repeFolderName"></span>”已存在于该路径下，您希望：
+						</p>
+						<p>
+							<button id="importcoverbtn" type="button"
+								class="btn btn-danger btn-sm"
+								onclick="importAndCover()">覆盖</button>
+							<button type="button" class="btn btn-default btn-sm"
+								onclick="abortImport()">取消上传</button>
+							<button type="button" class="btn btn-default btn-sm"
+								onclick="importAndBoth()">保留两者</button>
+						</p>
+					</div>
 				</div>
 				<div class="modal-footer">
 					<button type="button" class="btn btn-default" onclick='abortImport()'>取消</button>

@@ -16,6 +16,7 @@ var constraintLevel;// 当前文件夹限制等级
 var account;// 用户账户
 var isUpLoading=false;// 是否正在执行上传操作
 var isImporting=false;// 是否正在执行上传文件夹操作
+var importFolderName;// 上传文件夹时保存文件夹名称
 var xhr;// 文件或文件夹上传请求对象
 var viewerPageSize = 15; // 显示图片页的最大长度，注意最好是奇数
 var viewer; // viewer对象，用于预览图片功能
@@ -676,7 +677,7 @@ function showAccountView(folderView) {
 		if (checkAuth(authList, "U")) {
 			$("#uploadFileButtonLi").removeClass("disabled");
 			$("#uploadFileButtonLi a").attr("onclick","showUploadFileModel()");
-			if(isSupportWebkitdirectory()){// 若浏览器支持文件夹选择，则允许进行文件夹导入
+			if(checkAuth(authList, "C") && isSupportWebkitdirectory()){// 若浏览器支持文件夹选择，且具备新建文件夹权限，则允许进行文件夹上传
 				$("#uploadFolderButtonLi").removeClass("disabled");
 				$("#uploadFolderButtonLi a").attr("onclick","showUploadFolderModel()");
 			}
@@ -2519,15 +2520,12 @@ function showUploadFolderModel(){
 		$("#importcount").text("");
 		$("#importbutton").attr('disabled', false);
 		$("#importfoldertypelist").html("");
+		$("#selectFolderImportModelAlert").hide();
 		if(account!=null){
 			$("#folderpath").attr("folderConstraintLevel",constraintLevel+"");
 			$("#importfoldertype").text(folderTypes[constraintLevel]);
-			if(checkAuth(folderView.authList, "C")){
-				for(var i=constraintLevel;i<folderTypes.length;i++){
-					$("#importfoldertypelist").append("<li><a onclick='changeImportFolderType("+i+")'>"+folderTypes[i]+"</a></li>");
-				}
-			}else{
-				$("#importfoldertypelist").append("<li><a onclick='changeImportFolderType("+constraintLevel+")'>"+folderTypes[constraintLevel]+"</a></li>");
+			for(var i=constraintLevel;i<folderTypes.length;i++){
+				$("#importfoldertypelist").append("<li><a onclick='changeImportFolderType("+i+")'>"+folderTypes[i]+"</a></li>");
 			}
 		}else{
 			$("#importfoldertypelist").append("<li><a onclick='changeImportFolderType(0)'>"+folderTypes[0]+"</a></li>");
@@ -2545,8 +2543,8 @@ function checkimportpath(){
 function getInputImport(){
 	ifs = $("#importfolder")[0].files;
 	if(ifs.length > 0) {
-		var folderName = ifs[0].webkitRelativePath.substring(0, ifs[0].webkitRelativePath.indexOf("/"));
-		$("#folderpath").val(folderName);
+		importFolderName = ifs[0].webkitRelativePath.substring(0, ifs[0].webkitRelativePath.indexOf("/"));
+		$("#folderpath").val(importFolderName);
 	}
 }
 
@@ -2560,7 +2558,6 @@ function checkImportFolder(){
 			$("#importFolderAlert").hide();
 			$("#importFolderAlert").text("");
 			isImporting = true;
-			var folderName = ifs[0].webkitRelativePath.substring(0, ifs[0].webkitRelativePath.indexOf("/"));
 			var maxSize = 0;
 			var maxFileIndex = 0;
 			// 找出最大体积的文件避免服务器进行效验
@@ -2576,7 +2573,7 @@ function checkImportFolder(){
 				type:'POST',
 				dataType:'text',
 				data:{
-					folderName : folderName,
+					folderName : importFolderName,
 					maxSize : maxSize,
 					folderId : locationpath
 				},
@@ -2595,8 +2592,15 @@ function checkImportFolder(){
 					case 'fileOverSize':
 						showImportFolderAlert("提示：文件["+ifs[maxFileIndex].webkitRelativePath+"]的体积超过最大限制（"+resJson.maxSize+"），无法开始上传");
 						break;
-					case 'repeatFolder':
-						showImportFolderAlert("提示：路径下已存在同名文件夹，无法开始上传（为确保数据的完整性和安全性，本操作不提供覆盖及保留两者选项。您可以进行如下操作后再试：1.将上传文件夹的换用其他名称；2.修改冲突文件夹的名称；3.删除冲突的文件夹）");
+					case 'repeatFolder_Both':
+						$("#repeFolderName").text(importFolderName);
+						$("#importcoverbtn").hide();
+						$("#selectFolderImportModelAlert").show();
+						break;
+					case 'repeatFolder_coverOrBoth':
+						$("#repeFolderName").text(importFolderName);
+						$("#importcoverbtn").show();
+						$("#selectFolderImportModelAlert").show();
 						break;
 					case 'permitUpload':
 						iteratorImport(0);// 直接允许上传
@@ -2639,8 +2643,59 @@ function importProgress(evt) {
 	}
 }
 
-// 迭代上传文件夹内的文件
-function iteratorImport(i){
+// 覆盖并上传文件夹
+function importAndCover() {
+	$("#selectFolderImportModelAlert").hide();
+	$.ajax({
+		url:'homeController/deleteFolderByName.ajax',
+		type:'POST',
+		data:{
+			parentId : locationpath,
+			folderName : importFolderName
+		},
+		dataType:'text',
+		success:function(result){
+			if(result == 'deleteSuccess'){
+				iteratorImport(0);// 若覆盖成功，则开始上传
+			}else{
+				showImportFolderAlert("提示：无法覆盖原文件夹，上传失败");
+			}
+		},
+		error:function(){
+			showImportFolderAlert("提示：无法覆盖原文件夹，上传失败");
+		}
+	});
+}
+
+// 保留两者并上传文件夹
+function importAndBoth() {
+	$("#selectFolderImportModelAlert").hide();
+	var fc=$("#folderpath").attr("folderConstraintLevel");// 文件夹访问级别
+	$.ajax({
+		url:'homeController/createNewFolderByName.ajax',
+		type:'POST',
+		data:{
+			parentId : locationpath,
+			folderName : importFolderName,
+			folderConstraint : fc
+		},
+		dataType:'text',
+		success:function(result){
+			var resJson = eval("(" + result + ")");
+			if(resJson.result == 'success'){
+				iteratorImport(0,resJson.newName);// 若新建成功，则使用新文件夹名称开始上传
+			}else{
+				showImportFolderAlert("提示：生成新文件夹名称失败，无法开始上传");
+			}
+		},
+		error:function(){
+			showImportFolderAlert("提示：生成新文件夹名称失败，无法开始上传");
+		}
+	});
+}
+
+// 迭代上传文件夹内的文件（直接上传）
+function iteratorImport(i,newFolderName){
 	$("#importpros").width("0%");// 先将进度条置0
 	$("#importpros").attr('aria-valuenow',"0");
 	var uploadfile = ifs[i];// 获取要上传的文件
@@ -2661,6 +2716,9 @@ function iteratorImport(i){
 		fd.append("file", uploadfile);// 将文件对象添加到FormData对象中，字段名为uploadfile
 		fd.append("folderId", locationpath);
 		fd.append("folderConstraint",fc);
+		if(!!newFolderName){
+			fd.append("newFolderName",newFolderName);
+		}
 		xhr.open("POST", "homeController/doImportFolder.ajax", true);// 上传目标
 		
 		xhr.upload.addEventListener("progress", importProgress, false);// 这个是对上传进度的监听
@@ -2686,7 +2744,7 @@ function iteratorImport(i){
 					$("#ils_" + i).text("[已完成]");
 					var ni=i+1;
 					if(ni < fcount){
-						iteratorImport(ni);
+						iteratorImport(ni,newFolderName);
 					}else{
 						// 完成全部上传后，清空所有提示信息，并还原上传窗口
 						isImporting=false;

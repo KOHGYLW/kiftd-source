@@ -52,8 +52,8 @@ public class FolderUtil {
 		}
 		this.fm.deleteById(folderId);
 	}
-	
-	public Folder createNewFolder(final String parentId,String account,String folderName,String folderConstraint) {
+
+	public Folder createNewFolder(final String parentId, String account, String folderName, String folderConstraint) {
 		if (!ConfigureReader.instance().authorized(account, AccountAuth.CREATE_NEW_FOLDER)) {
 			return null;
 		}
@@ -117,5 +117,17 @@ public class FolderUtil {
 			}
 		}
 		return null;
+	}
+
+	// 检查新建的文件夹是否存在同名问题。若有，删除同名文件夹并返回是否进行了该操作（旨在确保上传文件夹操作不被重复上传干扰）
+	public boolean hasRepeatFolder(Folder f) {
+		Folder[] repeats = fm.queryByParentId(f.getFolderParent()).parallelStream()
+				.filter((e) -> e.getFolderName().equals(f.getFolderName())).toArray(Folder[]::new);
+		if (repeats.length > 1) {
+			deleteAllChildFolder(f.getFolderId());
+			return true;
+		} else {
+			return false;
+		}
 	}
 }

@@ -2,12 +2,18 @@ package kohgylw.kiftd.server.service.impl;
 
 import kohgylw.kiftd.server.service.*;
 import org.springframework.stereotype.*;
+
+import com.google.gson.Gson;
+
 import kohgylw.kiftd.server.mapper.*;
 import javax.annotation.*;
 import javax.servlet.http.*;
 import kohgylw.kiftd.server.enumeration.*;
 import kohgylw.kiftd.server.model.*;
+import kohgylw.kiftd.server.pojo.CreateNewFolderByNameRespons;
 import kohgylw.kiftd.server.util.*;
+
+import java.nio.charset.Charset;
 import java.util.*;
 
 @Service
@@ -20,6 +26,8 @@ public class FolderServiceImpl implements FolderService {
 	private FolderUtil fu;
 	@Resource
 	private LogUtil lu;
+	@Resource
+	private Gson gson;
 
 	public String newFolder(final HttpServletRequest request) {
 		final String parentId = request.getParameter("parentId");
@@ -36,7 +44,7 @@ public class FolderServiceImpl implements FolderService {
 			return "errorParameter";
 		}
 		final Folder parentFolder = this.fm.queryById(parentId);
-		if (parentFolder == null) {
+		if (parentFolder == null || !ConfigureReader.instance().accessFolder(parentFolder, account)) {
 			return "errorParameter";
 		}
 		if (fm.queryByParentId(parentId).parallelStream().anyMatch((e) -> e.getFolderName().equals(folderName))) {
@@ -48,7 +56,7 @@ public class FolderServiceImpl implements FolderService {
 		if (folderConstraint != null) {
 			try {
 				int ifc = Integer.parseInt(folderConstraint);
-				if (ifc > 0 && account == null) {
+				if (ifc != 0 && account == null) {
 					return "errorParameter";
 				}
 				if (ifc < pc) {
@@ -77,8 +85,12 @@ public class FolderServiceImpl implements FolderService {
 			try {
 				final int r = this.fm.insertNewFolder(f);
 				if (r > 0) {
-					this.lu.writeCreateFolderEvent(request, f);
-					return "createFolderSuccess";
+					if (fu.hasRepeatFolder(f)) {
+						return "cannotCreateFolder";
+					} else {
+						this.lu.writeCreateFolderEvent(request, f);
+						return "createFolderSuccess";
+					}
 				}
 				break;
 			} catch (Exception e) {
@@ -105,6 +117,9 @@ public class FolderServiceImpl implements FolderService {
 		if (folder == null) {
 			return "deleteFolderSuccess";
 		}
+		if (!ConfigureReader.instance().accessFolder(folder, account)) {
+			return "noAuthorized";
+		}
 		final List<Folder> l = this.fu.getParentList(folderId);
 		if (this.fu.deleteAllChildFolder(folderId) > 0) {
 			this.lu.writeDeleteFolderEvent(request, folder, l);
@@ -130,6 +145,9 @@ public class FolderServiceImpl implements FolderService {
 		final Folder folder = this.fm.queryById(folderId);
 		if (folder == null) {
 			return "errorParameter";
+		}
+		if (!ConfigureReader.instance().accessFolder(folder, account)) {
+			return "noAuthorized";
 		}
 		final Folder parentFolder = this.fm.queryById(folder.getFolderParent());
 		int pc = parentFolder.getFolderConstraint();
@@ -196,6 +214,125 @@ public class FolderServiceImpl implements FolderService {
 			}
 			changeChildFolderConstraint(cf.getFolderId(), c);
 		}
+	}
+
+	@Override
+	public String deleteFolderByName(HttpServletRequest request) {
+		final String parentId = request.getParameter("parentId");
+		final String folderName = request.getParameter("folderName");
+		final String account = (String) request.getSession().getAttribute("ACCOUNT");
+		if (!ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER)) {
+			return "deleteError";
+		}
+		if (parentId == null || parentId.length() <= 0) {
+			return "deleteError";
+		}
+		final Folder[] repeatFolders = this.fm.queryByParentId(parentId).parallelStream()
+				.filter((f) -> f.getFolderName()
+						.equals(new String(folderName.getBytes(Charset.forName("UTF-8")), Charset.forName("UTF-8"))))
+				.toArray(Folder[]::new);
+		for (Folder rf : repeatFolders) {
+			if (!ConfigureReader.instance().accessFolder(rf, account)) {
+				return "deleteError";
+			}
+			final List<Folder> l = this.fu.getParentList(rf.getFolderId());
+			if (this.fu.deleteAllChildFolder(rf.getFolderId()) > 0) {
+				this.lu.writeDeleteFolderEvent(request, rf, l);
+			} else {
+				return "deleteError";
+			}
+		}
+		return "deleteSuccess";
+	}
+
+	@Override
+	public String createNewFolderByName(HttpServletRequest request) {
+		final String parentId = request.getParameter("parentId");
+		final String folderName = request.getParameter("folderName");
+		final String folderConstraint = request.getParameter("folderConstraint");
+		final String account = (String) request.getSession().getAttribute("ACCOUNT");
+		CreateNewFolderByNameRespons cnfbnr = new CreateNewFolderByNameRespons();
+		if (!ConfigureReader.instance().authorized(account, AccountAuth.CREATE_NEW_FOLDER)) {
+			cnfbnr.setResult("error");
+			return gson.toJson(cnfbnr);
+		}
+		if (parentId == null || folderName == null || parentId.length() <= 0 || folderName.length() <= 0) {
+			cnfbnr.setResult("error");
+			return gson.toJson(cnfbnr);
+		}
+		if (!TextFormateUtil.instance().matcherFolderName(folderName) || folderName.indexOf(".") == 0) {
+			cnfbnr.setResult("error");
+			return gson.toJson(cnfbnr);
+		}
+		final Folder parentFolder = this.fm.queryById(parentId);
+		if (parentFolder == null || !ConfigureReader.instance().accessFolder(parentFolder, account)) {
+			cnfbnr.setResult("error");
+			return gson.toJson(cnfbnr);
+		}
+		Folder f = new Folder();
+		if (fm.queryByParentId(parentId).parallelStream().anyMatch((e) -> e.getFolderName().equals(folderName))) {
+			f.setFolderName(FileNodeUtil.getNewFolderName(folderName, fm.queryByParentId(parentId)));
+		} else {
+			cnfbnr.setResult("error");
+			return gson.toJson(cnfbnr);
+		}
+		// 设置子文件夹约束等级，不允许子文件夹的约束等级比父文件夹低
+		int pc = parentFolder.getFolderConstraint();
+		if (folderConstraint != null) {
+			try {
+				int ifc = Integer.parseInt(folderConstraint);
+				if (ifc != 0 && account == null) {
+					cnfbnr.setResult("error");
+					return gson.toJson(cnfbnr);
+				}
+				if (ifc < pc) {
+					cnfbnr.setResult("error");
+					return gson.toJson(cnfbnr);
+				} else {
+					f.setFolderConstraint(ifc);
+				}
+			} catch (Exception e) {
+				cnfbnr.setResult("error");
+				return gson.toJson(cnfbnr);
+			}
+		} else {
+			cnfbnr.setResult("error");
+			return gson.toJson(cnfbnr);
+		}
+		f.setFolderId(UUID.randomUUID().toString());
+		f.setFolderCreationDate(ServerTimeUtil.accurateToDay());
+		if (account != null) {
+			f.setFolderCreator(account);
+		} else {
+			f.setFolderCreator("匿名用户");
+		}
+		f.setFolderParent(parentId);
+		int i = 0;
+		while (true) {
+			try {
+				final int r = this.fm.insertNewFolder(f);
+				if (r > 0) {
+					if (fu.hasRepeatFolder(f)) {
+						cnfbnr.setResult("error");
+						return gson.toJson(cnfbnr);
+					} else {
+						this.lu.writeCreateFolderEvent(request, f);
+						cnfbnr.setResult("success");
+						cnfbnr.setNewName(f.getFolderName());
+						return gson.toJson(cnfbnr);
+					}
+				}
+				break;
+			} catch (Exception e) {
+				f.setFolderId(UUID.randomUUID().toString());
+				i++;
+			}
+			if (i >= 10) {
+				break;
+			}
+		}
+		cnfbnr.setResult("error");
+		return gson.toJson(cnfbnr);
 	}
 
 }

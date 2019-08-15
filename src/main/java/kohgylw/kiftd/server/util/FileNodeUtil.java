@@ -155,7 +155,7 @@ public class FileNodeUtil {
 	 * @author 青阳龙野(kohgylw)
 	 * @param originalName
 	 *            java.lang.String 原始文件夹名
-	 * @param nodes
+	 * @param folders
 	 *            java.util.List Folder 要检查的文件夹列表
 	 * @return java.lang.String 新文件夹名
 	 */
