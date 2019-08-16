@@ -104,22 +104,27 @@ public class FolderServiceImpl implements FolderService {
 		return "cannotCreateFolder";
 	}
 
+	// 删除文件夹的实现方法
 	public String deleteFolder(final HttpServletRequest request) {
 		final String folderId = request.getParameter("folderId");
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
+		// 检查权限
 		if (!ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER)) {
 			return "noAuthorized";
 		}
-		if (folderId == null || folderId.length() <= 0) {
+		// 检查删除目标的ID参数是否正确
+		if (folderId == null || folderId.length() == 0 || "root".equals(folderId)) {
 			return "errorParameter";
 		}
 		final Folder folder = this.fm.queryById(folderId);
 		if (folder == null) {
 			return "deleteFolderSuccess";
 		}
+		// 检查删除者是否具备删除目标的访问许可
 		if (!ConfigureReader.instance().accessFolder(folder, account)) {
 			return "noAuthorized";
 		}
+		// 执行迭代删除
 		final List<Folder> l = this.fu.getParentList(folderId);
 		if (this.fu.deleteAllChildFolder(folderId) > 0) {
 			this.lu.writeDeleteFolderEvent(request, folder, l);
@@ -128,6 +133,7 @@ public class FolderServiceImpl implements FolderService {
 		return "cannotDeleteFolder";
 	}
 
+	// 对编辑文件夹的实现
 	public String renameFolder(final HttpServletRequest request) {
 		final String folderId = request.getParameter("folderId");
 		final String newName = request.getParameter("newName");
@@ -136,7 +142,8 @@ public class FolderServiceImpl implements FolderService {
 		if (!ConfigureReader.instance().authorized(account, AccountAuth.RENAME_FILE_OR_FOLDER)) {
 			return "noAuthorized";
 		}
-		if (folderId == null || folderId.length() <= 0 || newName == null || newName.length() <= 0) {
+		if (folderId == null || folderId.length() == 0 || newName == null || newName.length() == 0
+				|| "root".equals(folderId)) {
 			return "errorParameter";
 		}
 		if (!TextFormateUtil.instance().matcherFolderName(newName) || newName.indexOf(".") == 0) {
@@ -224,7 +231,11 @@ public class FolderServiceImpl implements FolderService {
 		if (!ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER)) {
 			return "deleteError";
 		}
-		if (parentId == null || parentId.length() <= 0) {
+		if (parentId == null || parentId.length() == 0) {
+			return "deleteError";
+		}
+		Folder p = fm.queryById(parentId);
+		if (p == null) {
 			return "deleteError";
 		}
 		final Folder[] repeatFolders = this.fm.queryByParentId(parentId).parallelStream()
