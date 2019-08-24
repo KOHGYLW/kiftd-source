@@ -266,27 +266,26 @@ public class FileBlockUtil {
 				addFoldersToZipEntrySourceArray(fo, zs, account, "");
 			}
 			for (Node node : nodes) {
-				int i = 1;
-				String fname = node.getFileName();
-				while (true) {
-					if (nodes.parallelStream().filter((e) -> e.getFileName().equals(node.getFileName())).count() > 1
-							|| folders.parallelStream().filter((e) -> e.getFolderName().equals(node.getFileName()))
-									.count() > 0) {
-						if (fname.indexOf(".") >= 0) {
-							node.setFileName(fname.substring(0, fname.lastIndexOf(".")) + " (" + i + ")"
-									+ fname.substring(fname.lastIndexOf(".")));
+				if(ConfigureReader.instance().accessFolder(flm.queryById(node.getFileParentFolder()), account)) {
+					int i = 1;
+					String fname = node.getFileName();
+					while (true) {
+						if (nodes.parallelStream().filter((e) -> e.getFileName().equals(node.getFileName())).count() > 1
+								|| folders.parallelStream().filter((e) -> e.getFolderName().equals(node.getFileName()))
+								.count() > 0) {
+							if (fname.indexOf(".") >= 0) {
+								node.setFileName(fname.substring(0, fname.lastIndexOf(".")) + " (" + i + ")"
+										+ fname.substring(fname.lastIndexOf(".")));
+							} else {
+								node.setFileName(fname + " (" + i + ")");
+							}
+							i++;
 						} else {
-							node.setFileName(fname + " (" + i + ")");
+							break;
 						}
-						i++;
-					} else {
-						break;
 					}
+					zs.add((ZipEntrySource) new FileSource(node.getFileName(), getFileFromBlocks(node)));
 				}
-				zs.add((ZipEntrySource) new FileSource(node.getFileName(), getFileFromBlocks(node)));
-			}
-			for (ZipEntrySource zes : zs) {
-				System.out.println(zes.getPath());
 			}
 			ZipUtil.pack(zs.toArray(new ZipEntrySource[0]), f);
 			return zipname;
