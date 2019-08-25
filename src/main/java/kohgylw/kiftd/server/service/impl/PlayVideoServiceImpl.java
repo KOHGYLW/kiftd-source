@@ -28,6 +28,10 @@ public class PlayVideoServiceImpl implements PlayVideoService {
 	private FileBlockUtil fbu;
 	@Resource
 	private LogUtil lu;
+	@Resource
+	private FolderMapper flm;
+	@Resource
+	private FolderUtil fu;
 
 	private VideoInfo foundVideo(final HttpServletRequest request) {
 		final String fileId = request.getParameter("fileId");
@@ -36,7 +40,9 @@ public class PlayVideoServiceImpl implements PlayVideoService {
 			final VideoInfo vi = new VideoInfo(f);
 			if (f != null) {
 				final String account = (String) request.getSession().getAttribute("ACCOUNT");
-				if (ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES)) {
+				if (ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES,
+						fu.getAllFoldersId(f.getFileParentFolder()))
+						&& ConfigureReader.instance().accessFolder(flm.queryById(f.getFileParentFolder()), account)) {
 					final String fileName = f.getFileName();
 					// 检查视频格式
 					final String suffix = fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase();
@@ -44,8 +50,8 @@ public class PlayVideoServiceImpl implements PlayVideoService {
 					case "mp4":
 					case "mov":
 						// 对于mp4后缀的视频，进一步检查其编码是否为h264，如果是，则设定无需转码直接播放
-						File target=fbu.getFileFromBlocks(f);
-						if(target == null || !target.isFile()) {
+						File target = fbu.getFileFromBlocks(f);
+						if (target == null || !target.isFile()) {
 							return null;
 						}
 						MultimediaObject mo = new MultimediaObject(target);

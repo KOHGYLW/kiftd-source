@@ -27,6 +27,10 @@ public class ShowPictureServiceImpl implements ShowPictureService {
 	private Gson gson;
 	@Resource
 	private FileBlockUtil fbu;
+	@Resource
+	private FolderUtil fu;
+	@Resource
+	private FolderMapper flm;
 
 	/**
 	 * 
@@ -45,30 +49,35 @@ public class ShowPictureServiceImpl implements ShowPictureService {
 		final String fileId = request.getParameter("fileId");
 		if (fileId != null && fileId.length() > 0) {
 			final String account = (String) request.getSession().getAttribute("ACCOUNT");
-			if (ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES)) {
-				final List<Node> nodes = this.fm.queryBySomeFolder(fileId);
-				final List<Node> pictureViewList = new ArrayList<Node>();
-				int index = 0;
-				for (final Node n : nodes) {
-					final String fileName = n.getFileName();
-					final String suffix = fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase();
-					if (suffix.equals("jpg") || suffix.equals("jpeg") || suffix.equals("gif") || suffix.equals("bmp")
-							|| suffix.equals("png")) {
-						int pSize = Integer.parseInt(n.getFileSize());
-						if (pSize > 1) {
-							n.setFilePath("homeController/showCondensedPicture.do?fileId=" + n.getFileId());
+			Node p = fm.queryById(fileId);
+			if (p != null) {
+				if (ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES,
+						fu.getAllFoldersId(p.getFileParentFolder()))
+						&& ConfigureReader.instance().accessFolder(flm.queryById(p.getFileParentFolder()), account)) {
+					final List<Node> nodes = this.fm.queryBySomeFolder(fileId);
+					final List<Node> pictureViewList = new ArrayList<Node>();
+					int index = 0;
+					for (final Node n : nodes) {
+						final String fileName = n.getFileName();
+						final String suffix = fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase();
+						if (suffix.equals("jpg") || suffix.equals("jpeg") || suffix.equals("gif")
+								|| suffix.equals("bmp") || suffix.equals("png")) {
+							int pSize = Integer.parseInt(n.getFileSize());
+							if (pSize > 1) {
+								n.setFilePath("homeController/showCondensedPicture.do?fileId=" + n.getFileId());
+							}
+							pictureViewList.add(n);
+							if (!n.getFileId().equals(fileId)) {
+								continue;
+							}
+							index = pictureViewList.size() - 1;
 						}
-						pictureViewList.add(n);
-						if (!n.getFileId().equals(fileId)) {
-							continue;
-						}
-						index = pictureViewList.size() - 1;
 					}
+					final PictureViewList pvl = new PictureViewList();
+					pvl.setIndex(index);
+					pvl.setPictureViewList(pictureViewList);
+					return pvl;
 				}
-				final PictureViewList pvl = new PictureViewList();
-				pvl.setIndex(index);
-				pvl.setPictureViewList(pictureViewList);
-				return pvl;
 			}
 		}
 		return null;
@@ -85,12 +94,15 @@ public class ShowPictureServiceImpl implements ShowPictureService {
 	@Override
 	public void getCondensedPicture(final HttpServletRequest request, final HttpServletResponse response) {
 		// TODO 自动生成的方法存根
-		if (ConfigureReader.instance().authorized((String) request.getSession().getAttribute("ACCOUNT"),
-				AccountAuth.DOWNLOAD_FILES)) {
-			String fileId = request.getParameter("fileId");
-			if (fileId != null) {
-				Node node = fm.queryById(fileId);
-				if (node != null) {
+		String fileId = request.getParameter("fileId");
+		String account = (String) request.getSession().getAttribute("ACCOUNT");
+		if (fileId != null) {
+			Node node = fm.queryById(fileId);
+			if (node != null) {
+				if (ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES,
+						fu.getAllFoldersId(node.getFileParentFolder()))
+						&& ConfigureReader.instance().accessFolder(flm.queryById(node.getFileParentFolder()),
+								account)) {
 					File pBlock = fbu.getFileFromBlocks(node);
 					if (pBlock != null && pBlock.exists()) {
 						try {

@@ -7,6 +7,7 @@ import kohgylw.kiftd.server.enumeration.AccountAuth;
 import kohgylw.kiftd.server.mapper.*;
 import kohgylw.kiftd.server.model.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 public class FolderUtil {
@@ -28,6 +29,13 @@ public class FolderUtil {
 		}
 		Collections.reverse(folderList);
 		return folderList;
+	}
+
+	public List<String> getAllFoldersId(final String fid) {
+		List<String> idList = new ArrayList<>();
+		idList.addAll(getParentList(fid).parallelStream().map((e) -> e.getFolderId()).collect(Collectors.toList()));
+		idList.add(fid);
+		return idList;
 	}
 
 	public int deleteAllChildFolder(final String folderId) {
@@ -54,7 +62,7 @@ public class FolderUtil {
 	}
 
 	public Folder createNewFolder(final String parentId, String account, String folderName, String folderConstraint) {
-		if (!ConfigureReader.instance().authorized(account, AccountAuth.CREATE_NEW_FOLDER)) {
+		if (!ConfigureReader.instance().authorized(account, AccountAuth.CREATE_NEW_FOLDER, getAllFoldersId(parentId))) {
 			return null;
 		}
 		if (parentId == null || folderName == null || parentId.length() <= 0 || folderName.length() <= 0) {
@@ -65,6 +73,9 @@ public class FolderUtil {
 		}
 		final Folder parentFolder = this.fm.queryById(parentId);
 		if (parentFolder == null) {
+			return null;
+		}
+		if (!ConfigureReader.instance().accessFolder(parentFolder, account)) {
 			return null;
 		}
 		if (fm.queryByParentId(parentId).parallelStream().anyMatch((e) -> e.getFolderName().equals(folderName))) {
@@ -85,7 +96,6 @@ public class FolderUtil {
 					f.setFolderConstraint(ifc);
 				}
 			} catch (Exception e) {
-				// TODO: handle exception
 				return null;
 			}
 		} else {

@@ -14,11 +14,13 @@ import javax.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Service;
 
 import kohgylw.kiftd.server.enumeration.AccountAuth;
+import kohgylw.kiftd.server.mapper.FolderMapper;
 import kohgylw.kiftd.server.mapper.NodeMapper;
 import kohgylw.kiftd.server.model.Node;
 import kohgylw.kiftd.server.service.ExternalDownloadService;
 import kohgylw.kiftd.server.util.ConfigureReader;
 import kohgylw.kiftd.server.util.FileBlockUtil;
+import kohgylw.kiftd.server.util.FolderUtil;
 import kohgylw.kiftd.server.util.LogUtil;
 import kohgylw.kiftd.server.util.RangeFileStreamWriter;
 
@@ -34,18 +36,24 @@ public class ExternalDownloadServiceImpl extends RangeFileStreamWriter implement
 	private LogUtil lu;
 	@Resource
 	private FileBlockUtil fbu;
+	@Resource
+	private FolderUtil fu;
+	@Resource
+	private FolderMapper fm;
 
 	@Override
 	public String getDownloadKey(HttpServletRequest request) {
 		// 首先进行权限检查
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
-		// 权限检查
-		if (ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES)) {
-			// 找到要下载的文件节点
-			final String fileId = request.getParameter("fId");
-			if (fileId != null) {
-				final Node f = this.nm.queryById(fileId);
-				if (f != null) {
+		// 找到要下载的文件节点
+		final String fileId = request.getParameter("fId");
+		if (fileId != null) {
+			final Node f = this.nm.queryById(fileId);
+			if (f != null) {
+				// 权限检查
+				if (ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES,
+						fu.getAllFoldersId(f.getFileParentFolder()))
+						&& ConfigureReader.instance().accessFolder(fm.queryById(f.getFileParentFolder()), account)) {
 					// 获取凭证
 					synchronized (downloadKeyMap) {
 						// 查找该资源是否已经生成了一个凭证，如有，则直接使用，否则，新生成一个加入到凭证表。

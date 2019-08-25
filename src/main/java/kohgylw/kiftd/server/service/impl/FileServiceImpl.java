@@ -72,7 +72,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 			return ERROR_PARAMETER;
 		}
 		// 权限检查
-		if (!ConfigureReader.instance().authorized(account, AccountAuth.UPLOAD_FILES)
+		if (!ConfigureReader.instance().authorized(account, AccountAuth.UPLOAD_FILES, fu.getAllFoldersId(folderId))
 				|| !ConfigureReader.instance().accessFolder(folder, account)) {
 			return NO_AUTHORIZED;
 		}
@@ -161,7 +161,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 			return UPLOADERROR;
 		}
 		// 检查上传权限
-		if (!ConfigureReader.instance().authorized(account, AccountAuth.UPLOAD_FILES)
+		if (!ConfigureReader.instance().authorized(account, AccountAuth.UPLOAD_FILES, fu.getAllFoldersId(folderId))
 				|| !ConfigureReader.instance().accessFolder(folder, account)) {
 			return UPLOADERROR;
 		}
@@ -182,7 +182,8 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 				// 覆盖则找到已存在文件节点的File并将新内容写入其中，同时更新原节点信息（除了文件名、父目录和ID之外的全部信息）
 				case "cover":
 					// 其中覆盖操作同时要求用户必须具备删除权限
-					if (!ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER)) {
+					if (!ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER,
+							fu.getAllFoldersId(folderId))) {
 						return UPLOADERROR;
 					}
 					for (Node f : files) {
@@ -280,7 +281,8 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		}
 		final Folder f = this.flm.queryById(file.getFileParentFolder());
 		// 权限检查
-		if (!ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER)
+		if (!ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER,
+				fu.getAllFoldersId(file.getFileParentFolder()))
 				|| !ConfigureReader.instance().accessFolder(f, account)) {
 			return NO_AUTHORIZED;
 		}
@@ -300,12 +302,13 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 	public void doDownloadFile(final HttpServletRequest request, final HttpServletResponse response) {
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
 		// 权限检查
-		if (ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES)) {
-			// 找到要下载的文件节点
-			final String fileId = request.getParameter("fileId");
-			if (fileId != null) {
-				final Node f = this.fm.queryById(fileId);
-				if (f != null) {
+		// 找到要下载的文件节点
+		final String fileId = request.getParameter("fileId");
+		if (fileId != null) {
+			final Node f = this.fm.queryById(fileId);
+			if (f != null) {
+				if (ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES,
+						fu.getAllFoldersId(f.getFileParentFolder()))) {
 					Folder folder = flm.queryById(f.getFileParentFolder());
 					if (ConfigureReader.instance().accessFolder(folder, account)) {
 						// 执行写出
@@ -334,10 +337,6 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		final String fileId = request.getParameter("fileId");
 		final String newFileName = request.getParameter("newFileName");
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
-		// 权限检查
-		if (!ConfigureReader.instance().authorized(account, AccountAuth.RENAME_FILE_OR_FOLDER)) {
-			return NO_AUTHORIZED;
-		}
 		// 参数检查
 		if (fileId == null || fileId.length() <= 0 || newFileName == null || newFileName.length() <= 0) {
 			return ERROR_PARAMETER;
@@ -351,6 +350,11 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		}
 		final Folder folder = flm.queryById(file.getFileParentFolder());
 		if (!ConfigureReader.instance().accessFolder(folder, account)) {
+			return NO_AUTHORIZED;
+		}
+		// 权限检查
+		if (!ConfigureReader.instance().authorized(account, AccountAuth.RENAME_FILE_OR_FOLDER,
+				fu.getAllFoldersId(file.getFileParentFolder()))) {
 			return NO_AUTHORIZED;
 		}
 		if (!file.getFileName().equals(newFileName)) {
@@ -376,84 +380,85 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		final String strIdList = request.getParameter("strIdList");
 		final String strFidList = request.getParameter("strFidList");
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
-		// 权限检查
-		if (ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER)) {
-			try {
-				// 得到要删除的文件ID列表
-				final List<String> idList = gson.fromJson(strIdList, new TypeToken<List<String>>() {
-				}.getType());
-				// 对每个要删除的文件节点进行确认并删除
-				for (final String fileId : idList) {
-					if (fileId == null || fileId.length() == 0) {
-						return ERROR_PARAMETER;
-					}
-					final Node file = this.fm.queryById(fileId);
-					if (file == null) {
-						continue;
-					}
-					final Folder folder = flm.queryById(file.getFileParentFolder());
-					if (!ConfigureReader.instance().accessFolder(folder, account)) {
-						return NO_AUTHORIZED;
-					}
-					// 删除文件块
-					if (!this.fbu.deleteFromFileBlocks(file)) {
-						return "cannotDeleteFile";
-					}
-					// 删除文件节点
-					if (this.fm.deleteById(fileId) <= 0) {
-						return "cannotDeleteFile";
-					}
-					// 日志记录
-					this.lu.writeDeleteFileEvent(request, file);
+		try {
+			// 得到要删除的文件ID列表
+			final List<String> idList = gson.fromJson(strIdList, new TypeToken<List<String>>() {
+			}.getType());
+			// 对每个要删除的文件节点进行确认并删除
+			for (final String fileId : idList) {
+				if (fileId == null || fileId.length() == 0) {
+					return ERROR_PARAMETER;
 				}
-				// 删完选中的文件，再去删文件夹
-				final List<String> fidList = gson.fromJson(strFidList, new TypeToken<List<String>>() {
-				}.getType());
-				for (String fid : fidList) {
-					Folder folder = flm.queryById(fid);
-					if (folder == null) {
-						continue;
-					}
-					if (!ConfigureReader.instance().accessFolder(folder, account)) {
-						return NO_AUTHORIZED;
-					}
-					final List<Folder> l = this.fu.getParentList(fid);
-					if (fu.deleteAllChildFolder(fid) <= 0) {
-						return "cannotDeleteFile";
-					} else {
-						this.lu.writeDeleteFolderEvent(request, folder, l);
-					}
+				final Node file = this.fm.queryById(fileId);
+				if (file == null) {
+					continue;
 				}
-				return "deleteFileSuccess";
-			} catch (Exception e) {
-				return ERROR_PARAMETER;
+				final Folder folder = flm.queryById(file.getFileParentFolder());
+				if (!ConfigureReader.instance().accessFolder(folder, account)) {
+					return NO_AUTHORIZED;
+				}
+				if (!ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER,
+						fu.getAllFoldersId(file.getFileParentFolder()))) {
+					return NO_AUTHORIZED;
+				}
+				// 删除文件块
+				if (!this.fbu.deleteFromFileBlocks(file)) {
+					return "cannotDeleteFile";
+				}
+				// 删除文件节点
+				if (this.fm.deleteById(fileId) <= 0) {
+					return "cannotDeleteFile";
+				}
+				// 日志记录
+				this.lu.writeDeleteFileEvent(request, file);
 			}
+			// 删完选中的文件，再去删文件夹
+			final List<String> fidList = gson.fromJson(strFidList, new TypeToken<List<String>>() {
+			}.getType());
+			for (String fid : fidList) {
+				Folder folder = flm.queryById(fid);
+				if (folder == null) {
+					continue;
+				}
+				if (!ConfigureReader.instance().accessFolder(folder, account)) {
+					return NO_AUTHORIZED;
+				}
+				if (!ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER,
+						fu.getAllFoldersId(folder.getFolderParent()))) {
+					return NO_AUTHORIZED;
+				}
+				final List<Folder> l = this.fu.getParentList(fid);
+				if (fu.deleteAllChildFolder(fid) <= 0) {
+					return "cannotDeleteFile";
+				} else {
+					this.lu.writeDeleteFolderEvent(request, folder, l);
+				}
+			}
+			return "deleteFileSuccess";
+		} catch (Exception e) {
+			return ERROR_PARAMETER;
 		}
-		return NO_AUTHORIZED;
 	}
 
 	// 打包下载功能：前置——压缩要打包下载的文件
 	public String downloadCheckedFiles(final HttpServletRequest request) {
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
-		// 权限检查
-		if (ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES)) {
-			final String strIdList = request.getParameter("strIdList");
-			final String strFidList = request.getParameter("strFidList");
-			try {
-				// 获得要打包下载的文件ID
-				final List<String> idList = gson.fromJson(strIdList, new TypeToken<List<String>>() {
-				}.getType());
-				final List<String> fidList = gson.fromJson(strFidList, new TypeToken<List<String>>() {
-				}.getType());
-				// 创建ZIP压缩包并将全部文件压缩
-				if (idList.size() > 0 || fidList.size() > 0) {
-					final String zipname = this.fbu.createZip(idList, fidList, account);
-					this.lu.writeDownloadCheckedFileEvent(request, idList);
-					// 返回生成的压缩包路径
-					return zipname;
-				}
-			} catch (Exception ex) {
+		final String strIdList = request.getParameter("strIdList");
+		final String strFidList = request.getParameter("strFidList");
+		try {
+			// 获得要打包下载的文件ID
+			final List<String> idList = gson.fromJson(strIdList, new TypeToken<List<String>>() {
+			}.getType());
+			final List<String> fidList = gson.fromJson(strFidList, new TypeToken<List<String>>() {
+			}.getType());
+			// 创建ZIP压缩包并将全部文件压缩
+			if (idList.size() > 0 || fidList.size() > 0) {
+				final String zipname = this.fbu.createZip(idList, fidList, account);
+				this.lu.writeDownloadCheckedFileEvent(request, idList);
+				// 返回生成的压缩包路径
+				return zipname;
 			}
+		} catch (Exception ex) {
 		}
 		return "ERROR";
 	}
@@ -475,43 +480,45 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 
 	public String getPackTime(final HttpServletRequest request) {
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
-		if (ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES)) {
-			final String strIdList = request.getParameter("strIdList");
-			final String strFidList = request.getParameter("strFidList");
-			try {
-				final List<String> idList = gson.fromJson(strIdList, new TypeToken<List<String>>() {
-				}.getType());
-				final List<String> fidList = gson.fromJson(strFidList, new TypeToken<List<String>>() {
-				}.getType());
-				for (String fid : fidList) {
-					countFolderFilesId(account, fid, fidList);
-				}
-				long packTime = 0L;
-				for (final String fid : idList) {
-					final Node n = this.fm.queryById(fid);
+		final String strIdList = request.getParameter("strIdList");
+		final String strFidList = request.getParameter("strFidList");
+		try {
+			final List<String> idList = gson.fromJson(strIdList, new TypeToken<List<String>>() {
+			}.getType());
+			final List<String> fidList = gson.fromJson(strFidList, new TypeToken<List<String>>() {
+			}.getType());
+			for (String fid : fidList) {
+				countFolderFilesId(account, fid, fidList);
+			}
+			long packTime = 0L;
+			for (final String fid : idList) {
+				final Node n = this.fm.queryById(fid);
+				if (ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES,
+						fu.getAllFoldersId(n.getFileParentFolder()))
+						&& ConfigureReader.instance().accessFolder(flm.queryById(n.getFileParentFolder()), account)) {
 					final File f = fbu.getFileFromBlocks(n);
 					if (f != null && f.exists()) {
 						packTime += f.length() / 25000000L;
 					}
 				}
-				if (packTime < 4L) {
-					return "\u9a6c\u4e0a\u5b8c\u6210";
-				}
-				if (packTime >= 4L && packTime < 10L) {
-					return "\u5927\u7ea610\u79d2";
-				}
-				if (packTime >= 10L && packTime < 35L) {
-					return "\u4e0d\u5230\u534a\u5206\u949f";
-				}
-				if (packTime >= 35L && packTime < 65L) {
-					return "\u5927\u7ea61\u5206\u949f";
-				}
-				if (packTime >= 65L) {
-					return "\u8d85\u8fc7" + packTime / 60L
-							+ "\u5206\u949f\uff0c\u8017\u65f6\u8f83\u957f\uff0c\u5efa\u8bae\u76f4\u63a5\u4e0b\u8f7d";
-				}
-			} catch (Exception ex) {
 			}
+			if (packTime < 4L) {
+				return "\u9a6c\u4e0a\u5b8c\u6210";
+			}
+			if (packTime >= 4L && packTime < 10L) {
+				return "\u5927\u7ea610\u79d2";
+			}
+			if (packTime >= 10L && packTime < 35L) {
+				return "\u4e0d\u5230\u534a\u5206\u949f";
+			}
+			if (packTime >= 35L && packTime < 65L) {
+				return "\u5927\u7ea61\u5206\u949f";
+			}
+			if (packTime >= 65L) {
+				return "\u8d85\u8fc7" + packTime / 60L
+						+ "\u5206\u949f\uff0c\u8017\u65f6\u8f83\u957f\uff0c\u5efa\u8bae\u76f4\u63a5\u4e0b\u8f7d";
+			}
+		} catch (Exception ex) {
 		}
 		return "0";
 	}
@@ -536,77 +543,70 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		final String strOptMap = request.getParameter("strOptMap");
 		final String locationpath = request.getParameter("locationpath");
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
-		if (ConfigureReader.instance().authorized(account, AccountAuth.MOVE_FILES)) {
-			Folder targetFolder = flm.queryById(locationpath);
-			if (targetFolder == null) {
-				return ERROR_PARAMETER;
-			}
-			if (!ConfigureReader.instance().accessFolder(targetFolder, account)) {
-				return NO_AUTHORIZED;
-			}
-			try {
-				final List<String> idList = gson.fromJson(strIdList, new TypeToken<List<String>>() {
-				}.getType());
-				final Map<String, String> optMap = gson.fromJson(strOptMap, new TypeToken<Map<String, String>>() {
-				}.getType());
-				for (final String id : idList) {
-					if (id == null || id.length() <= 0) {
+		Folder targetFolder = flm.queryById(locationpath);
+		if (targetFolder == null) {
+			return ERROR_PARAMETER;
+		}
+		if (!ConfigureReader.instance().accessFolder(targetFolder, account)) {
+			return NO_AUTHORIZED;
+		}
+		if (!ConfigureReader.instance().authorized(account, AccountAuth.MOVE_FILES, fu.getAllFoldersId(locationpath))) {
+			return NO_AUTHORIZED;
+		}
+		try {
+			final List<String> idList = gson.fromJson(strIdList, new TypeToken<List<String>>() {
+			}.getType());
+			final Map<String, String> optMap = gson.fromJson(strOptMap, new TypeToken<Map<String, String>>() {
+			}.getType());
+			for (final String id : idList) {
+				if (id == null || id.length() <= 0) {
+					return ERROR_PARAMETER;
+				}
+				final Node node = this.fm.queryById(id);
+				if (node == null) {
+					return ERROR_PARAMETER;
+				}
+				if (node.getFileParentFolder().equals(locationpath)) {
+					continue;
+				}
+				if (!ConfigureReader.instance().accessFolder(flm.queryById(node.getFileParentFolder()), account)) {
+					return NO_AUTHORIZED;
+				}
+				if (!ConfigureReader.instance().authorized(account, AccountAuth.MOVE_FILES,
+						fu.getAllFoldersId(node.getFileParentFolder()))) {
+					return NO_AUTHORIZED;
+				}
+				if (fm.queryByParentFolderId(locationpath).parallelStream()
+						.anyMatch((e) -> e.getFileName().equals(node.getFileName()))) {
+					if (optMap.get(id) == null) {
 						return ERROR_PARAMETER;
 					}
-					final Node node = this.fm.queryById(id);
-					if (node == null) {
-						return ERROR_PARAMETER;
-					}
-					if (node.getFileParentFolder().equals(locationpath)) {
-						continue;
-					}
-					if (!ConfigureReader.instance().accessFolder(flm.queryById(node.getFileParentFolder()), account)) {
-						return NO_AUTHORIZED;
-					}
-					if (fm.queryByParentFolderId(locationpath).parallelStream()
-							.anyMatch((e) -> e.getFileName().equals(node.getFileName()))) {
-						if (optMap.get(id) == null) {
-							return ERROR_PARAMETER;
+					switch (optMap.get(id)) {
+					case "cover":
+						if (!ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER,
+								fu.getAllFoldersId(locationpath))) {
+							return NO_AUTHORIZED;
 						}
-						switch (optMap.get(id)) {
-						case "cover":
-							if (!ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER)) {
-								return NO_AUTHORIZED;
-							}
-							Node n = fm.queryByParentFolderId(locationpath).parallelStream()
-									.filter((e) -> e.getFileName().equals(node.getFileName())).findFirst().get();
-							if (fm.deleteById(n.getFileId()) > 0) {
-								Map<String, String> map = new HashMap<>();
-								map.put("fileId", node.getFileId());
-								map.put("locationpath", locationpath);
-								if (this.fm.moveById(map) <= 0) {
-									return "cannotMoveFiles";
-								}
-							} else {
-								return "cannotMoveFiles";
-							}
-							this.lu.writeMoveFileEvent(request, node);
-							break;
-						case "both":
-							node.setFileName(FileNodeUtil.getNewNodeName(node.getFileName(),
-									fm.queryByParentFolderId(locationpath)));
-							if (fm.update(node) <= 0) {
-								return "cannotMoveFiles";
-							}
+						Node n = fm.queryByParentFolderId(locationpath).parallelStream()
+								.filter((e) -> e.getFileName().equals(node.getFileName())).findFirst().get();
+						if (fm.deleteById(n.getFileId()) > 0) {
 							Map<String, String> map = new HashMap<>();
 							map.put("fileId", node.getFileId());
 							map.put("locationpath", locationpath);
 							if (this.fm.moveById(map) <= 0) {
 								return "cannotMoveFiles";
 							}
-							this.lu.writeMoveFileEvent(request, node);
-							break;
-						case "skip":
-							break;
-						default:
-							return ERROR_PARAMETER;
+						} else {
+							return "cannotMoveFiles";
 						}
-					} else {
+						this.lu.writeMoveFileEvent(request, node);
+						break;
+					case "both":
+						node.setFileName(FileNodeUtil.getNewNodeName(node.getFileName(),
+								fm.queryByParentFolderId(locationpath)));
+						if (fm.update(node) <= 0) {
+							return "cannotMoveFiles";
+						}
 						Map<String, String> map = new HashMap<>();
 						map.put("fileId", node.getFileId());
 						map.put("locationpath", locationpath);
@@ -614,89 +614,106 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 							return "cannotMoveFiles";
 						}
 						this.lu.writeMoveFileEvent(request, node);
+						break;
+					case "skip":
+						break;
+					default:
+						return ERROR_PARAMETER;
 					}
+				} else {
+					Map<String, String> map = new HashMap<>();
+					map.put("fileId", node.getFileId());
+					map.put("locationpath", locationpath);
+					if (this.fm.moveById(map) <= 0) {
+						return "cannotMoveFiles";
+					}
+					this.lu.writeMoveFileEvent(request, node);
 				}
-				final List<String> fidList = gson.fromJson(strFidList, new TypeToken<List<String>>() {
-				}.getType());
-				for (final String fid : fidList) {
-					if (fid == null || fid.length() <= 0) {
+			}
+			final List<String> fidList = gson.fromJson(strFidList, new TypeToken<List<String>>() {
+			}.getType());
+			for (final String fid : fidList) {
+				if (fid == null || fid.length() <= 0) {
+					return ERROR_PARAMETER;
+				}
+				final Folder folder = this.flm.queryById(fid);
+				if (folder == null) {
+					return ERROR_PARAMETER;
+				}
+				if (folder.getFolderParent().equals(locationpath)) {
+					continue;
+				}
+				if (!ConfigureReader.instance().accessFolder(folder, account)) {
+					return NO_AUTHORIZED;
+				}
+				if (!ConfigureReader.instance().authorized(account, AccountAuth.MOVE_FILES,
+						fu.getAllFoldersId(folder.getFolderParent()))) {
+					return NO_AUTHORIZED;
+				}
+				if (fid.equals(locationpath) || fu.getParentList(locationpath).parallelStream()
+						.anyMatch((e) -> e.getFolderId().equals(folder.getFolderId()))) {
+					return ERROR_PARAMETER;
+				}
+				if (flm.queryByParentId(locationpath).parallelStream()
+						.anyMatch((e) -> e.getFolderName().equals(folder.getFolderName()))) {
+					if (optMap.get(fid) == null) {
 						return ERROR_PARAMETER;
 					}
-					final Folder folder = this.flm.queryById(fid);
-					if (folder == null) {
-						return ERROR_PARAMETER;
-					}
-					if (folder.getFolderParent().equals(locationpath)) {
-						continue;
-					}
-					if (!ConfigureReader.instance().accessFolder(folder, account)) {
-						return NO_AUTHORIZED;
-					}
-					if (fid.equals(locationpath) || fu.getParentList(locationpath).parallelStream()
-							.anyMatch((e) -> e.getFolderId().equals(folder.getFolderId()))) {
-						return ERROR_PARAMETER;
-					}
-					if (flm.queryByParentId(locationpath).parallelStream()
-							.anyMatch((e) -> e.getFolderName().equals(folder.getFolderName()))) {
-						if (optMap.get(fid) == null) {
-							return ERROR_PARAMETER;
+					switch (optMap.get(fid)) {
+					case "cover":
+						if (!ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER,
+								fu.getAllFoldersId(locationpath))) {
+							return NO_AUTHORIZED;
 						}
-						switch (optMap.get(fid)) {
-						case "cover":
-							if (!ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER)) {
-								return NO_AUTHORIZED;
-							}
-							Folder f = flm.queryByParentId(locationpath).parallelStream()
-									.filter((e) -> e.getFolderName().equals(folder.getFolderName())).findFirst().get();
-							Map<String, String> map = new HashMap<>();
-							map.put("folderId", folder.getFolderId());
-							map.put("locationpath", locationpath);
-							if (this.flm.moveById(map) > 0) {
-								if (fu.deleteAllChildFolder(f.getFolderId()) > 0) {
-									this.lu.writeMoveFileEvent(request, folder);
-									break;
-								}
-							}
-							return "cannotMoveFiles";
-						case "both":
-							Map<String, String> map3 = new HashMap<>();
-							map3.put("folderId", folder.getFolderId());
-							map3.put("locationpath", locationpath);
-							if (this.flm.moveById(map3) > 0) {
-								Map<String, String> map2 = new HashMap<String, String>();
-								map2.put("folderId", folder.getFolderId());
-								map2.put("newName", FileNodeUtil.getNewFolderName(folder.getFolderName(),
-										flm.queryByParentId(locationpath)));
-								if (flm.updateFolderNameById(map2) <= 0) {
-									return "cannotMoveFiles";
-								}
-								this.lu.writeMoveFileEvent(request, folder);
-								break;
-							}
-							this.lu.writeMoveFileEvent(request, folder);
-							break;
-						case "skip":
-							break;
-						default:
-							return ERROR_PARAMETER;
-						}
-					} else {
+						Folder f = flm.queryByParentId(locationpath).parallelStream()
+								.filter((e) -> e.getFolderName().equals(folder.getFolderName())).findFirst().get();
 						Map<String, String> map = new HashMap<>();
 						map.put("folderId", folder.getFolderId());
 						map.put("locationpath", locationpath);
 						if (this.flm.moveById(map) > 0) {
-							this.lu.writeMoveFileEvent(request, folder);
-						} else {
-							return "cannotMoveFiles";
+							if (fu.deleteAllChildFolder(f.getFolderId()) > 0) {
+								this.lu.writeMoveFileEvent(request, folder);
+								break;
+							}
 						}
+						return "cannotMoveFiles";
+					case "both":
+						Map<String, String> map3 = new HashMap<>();
+						map3.put("folderId", folder.getFolderId());
+						map3.put("locationpath", locationpath);
+						if (this.flm.moveById(map3) > 0) {
+							Map<String, String> map2 = new HashMap<String, String>();
+							map2.put("folderId", folder.getFolderId());
+							map2.put("newName", FileNodeUtil.getNewFolderName(folder.getFolderName(),
+									flm.queryByParentId(locationpath)));
+							if (flm.updateFolderNameById(map2) <= 0) {
+								return "cannotMoveFiles";
+							}
+							this.lu.writeMoveFileEvent(request, folder);
+							break;
+						}
+						this.lu.writeMoveFileEvent(request, folder);
+						break;
+					case "skip":
+						break;
+					default:
+						return ERROR_PARAMETER;
+					}
+				} else {
+					Map<String, String> map = new HashMap<>();
+					map.put("folderId", folder.getFolderId());
+					map.put("locationpath", locationpath);
+					if (this.flm.moveById(map) > 0) {
+						this.lu.writeMoveFileEvent(request, folder);
+					} else {
+						return "cannotMoveFiles";
 					}
 				}
-				return "moveFilesSuccess";
-			} catch (Exception e) {
-				return ERROR_PARAMETER;
 			}
+			return "moveFilesSuccess";
+		} catch (Exception e) {
+			return ERROR_PARAMETER;
 		}
-		return NO_AUTHORIZED;
 	}
 
 	@Override
@@ -705,7 +722,9 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		final String strFidList = request.getParameter("strFidList");
 		final String locationpath = request.getParameter("locationpath");
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
-		if (ConfigureReader.instance().authorized(account, AccountAuth.MOVE_FILES)) {
+		Folder targetFolder = flm.queryById(locationpath);
+		if (ConfigureReader.instance().accessFolder(targetFolder, account) && ConfigureReader.instance()
+				.authorized(account, AccountAuth.MOVE_FILES, fu.getAllFoldersId(locationpath))) {
 			try {
 				final List<String> idList = gson.fromJson(strIdList, new TypeToken<List<String>>() {
 				}.getType());
@@ -727,6 +746,10 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 					if (!ConfigureReader.instance().accessFolder(flm.queryById(node.getFileParentFolder()), account)) {
 						return NO_AUTHORIZED;
 					}
+					if (!ConfigureReader.instance().authorized(account, AccountAuth.MOVE_FILES,
+							fu.getAllFoldersId(node.getFileParentFolder()))) {
+						return NO_AUTHORIZED;
+					}
 					if (fm.queryByParentFolderId(locationpath).parallelStream()
 							.anyMatch((e) -> e.getFileName().equals(node.getFileName()))) {
 						repeNodes.add(node);
@@ -744,6 +767,10 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 						continue;
 					}
 					if (!ConfigureReader.instance().accessFolder(folder, account)) {
+						return NO_AUTHORIZED;
+					}
+					if (!ConfigureReader.instance().authorized(account, AccountAuth.MOVE_FILES,
+							fu.getAllFoldersId(folder.getFolderParent()))) {
 						return NO_AUTHORIZED;
 					}
 					if (folderId.equals(locationpath) || fu.getParentList(locationpath).parallelStream()
@@ -793,8 +820,9 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 			return gson.toJson(cifr);
 		}
 		// 先行权限检查
-		if (!ConfigureReader.instance().authorized(account, AccountAuth.UPLOAD_FILES)
-				|| !ConfigureReader.instance().authorized(account, AccountAuth.CREATE_NEW_FOLDER)
+		if (!ConfigureReader.instance().authorized(account, AccountAuth.UPLOAD_FILES, fu.getAllFoldersId(folderId))
+				|| !ConfigureReader.instance().authorized(account, AccountAuth.CREATE_NEW_FOLDER,
+						fu.getAllFoldersId(folderId))
 				|| !ConfigureReader.instance().accessFolder(folder, account)) {
 			cifr.setResult(NO_AUTHORIZED);
 			return gson.toJson(cifr);
@@ -823,7 +851,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 							new String(folderName.getBytes(Charset.forName("UTF-8")), Charset.forName("UTF-8"))))
 					.findAny().get();
 			if (ConfigureReader.instance().accessFolder(testFolder, account)
-					&& ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER)) {
+					&& ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER,fu.getAllFoldersId(folderId))) {
 				cifr.setResult("repeatFolder_coverOrBoth");
 			} else {
 				cifr.setResult("repeatFolder_Both");
@@ -854,8 +882,8 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 			return UPLOADERROR;
 		}
 		// 检查上传权限
-		if (!ConfigureReader.instance().authorized(account, AccountAuth.UPLOAD_FILES)
-				|| !ConfigureReader.instance().authorized(account, AccountAuth.CREATE_NEW_FOLDER)
+		if (!ConfigureReader.instance().authorized(account, AccountAuth.UPLOAD_FILES,fu.getAllFoldersId(folderId))
+				|| !ConfigureReader.instance().authorized(account, AccountAuth.CREATE_NEW_FOLDER,fu.getAllFoldersId(folderId))
 				|| !ConfigureReader.instance().accessFolder(folder, account)) {
 			return UPLOADERROR;
 		}

@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import kohgylw.kiftd.printer.Printer;
 import kohgylw.kiftd.server.enumeration.AccountAuth;
 import kohgylw.kiftd.server.enumeration.PowerPointType;
+import kohgylw.kiftd.server.mapper.FolderMapper;
 import kohgylw.kiftd.server.mapper.NodeMapper;
 import kohgylw.kiftd.server.model.Node;
 import kohgylw.kiftd.server.pojo.VideoTranscodeThread;
@@ -23,6 +24,7 @@ import kohgylw.kiftd.server.service.ResourceService;
 import kohgylw.kiftd.server.util.ConfigureReader;
 import kohgylw.kiftd.server.util.Docx2PDFUtil;
 import kohgylw.kiftd.server.util.FileBlockUtil;
+import kohgylw.kiftd.server.util.FolderUtil;
 import kohgylw.kiftd.server.util.LogUtil;
 import kohgylw.kiftd.server.util.PowerPoint2PDFUtil;
 import kohgylw.kiftd.server.util.Txt2PDFUtil;
@@ -46,17 +48,23 @@ public class ResourceServiceImpl implements ResourceService {
 	private VideoTranscodeUtil vtu;
 	@Resource
 	private PowerPoint2PDFUtil p2pu;
+	@Resource
+	private FolderUtil fu;
+	@Resource
+	private FolderMapper fm;
 
 	// 提供资源的输出流，原理与下载相同，但是个别细节有区别
 	@Override
 	public void getResource(HttpServletRequest request, HttpServletResponse response) {
 		// TODO 自动生成的方法存根
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
-		if (ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES)) {
-			String fid = request.getParameter("fid");
-			if (fid != null) {
-				Node n = nm.queryById(fid);
-				if (n != null) {
+		String fid = request.getParameter("fid");
+		if (fid != null) {
+			Node n = nm.queryById(fid);
+			if (n != null) {
+				if (ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES,
+						fu.getAllFoldersId(n.getFileParentFolder()))
+						&& ConfigureReader.instance().accessFolder(fm.queryById(n.getFileParentFolder()), account)) {
 					File file = fbu.getFileFromBlocks(n);
 					if (file != null && file.isFile()) {
 						String suffix = "";
@@ -195,10 +203,12 @@ public class ResourceServiceImpl implements ResourceService {
 	public void getWordView(String fileId, HttpServletRequest request, HttpServletResponse response) {
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
 		// 权限检查
-		if (ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES)) {
-			if (fileId != null) {
-				Node n = nm.queryById(fileId);
-				if (n != null) {
+		if (fileId != null) {
+			Node n = nm.queryById(fileId);
+			if (n != null) {
+				if (ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES,
+						fu.getAllFoldersId(n.getFileParentFolder()))
+						&& ConfigureReader.instance().accessFolder(fm.queryById(n.getFileParentFolder()), account)) {
 					File file = fbu.getFileFromBlocks(n);
 					if (file != null && file.isFile()) {
 						// 后缀检查
@@ -234,10 +244,12 @@ public class ResourceServiceImpl implements ResourceService {
 	public void getTxtView(String fileId, HttpServletRequest request, HttpServletResponse response) {
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
 		// 权限检查
-		if (ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES)) {
-			if (fileId != null) {
-				Node n = nm.queryById(fileId);
-				if (n != null) {
+		if (fileId != null) {
+			Node n = nm.queryById(fileId);
+			if (n != null) {
+				if (ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES,
+						fu.getAllFoldersId(n.getFileParentFolder()))
+						&& ConfigureReader.instance().accessFolder(fm.queryById(n.getFileParentFolder()), account)) {
 					File file = fbu.getFileFromBlocks(n);
 					if (file != null && file.isFile()) {
 						// 后缀检查
@@ -270,16 +282,13 @@ public class ResourceServiceImpl implements ResourceService {
 
 	@Override
 	public String getVideoTranscodeStatus(HttpServletRequest request) {
-		final String account = (String) request.getSession().getAttribute("ACCOUNT");
-		if (ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES)) {
-			String fId = request.getParameter("fileId");
-			if (fId != null) {
-				try {
-					return vtu.getTranscodeProcess(fId);
-				} catch (Exception e) {
-					Printer.instance.print(e.getMessage());
-					lu.writeException(e);
-				}
+		String fId = request.getParameter("fileId");
+		if (fId != null) {
+			try {
+				return vtu.getTranscodeProcess(fId);
+			} catch (Exception e) {
+				Printer.instance.print(e.getMessage());
+				lu.writeException(e);
 			}
 		}
 		return "ERROR";
@@ -290,10 +299,12 @@ public class ResourceServiceImpl implements ResourceService {
 	public void getPPTView(String fileId, HttpServletRequest request, HttpServletResponse response) {
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
 		// 权限检查
-		if (ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES)) {
-			if (fileId != null) {
-				Node n = nm.queryById(fileId);
-				if (n != null) {
+		if (fileId != null) {
+			Node n = nm.queryById(fileId);
+			if (n != null) {
+				if (ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES,
+						fu.getAllFoldersId(n.getFileParentFolder()))
+						&& ConfigureReader.instance().accessFolder(fm.queryById(n.getFileParentFolder()), account)) {
 					File file = fbu.getFileFromBlocks(n);
 					if (file != null && file.isFile()) {
 						// 后缀检查

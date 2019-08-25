@@ -140,10 +140,26 @@ public class ConfigureReader {
 		final String apwd = this.accountp.getProperty(account + ".pwd");
 		return apwd != null && apwd.equals(pwd);
 	}
-
-	public boolean authorized(final String account, final AccountAuth auth) {
+	
+	/**
+	 * 
+	 * <h2>操作权限判别方法</h2>
+	 * <p>该方法用于判断账户是否具备执行指定操作的权限，若具备则返回true，否则返回false。在每一个用户操作执行前，均应先使用本方法进行判别。</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @param account java.lang.String 账户的ID，如果是匿名访问可传入null
+	 * @param auth kohgylw.kiftd.server.enumeration.AccountAuth 要判断的操作类型，使用枚举类中定义的各种操作作为参数传入
+	 * @param folders 该操作所发生的文件夹序列，其中应包含该操作对应的文件夹和其所有上级文件夹的ID
+	 * @return boolean 是否具备该操作的权限，若具备返回true，否则返回false
+	 */
+	public boolean authorized(final String account, final AccountAuth auth, List<String> folders) {
 		if (account != null && account.length() > 0) {
 			final StringBuffer auths = new StringBuffer();
+			for(String id:folders) {
+				String addedAuth = accountp.getProperty(account+".auth."+id);
+				if(addedAuth != null) {
+					auths.append(addedAuth);
+				}
+			}
 			final String accauth = this.accountp.getProperty(account + ".auth");
 			final String overall = this.accountp.getProperty("authOverall");
 			if (accauth != null) {
@@ -417,11 +433,14 @@ public class ConfigureReader {
 	public int getPropertiesStatus() {
 		return this.propertiesStatus;
 	}
-	
+
 	/**
 	 * 
 	 * <h2>重新检查各项设置</h2>
-	 * <p>在服务器启动前再次检查各设置，实现某些设置的“即插即用”。</p>
+	 * <p>
+	 * 在服务器启动前再次检查各设置，实现某些设置的“即插即用”。
+	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
 	 */
 	public void reTestServerPropertiesAndEffect() {

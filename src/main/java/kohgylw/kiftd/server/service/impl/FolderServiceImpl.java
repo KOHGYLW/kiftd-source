@@ -34,9 +34,6 @@ public class FolderServiceImpl implements FolderService {
 		final String folderName = request.getParameter("folderName");
 		final String folderConstraint = request.getParameter("folderConstraint");
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
-		if (!ConfigureReader.instance().authorized(account, AccountAuth.CREATE_NEW_FOLDER)) {
-			return "noAuthorized";
-		}
 		if (parentId == null || folderName == null || parentId.length() <= 0 || folderName.length() <= 0) {
 			return "errorParameter";
 		}
@@ -46,6 +43,10 @@ public class FolderServiceImpl implements FolderService {
 		final Folder parentFolder = this.fm.queryById(parentId);
 		if (parentFolder == null || !ConfigureReader.instance().accessFolder(parentFolder, account)) {
 			return "errorParameter";
+		}
+		if (!ConfigureReader.instance().authorized(account, AccountAuth.CREATE_NEW_FOLDER,
+				fu.getAllFoldersId(parentId))) {
+			return "noAuthorized";
 		}
 		if (fm.queryByParentId(parentId).parallelStream().anyMatch((e) -> e.getFolderName().equals(folderName))) {
 			return "nameOccupied";
@@ -65,7 +66,6 @@ public class FolderServiceImpl implements FolderService {
 					f.setFolderConstraint(ifc);
 				}
 			} catch (Exception e) {
-				// TODO: handle exception
 				return "errorParameter";
 			}
 		} else {
@@ -108,10 +108,6 @@ public class FolderServiceImpl implements FolderService {
 	public String deleteFolder(final HttpServletRequest request) {
 		final String folderId = request.getParameter("folderId");
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
-		// 检查权限
-		if (!ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER)) {
-			return "noAuthorized";
-		}
 		// 检查删除目标的ID参数是否正确
 		if (folderId == null || folderId.length() == 0 || "root".equals(folderId)) {
 			return "errorParameter";
@@ -122,6 +118,11 @@ public class FolderServiceImpl implements FolderService {
 		}
 		// 检查删除者是否具备删除目标的访问许可
 		if (!ConfigureReader.instance().accessFolder(folder, account)) {
+			return "noAuthorized";
+		}
+		// 检查权限
+		if (!ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER,
+				fu.getAllFoldersId(folder.getFolderParent()))) {
 			return "noAuthorized";
 		}
 		// 执行迭代删除
@@ -139,9 +140,6 @@ public class FolderServiceImpl implements FolderService {
 		final String newName = request.getParameter("newName");
 		final String folderConstraint = request.getParameter("folderConstraint");
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
-		if (!ConfigureReader.instance().authorized(account, AccountAuth.RENAME_FILE_OR_FOLDER)) {
-			return "noAuthorized";
-		}
 		if (folderId == null || folderId.length() == 0 || newName == null || newName.length() == 0
 				|| "root".equals(folderId)) {
 			return "errorParameter";
@@ -154,6 +152,10 @@ public class FolderServiceImpl implements FolderService {
 			return "errorParameter";
 		}
 		if (!ConfigureReader.instance().accessFolder(folder, account)) {
+			return "noAuthorized";
+		}
+		if (!ConfigureReader.instance().authorized(account, AccountAuth.RENAME_FILE_OR_FOLDER,
+				fu.getAllFoldersId(folder.getFolderParent()))) {
 			return "noAuthorized";
 		}
 		final Folder parentFolder = this.fm.queryById(folder.getFolderParent());
@@ -188,7 +190,6 @@ public class FolderServiceImpl implements FolderService {
 					return "renameFolderSuccess";
 				}
 			} catch (Exception e) {
-				// TODO: handle exception
 				return "errorParameter";
 			}
 		} else {
@@ -228,14 +229,15 @@ public class FolderServiceImpl implements FolderService {
 		final String parentId = request.getParameter("parentId");
 		final String folderName = request.getParameter("folderName");
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
-		if (!ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER)) {
-			return "deleteError";
-		}
 		if (parentId == null || parentId.length() == 0) {
 			return "deleteError";
 		}
 		Folder p = fm.queryById(parentId);
 		if (p == null) {
+			return "deleteError";
+		}
+		if (!ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER,
+				fu.getAllFoldersId(parentId)) || !ConfigureReader.instance().accessFolder(p, account)) {
 			return "deleteError";
 		}
 		final Folder[] repeatFolders = this.fm.queryByParentId(parentId).parallelStream()
@@ -263,10 +265,6 @@ public class FolderServiceImpl implements FolderService {
 		final String folderConstraint = request.getParameter("folderConstraint");
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
 		CreateNewFolderByNameRespons cnfbnr = new CreateNewFolderByNameRespons();
-		if (!ConfigureReader.instance().authorized(account, AccountAuth.CREATE_NEW_FOLDER)) {
-			cnfbnr.setResult("error");
-			return gson.toJson(cnfbnr);
-		}
 		if (parentId == null || folderName == null || parentId.length() <= 0 || folderName.length() <= 0) {
 			cnfbnr.setResult("error");
 			return gson.toJson(cnfbnr);
@@ -277,6 +275,11 @@ public class FolderServiceImpl implements FolderService {
 		}
 		final Folder parentFolder = this.fm.queryById(parentId);
 		if (parentFolder == null || !ConfigureReader.instance().accessFolder(parentFolder, account)) {
+			cnfbnr.setResult("error");
+			return gson.toJson(cnfbnr);
+		}
+		if (!ConfigureReader.instance().authorized(account, AccountAuth.CREATE_NEW_FOLDER,
+				fu.getAllFoldersId(parentId))) {
 			cnfbnr.setResult("error");
 			return gson.toJson(cnfbnr);
 		}

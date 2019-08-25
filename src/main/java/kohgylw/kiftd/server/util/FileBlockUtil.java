@@ -3,6 +3,7 @@ package kohgylw.kiftd.server.util;
 import org.springframework.stereotype.*;
 
 import kohgylw.kiftd.printer.Printer;
+import kohgylw.kiftd.server.enumeration.AccountAuth;
 import kohgylw.kiftd.server.mapper.*;
 import javax.annotation.*;
 import org.springframework.web.multipart.*;
@@ -33,6 +34,8 @@ public class FileBlockUtil {
 	private FolderMapper flm;// 文件夹映射，同样用于遍历
 	@Resource
 	private LogUtil lu;// 日志工具
+	@Resource
+	private FolderUtil fu;
 
 	/**
 	 * 
@@ -240,15 +243,22 @@ public class FileBlockUtil {
 			final List<Folder> folders = new ArrayList<>();
 			for (String fid : fidList) {
 				Folder fo = flm.queryById(fid);
-				if (fo != null) {
-					folders.add(fo);
+				if (ConfigureReader.instance().accessFolder(fo, account) && ConfigureReader.instance()
+						.authorized(account, AccountAuth.DOWNLOAD_FILES, fu.getAllFoldersId(fo.getFolderParent()))) {
+					if (fo != null) {
+						folders.add(fo);
+					}
 				}
 			}
 			final List<Node> nodes = new ArrayList<>();
 			for (String id : idList) {
 				Node n = fm.queryById(id);
-				if (n != null) {
-					nodes.add(n);
+				if (ConfigureReader.instance().accessFolder(flm.queryById(n.getFileParentFolder()), account)
+						&& ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES,
+								fu.getAllFoldersId(n.getFileParentFolder()))) {
+					if (n != null) {
+						nodes.add(n);
+					}
 				}
 			}
 			for (Folder fo : folders) {
@@ -266,13 +276,13 @@ public class FileBlockUtil {
 				addFoldersToZipEntrySourceArray(fo, zs, account, "");
 			}
 			for (Node node : nodes) {
-				if(ConfigureReader.instance().accessFolder(flm.queryById(node.getFileParentFolder()), account)) {
+				if (ConfigureReader.instance().accessFolder(flm.queryById(node.getFileParentFolder()), account)) {
 					int i = 1;
 					String fname = node.getFileName();
 					while (true) {
 						if (nodes.parallelStream().filter((e) -> e.getFileName().equals(node.getFileName())).count() > 1
 								|| folders.parallelStream().filter((e) -> e.getFolderName().equals(node.getFileName()))
-								.count() > 0) {
+										.count() > 0) {
 							if (fname.indexOf(".") >= 0) {
 								node.setFileName(fname.substring(0, fname.lastIndexOf(".")) + " (" + i + ")"
 										+ fname.substring(fname.lastIndexOf(".")));

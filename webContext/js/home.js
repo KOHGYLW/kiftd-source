@@ -307,6 +307,7 @@ $(function() {
 		$("#fim_creator").text(f.folderCreator);
 		$("#fim_folderCreationDate").text(f.folderCreationDate);
 		$("#fim_statistics").text("共包含 "+folderView.folderList.length+" 个文件夹， "+folderView.fileList.length+" 个文件。");
+		$("#fim_folderId").text(f.folderId);
 	});
 	// 关闭下载提示模态框自动隐藏下载链接
 	$('#downloadModal').on('hidden.bs.modal', function(e) {

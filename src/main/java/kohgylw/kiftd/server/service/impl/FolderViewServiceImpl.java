@@ -32,8 +32,8 @@ public class FolderViewServiceImpl implements FolderViewService {
 			return "ERROR";
 		}
 		Folder vf = this.fm.queryById(fid);
-		if(vf == null) {
-			return "NOT_FOUND";//如果用户请求一个不存在的文件夹，则返回“NOT_FOUND”，令页面回到ROOT视图
+		if (vf == null) {
+			return "NOT_FOUND";// 如果用户请求一个不存在的文件夹，则返回“NOT_FOUND”，令页面回到ROOT视图
 		}
 		final String account = (String) session.getAttribute("ACCOUNT");
 		// 检查访问文件夹视图请求是否合法
@@ -55,22 +55,22 @@ public class FolderViewServiceImpl implements FolderViewService {
 			fv.setAccount(account);
 		}
 		final List<String> authList = new ArrayList<String>();
-		if (cr.authorized(account, AccountAuth.UPLOAD_FILES)) {
+		if (cr.authorized(account, AccountAuth.UPLOAD_FILES, fu.getAllFoldersId(fid))) {
 			authList.add("U");
 		}
-		if (cr.authorized(account, AccountAuth.CREATE_NEW_FOLDER)) {
+		if (cr.authorized(account, AccountAuth.CREATE_NEW_FOLDER, fu.getAllFoldersId(fid))) {
 			authList.add("C");
 		}
-		if (cr.authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER)) {
+		if (cr.authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER, fu.getAllFoldersId(fid))) {
 			authList.add("D");
 		}
-		if (cr.authorized(account, AccountAuth.RENAME_FILE_OR_FOLDER)) {
+		if (cr.authorized(account, AccountAuth.RENAME_FILE_OR_FOLDER, fu.getAllFoldersId(fid))) {
 			authList.add("R");
 		}
-		if (cr.authorized(account, AccountAuth.DOWNLOAD_FILES)) {
+		if (cr.authorized(account, AccountAuth.DOWNLOAD_FILES, fu.getAllFoldersId(fid))) {
 			authList.add("L");
 		}
-		if (cr.authorized(account, AccountAuth.MOVE_FILES)) {
+		if (cr.authorized(account, AccountAuth.MOVE_FILES, fu.getAllFoldersId(fid))) {
 			authList.add("M");
 		}
 		fv.setAuthList(authList);
@@ -86,8 +86,8 @@ public class FolderViewServiceImpl implements FolderViewService {
 		if (fid == null || fid.length() == 0 || keyWorld == null) {
 			return "ERROR";
 		}
-		//如果啥么也不查，那么直接返回指定文件夹标准视图
-		if(keyWorld.length() == 0) {
+		// 如果啥么也不查，那么直接返回指定文件夹标准视图
+		if (keyWorld.length() == 0) {
 			return getFolderViewToJson(fid, request.getSession(), request);
 		}
 		Folder vf = this.fm.queryById(fid);
@@ -122,16 +122,16 @@ public class FolderViewServiceImpl implements FolderViewService {
 		}
 		// 设置操作权限，对于搜索视图而言，只能进行下载操作（因为是虚拟的）
 		final List<String> authList = new ArrayList<String>();
-		//搜索结果只接受“下载”操作
-		if (cr.authorized(account, AccountAuth.DOWNLOAD_FILES)) {
+		// 搜索结果只接受“下载”操作
+		if (cr.authorized(account, AccountAuth.DOWNLOAD_FILES, fu.getAllFoldersId(fid))) {
 			authList.add("L");
 		}
-		//同时额外具备普通文件夹没有的“定位”功能。
+		// 同时额外具备普通文件夹没有的“定位”功能。
 		authList.add("O");
 		sv.setAuthList(authList);
 		// 写入实时系统时间
 		sv.setPublishTime(ServerTimeUtil.accurateToMinute());
-		//设置查询字段
+		// 设置查询字段
 		sv.setKeyWorld(keyWorld);
 		return gson.toJson(sv);
 	}
