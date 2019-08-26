@@ -95,8 +95,8 @@ public class ConfigureReader {
 		}
 		this.DEFAULT_FILE_SYSTEM_PATH = this.path + File.separator + "filesystem" + File.separator;
 		this.confdir = this.path + File.separator + "conf" + File.separator;
-		this.serverp = new Properties();
-		this.accountp = new Properties();
+		this.serverp = new EnhancedProperties();
+		this.accountp = new EnhancedProperties();
 		extendStores = new ArrayList<>();
 		final File serverProp = new File(this.confdir + SERVER_PROPERTIES_FILE);
 		if (!serverProp.isFile()) {
@@ -141,23 +141,30 @@ public class ConfigureReader {
 		final String apwd = this.accountp.getProperty(account + ".pwd");
 		return apwd != null && apwd.equals(pwd);
 	}
-	
+
 	/**
 	 * 
 	 * <h2>操作权限判别方法</h2>
-	 * <p>该方法用于判断账户是否具备执行指定操作的权限，若具备则返回true，否则返回false。在每一个用户操作执行前，均应先使用本方法进行判别。</p>
+	 * <p>
+	 * 该方法用于判断账户是否具备执行指定操作的权限，若具备则返回true，否则返回false。在每一个用户操作执行前，均应先使用本方法进行判别。
+	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param account java.lang.String 账户的ID，如果是匿名访问可传入null
-	 * @param auth kohgylw.kiftd.server.enumeration.AccountAuth 要判断的操作类型，使用枚举类中定义的各种操作作为参数传入
-	 * @param folders 该操作所发生的文件夹序列，其中应包含该操作对应的文件夹和其所有上级文件夹的ID
+	 * @param account
+	 *            java.lang.String 账户的ID，如果是匿名访问可传入null
+	 * @param auth
+	 *            kohgylw.kiftd.server.enumeration.AccountAuth
+	 *            要判断的操作类型，使用枚举类中定义的各种操作作为参数传入
+	 * @param folders
+	 *            该操作所发生的文件夹序列，其中应包含该操作对应的文件夹和其所有上级文件夹的ID
 	 * @return boolean 是否具备该操作的权限，若具备返回true，否则返回false
 	 */
 	public boolean authorized(final String account, final AccountAuth auth, List<String> folders) {
 		if (account != null && account.length() > 0) {
 			final StringBuffer auths = new StringBuffer();
-			for(String id:folders) {
-				String addedAuth = accountp.getProperty(account+".auth."+id);
-				if(addedAuth != null) {
+			for (String id : folders) {
+				String addedAuth = accountp.getProperty(account + ".auth." + id);
+				if (addedAuth != null) {
 					auths.append(addedAuth);
 				}
 			}
@@ -495,8 +502,7 @@ public class ConfigureReader {
 			}
 			if (this.testServerPropertiesAndEffect() == 0) {
 				try {
-					this.serverp.store(new FileOutputStream(this.confdir + SERVER_PROPERTIES_FILE),
-							"<Kiftd server setting file is update.>");
+					this.serverp.store(new FileOutputStream(this.confdir + SERVER_PROPERTIES_FILE), null);
 					Printer.instance.print("配置更新完毕，准备就绪。");
 					return true;
 				} catch (Exception e) {
@@ -1026,39 +1032,47 @@ public class ConfigureReader {
 		}
 		return r;
 	}
-	
+
 	/**
 	 * 
 	 * <h2>得到所有存在额外权限设置的文件夹ID</h2>
-	 * <p>该功能主要用于配合无效额外权限设置定时检查功能，将已经删除的文件夹的额外权限设置进行清理。</p>
+	 * <p>
+	 * 该功能主要用于配合无效额外权限设置定时检查功能，将已经删除的文件夹的额外权限设置进行清理。
+	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
 	 * @return java.util.List<java.lang.String> 文件夹ID
 	 */
-	public List<String> getAllAddedAuthFoldersId(){
-		if(accountp != null) {
-			return accountp.stringPropertyNames().parallelStream().filter((n)->n.indexOf(".auth.")>=0).map(n->n.substring(n.lastIndexOf(".auth.")+6)).collect(Collectors.toList());
-		}else {
+	public List<String> getAllAddedAuthFoldersId() {
+		if (accountp != null) {
+			return accountp.stringPropertyNames().parallelStream().filter((n) -> n.indexOf(".auth.") >= 0)
+					.map(n -> n.substring(n.lastIndexOf(".auth.") + 6)).collect(Collectors.toList());
+		} else {
 			return new ArrayList<String>();
 		}
 	}
-	
+
 	/**
 	 * 
 	 * <h2>删除指定文件夹id的额外权限设置并更新账户文件</h2>
-	 * <p>该功能主要用于配合无效额外权限设置定时检查功能，将已经删除的文件夹的额外权限设置进行清理。</p>
+	 * <p>
+	 * 该功能主要用于配合无效额外权限设置定时检查功能，将已经删除的文件夹的额外权限设置进行清理。
+	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param idList java.util.List<java.lang.String> 需要清除的文件夹ID
+	 * @param idList
+	 *            java.util.List<java.lang.String> 需要清除的文件夹ID
 	 */
 	public void removeAddedAuthsAndUpdate(List<String> idList) {
-		if(idList != null && accountp != null) {
-			for(String id:idList) {
-				for(String invalidId:accountp.stringPropertyNames().parallelStream().filter(n->n.endsWith(".auth."+id)).collect(Collectors.toList())) {
+		if (idList != null && accountp != null) {
+			for (String id : idList) {
+				for (String invalidId : accountp.stringPropertyNames().parallelStream()
+						.filter(n -> n.endsWith(".auth." + id)).collect(Collectors.toList())) {
 					accountp.remove(invalidId);
 				}
 			}
 			try {
-				accountp.store(new FileOutputStream(this.confdir + ACCOUNT_PROPERTIES_FILE),
-						"<Kiftd account setting file is update.>");
+				accountp.store(new FileOutputStream(this.confdir + ACCOUNT_PROPERTIES_FILE), null);
 				Printer.instance.print("已清理账户配置中无效的文件夹额外权限配置（目标文件夹已被删除）。");
 			} catch (Exception e) {
 				Printer.instance.print("错误：无法清理无效的文件夹额外权限配置，该文件可能正在被占用。");
