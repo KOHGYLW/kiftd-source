@@ -975,7 +975,7 @@ function changeNewFolderType(type){
 function createfolder() {
 	var fn = $("#foldername").val();
 	var fc=$("#foldername").attr("folderConstraintLevel");
-	var reg = new RegExp("[\/\|\\s\\\\\*\\<\\>\\?\\:\\&\\$" + '"' + "]+", "g");
+	var reg = new RegExp("[\/\|\\\\\*\\<\\>\\?\\:\\&\\$" + '"' + "]+", "g");
 	if (fn.length == 0) {
 		showFolderAlert("提示：文件夹名称不能为空。");
 	} else if (fn.length > 128) {
@@ -1020,7 +1020,7 @@ function createfolder() {
 			}
 		});
 	} else {
-		showFolderAlert("提示：文件夹名中不应含有：空格 引号 / \ * | < > & $ : ? 且不能以“.”开头。");
+		showFolderAlert("提示：文件夹名中不应含有：引号 / \ * | < > & $ : ? 且不能以“.”开头。");
 	}
 }
 
@@ -1109,7 +1109,7 @@ function changeEditFolderType(type){
 function renameFolder(folderId) {
 	var newName = $("#newfoldername").val();
 	var fc=$("#newfoldername").attr("folderConstraintLevel");
-	var reg = new RegExp("[\/\|\\s\\\\\*\\<\\>\\?\\:\\&\\$" + '"' + "]+", "g");
+	var reg = new RegExp("[\/\|\\\\\*\\<\\>\\?\\:\\&\\$" + '"' + "]+", "g");
 	if (newName.length == 0) {
 		showRFolderAlert("提示：文件夹名称不能为空。");
 	} else if (newName.length > 128) {
@@ -1151,7 +1151,7 @@ function renameFolder(folderId) {
 			}
 		});
 	} else {
-		showRFolderAlert("提示：文件夹名中不应含有：空格 引号 / \ * | < > & $ : ? 且不能以“.”开头。");
+		showRFolderAlert("提示：文件夹名中不应含有：引号 / \ * | < > & $ : ? 且不能以“.”开头。");
 	}
 }
 
@@ -1541,7 +1541,7 @@ function showRenameFileModel(fileId, fileName) {
 
 // 修改文件名
 function renameFile(fileId) {
-	var reg = new RegExp("[\/\|\\s\\\\\*\\<\\>\\?\\:\\&\\$" + '"' + "]+", "g");
+	var reg = new RegExp("[\/\|\\\\\*\\<\\>\\?\\:\\&\\$" + '"' + "]+", "g");
 	var newFileName = $("#newfilename").val();
 	if (newFileName.length > 0) {
 		if (newFileName.length < 128) {
@@ -1579,7 +1579,7 @@ function renameFile(fileId) {
 					}
 				});
 			} else {
-				showRFileAlert("提示：文件名中不应含有：空格 引号 / \ * | < > & $ : ? 且不能以“.”开头。");
+				showRFileAlert("提示：文件名中不应含有：引号 / \ * | < > & $ : ? 且不能以“.”开头。");
 			}
 		} else {
 			showRFileAlert("提示：文件名称太长。");

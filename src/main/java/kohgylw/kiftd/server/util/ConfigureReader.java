@@ -1,6 +1,7 @@
 package kohgylw.kiftd.server.util;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import kohgylw.kiftd.printer.*;
 import kohgylw.kiftd.server.enumeration.*;
@@ -904,8 +905,7 @@ public class ConfigureReader {
 						}
 					}
 				} catch (Exception e) {
-					// TODO 自动生成的 catch 块
-					Printer.instance.print("错误：用户配置文件更改监听失败，该功能已失效，kiftd可能无法实时更新用户配置（重启应用可恢复该功能）。");
+					Printer.instance.print("错误：用户配置文件更改监听失败，该功能已失效，kiftd无法实时更新用户配置（可尝试重启程序以恢复该功能）。");
 				}
 			});
 			accountPropertiesUpdateDaemonThread.setDaemon(true);
@@ -1025,5 +1025,44 @@ public class ConfigureReader {
 		} catch (Exception e) {
 		}
 		return r;
+	}
+	
+	/**
+	 * 
+	 * <h2>得到所有存在额外权限设置的文件夹ID</h2>
+	 * <p>该功能主要用于配合无效额外权限设置定时检查功能，将已经删除的文件夹的额外权限设置进行清理。</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @return java.util.List<java.lang.String> 文件夹ID
+	 */
+	public List<String> getAllAddedAuthFoldersId(){
+		if(accountp != null) {
+			return accountp.stringPropertyNames().parallelStream().filter((n)->n.indexOf(".auth.")>=0).map(n->n.substring(n.lastIndexOf(".auth.")+6)).collect(Collectors.toList());
+		}else {
+			return new ArrayList<String>();
+		}
+	}
+	
+	/**
+	 * 
+	 * <h2>删除指定文件夹id的额外权限设置并更新账户文件</h2>
+	 * <p>该功能主要用于配合无效额外权限设置定时检查功能，将已经删除的文件夹的额外权限设置进行清理。</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @param idList java.util.List<java.lang.String> 需要清除的文件夹ID
+	 */
+	public void removeAddedAuthsAndUpdate(List<String> idList) {
+		if(idList != null && accountp != null) {
+			for(String id:idList) {
+				for(String invalidId:accountp.stringPropertyNames().parallelStream().filter(n->n.endsWith(".auth."+id)).collect(Collectors.toList())) {
+					accountp.remove(invalidId);
+				}
+			}
+			try {
+				accountp.store(new FileOutputStream(this.confdir + ACCOUNT_PROPERTIES_FILE),
+						"<Kiftd account setting file is update.>");
+				Printer.instance.print("已清理账户配置中无效的文件夹额外权限配置（目标文件夹已被删除）。");
+			} catch (Exception e) {
+				Printer.instance.print("错误：无法清理无效的文件夹额外权限配置，该文件可能正在被占用。");
+			}
+		}
 	}
 }

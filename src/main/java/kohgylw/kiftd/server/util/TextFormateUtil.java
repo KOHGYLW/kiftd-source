@@ -11,13 +11,13 @@ public class TextFormateUtil
     }
     
     public boolean matcherFolderName(final String folderName) {
-    		final Pattern p = Pattern.compile("[|\\/*<> \"?&$:]+");
+    		final Pattern p = Pattern.compile("[|\\/*<>\"?&$:]+");
         final Matcher m = p.matcher(folderName);
         return !m.find();
     }
     
     public boolean matcherFileName(final String fileName) {
-        final Pattern p = Pattern.compile("[|\\/*<> \"?&$:]+");
+        final Pattern p = Pattern.compile("[|\\/*<>\"?&$:]+");
         final Matcher m = p.matcher(fileName);
         return !m.find();
     }

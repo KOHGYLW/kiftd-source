@@ -9,6 +9,7 @@ import kohgylw.kiftd.server.mapper.*;
 import javax.annotation.*;
 import javax.servlet.http.*;
 import kohgylw.kiftd.server.enumeration.*;
+import kohgylw.kiftd.server.listener.InvalidAddedFolderAuthCleanListener;
 import kohgylw.kiftd.server.model.*;
 import kohgylw.kiftd.server.pojo.CreateNewFolderByNameRespons;
 import kohgylw.kiftd.server.util.*;
@@ -129,6 +130,7 @@ public class FolderServiceImpl implements FolderService {
 		final List<Folder> l = this.fu.getParentList(folderId);
 		if (this.fu.deleteAllChildFolder(folderId) > 0) {
 			this.lu.writeDeleteFolderEvent(request, folder, l);
+			InvalidAddedFolderAuthCleanListener.doCheck = true;
 			return "deleteFolderSuccess";
 		}
 		return "cannotDeleteFolder";
@@ -255,6 +257,7 @@ public class FolderServiceImpl implements FolderService {
 				return "deleteError";
 			}
 		}
+		InvalidAddedFolderAuthCleanListener.doCheck = true;
 		return "deleteSuccess";
 	}
 
