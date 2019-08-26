@@ -68,7 +68,7 @@ public class FolderUtil {
 		if (parentId == null || folderName == null || parentId.length() <= 0 || folderName.length() <= 0) {
 			return null;
 		}
-		if (!TextFormateUtil.instance().matcherFolderName(folderName) || folderName.indexOf(".") == 0) {
+		if (folderName.indexOf(".") == 0) {
 			return null;
 		}
 		final Folder parentFolder = this.fm.queryById(parentId);
