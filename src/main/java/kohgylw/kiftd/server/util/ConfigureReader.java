@@ -29,8 +29,8 @@ import java.sql.DriverManager;
 public class ConfigureReader {
 
 	private static ConfigureReader cr;// 自体实体
-	private Properties serverp;// 配置设置
-	private Properties accountp;// 账户设置
+	private KiftdProperties serverp;// 配置设置
+	private KiftdProperties accountp;// 账户设置
 	private int propertiesStatus;// 当前配置检查结果
 	private String path;
 	private String fileSystemPath;
@@ -94,8 +94,8 @@ public class ConfigureReader {
 		}
 		this.DEFAULT_FILE_SYSTEM_PATH = this.path + File.separator + "filesystem" + File.separator;
 		this.confdir = this.path + File.separator + "conf" + File.separator;
-		this.serverp = new Properties();
-		this.accountp = new Properties();
+		this.serverp = new KiftdProperties();
+		this.accountp = new KiftdProperties();
 		extendStores = new ArrayList<>();
 		final File serverProp = new File(this.confdir + SERVER_PROPERTIES_FILE);
 		if (!serverProp.isFile()) {
@@ -494,14 +494,14 @@ public class ConfigureReader {
 					(ss.getFsPath() + File.separator).equals(this.DEFAULT_FILE_SYSTEM_PATH) ? "DEFAULT"
 							: ss.getFsPath());
 			for (short i = 1; i < 32; i++) {
-				this.serverp.remove("FS.extend." + i);// 清空旧的扩展存储区设置
+				this.serverp.removeProperty("FS.extend." + i);// 清空旧的扩展存储区设置
 			}
 			for (ExtendStores es : ss.getExtendStores()) {
 				this.serverp.setProperty("FS.extend." + es.getIndex(), es.getPath().getAbsolutePath());
 			}
 			if (this.testServerPropertiesAndEffect() == 0) {
 				try {
-					this.serverp.store(new FileOutputStream(this.confdir + SERVER_PROPERTIES_FILE), "<Server settings has been updated.>");
+					this.serverp.store(new FileOutputStream(this.confdir + SERVER_PROPERTIES_FILE), null);
 					Printer.instance.print("配置更新完毕，准备就绪。");
 					return true;
 				} catch (Exception e) {
@@ -901,7 +901,6 @@ public class ConfigureReader {
 							if (we.kind() == StandardWatchEventKinds.ENTRY_MODIFY
 									&& ACCOUNT_PROPERTIES_FILE.equals(we.context().toString())) {
 								Printer.instance.print("正在更新账户配置信息...");
-								this.accountp.clear();
 								final File accountProp = new File(this.confdir + ACCOUNT_PROPERTIES_FILE);
 								final FileInputStream accountPropIn = new FileInputStream(accountProp);
 								this.accountp.load(accountPropIn);
@@ -1030,5 +1029,40 @@ public class ConfigureReader {
 		} catch (Exception e) {
 		}
 		return r;
+	}
+
+	public List<String> getAllAddedAuthFoldersId() {
+		List<String> foldersId = new ArrayList<>();
+		for (Iterator<String> it = accountp.stringPropertieNames().iterator(); it.hasNext();) {
+			String config = it.next();
+			int index = config.lastIndexOf(".auth.");
+			if (index >= 0) {
+				foldersId.add(config.substring(index+6));
+			}
+		}
+		return foldersId;
+	}
+	
+	public void removeAddedAuthByFolderId(List<String> fIds) {
+		if(fIds == null || fIds.size() == 0) {
+			return;
+		}
+		Set<String> configs=accountp.stringPropertieNames();
+		List<String> invalidConfigs = new ArrayList<>();
+		for(String fId:fIds) {
+			for (String config:configs) {
+				if(config.endsWith(".auth."+fId)) {
+					invalidConfigs.add(config);
+				}
+			}
+		}
+		for(String config:invalidConfigs) {
+			accountp.removeProperty(config);
+		}
+		try {
+			accountp.store(new FileOutputStream(this.confdir + ACCOUNT_PROPERTIES_FILE), null);
+		} catch (Exception e) {
+			Printer.instance.print("错误：更新账户配置文件时出现错误，请立即检查账户配置文件。");
+		}
 	}
 }

@@ -7,6 +7,7 @@ import org.springframework.stereotype.*;
 import kohgylw.kiftd.server.mapper.*;
 import javax.annotation.*;
 import kohgylw.kiftd.server.enumeration.*;
+import kohgylw.kiftd.server.listener.CleanInvalidAddedAuthListener;
 import kohgylw.kiftd.server.model.*;
 import kohgylw.kiftd.server.pojo.CheckImportFolderRespons;
 import kohgylw.kiftd.server.pojo.CheckUploadFilesRespons;
@@ -434,6 +435,9 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 					this.lu.writeDeleteFolderEvent(request, folder, l);
 				}
 			}
+			if(fidList.size() > 0) {
+				CleanInvalidAddedAuthListener.needCheck=true;
+			}
 			return "deleteFileSuccess";
 		} catch (Exception e) {
 			return ERROR_PARAMETER;
@@ -709,6 +713,9 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 						return "cannotMoveFiles";
 					}
 				}
+			}
+			if(fidList.size() > 0) {
+				CleanInvalidAddedAuthListener.needCheck=true;
 			}
 			return "moveFilesSuccess";
 		} catch (Exception e) {
