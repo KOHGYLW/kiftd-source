@@ -49,8 +49,9 @@ public class CleanInvalidAddedAuthListener implements ServletContextListener{
 							Printer.instance.print("文件夹ID："+id+"对应的文件夹不存在或已被删除，相关的额外权限设置将被清理。");
 						}
 					}
-					ConfigureReader.instance().removeAddedAuthByFolderId(invalidIdList);
-					Printer.instance.print("失效的额外权限设置已经清理完成。");
+					if(ConfigureReader.instance().removeAddedAuthByFolderId(invalidIdList)) {
+						Printer.instance.print("失效的额外权限设置已经清理完成。");
+					}
 					needCheck=false;
 				}
 				try {

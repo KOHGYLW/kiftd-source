@@ -1043,9 +1043,9 @@ public class ConfigureReader {
 		return foldersId;
 	}
 	
-	public void removeAddedAuthByFolderId(List<String> fIds) {
+	public boolean removeAddedAuthByFolderId(List<String> fIds) {
 		if(fIds == null || fIds.size() == 0) {
-			return;
+			return false;
 		}
 		Set<String> configs=accountp.stringPropertieNames();
 		List<String> invalidConfigs = new ArrayList<>();
@@ -1061,8 +1061,10 @@ public class ConfigureReader {
 		}
 		try {
 			accountp.store(new FileOutputStream(this.confdir + ACCOUNT_PROPERTIES_FILE), null);
+			return true;
 		} catch (Exception e) {
 			Printer.instance.print("错误：更新账户配置文件时出现错误，请立即检查账户配置文件。");
+			return false;
 		}
 	}
 }
