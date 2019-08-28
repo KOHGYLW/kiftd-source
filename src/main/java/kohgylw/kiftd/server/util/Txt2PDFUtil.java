@@ -37,43 +37,51 @@ public class Txt2PDFUtil {
 	/**
 	 * 
 	 * <h2>执行word格式转换（docx）</h2>
-	 * <p>将输入流中的word文件转换为PDF格式并输出至指定输出流，该方法线程阻塞。</p>
+	 * <p>
+	 * 将输入流中的word文件转换为PDF格式并输出至指定输出流，该方法线程阻塞。
+	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param in java.io.InputStream 输入流，输入docx格式
-	 * @param out java.io.OutputStream 输出流，输出PDF格式
-	 * @throws Exception 无法完成转码
+	 * @param in
+	 *            java.io.InputStream 输入流，输入docx格式
+	 * @param out
+	 *            java.io.OutputStream 输出流，输出PDF格式
+	 * @throws Exception
+	 *             无法完成转码
 	 */
 	public void convertPdf(File in, OutputStream out) throws Exception {
-		Rectangle rect = new Rectangle(PageSize.A4);//以A4页面显示文本
+		Rectangle rect = new Rectangle(PageSize.A4);// 以A4页面显示文本
 		Document doc = new Document(rect);
-		PdfWriter pw= PdfWriter.getInstance(doc, out);//开始转换
+		PdfWriter pw = PdfWriter.getInstance(doc, out);// 开始转换
 		doc.open();
-		BaseFont songFont = BaseFont.createFont("fonts/wqy-zenhei.ttc,0", BaseFont.IDENTITY_H, BaseFont.NOT_EMBEDDED);
-		Font font = new Font(songFont, 12, Font.NORMAL);//设置字体格式
+		BaseFont songFont = BaseFont.createFont(
+				ConfigureReader.instance().getPath() + File.separator + "fonts/wqy-zenhei.ttc,0", BaseFont.IDENTITY_H,
+				BaseFont.NOT_EMBEDDED);
+		Font font = new Font(songFont, 12, Font.NORMAL);// 设置字体格式
 		Paragraph paragraph = new Paragraph();
 		paragraph.setFont(font);
-		String charset=getTxtCharset(new FileInputStream(in));//判断编码格式
+		String charset = getTxtCharset(new FileInputStream(in));// 判断编码格式
 		BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(in), charset));
 		String line = null;
 		while ((line = reader.readLine()) != null) {
-			paragraph.add(line + "\n");//将文本逐行写入PDF段落
+			paragraph.add(line + "\n");// 将文本逐行写入PDF段落
 		}
 		reader.close();
-		//避免因打开空文档可能造成的打开失败
-		if(paragraph.isEmpty()) {
+		// 避免因打开空文档可能造成的打开失败
+		if (paragraph.isEmpty()) {
 			paragraph.add("");
 		}
-		doc.add(paragraph);//写入段落至文档
-		doc.close();//关闭文档
+		doc.add(paragraph);// 写入段落至文档
+		doc.close();// 关闭文档
 		pw.flush();
 		pw.close();
 	}
-	
-	//自动判别文本编码集，如果能判断则返回准确编码集名称，例如“UTF-8”，否则返回最大概率的编码集。
+
+	// 自动判别文本编码集，如果能判断则返回准确编码集名称，例如“UTF-8”，否则返回最大概率的编码集。
 	private String getTxtCharset(InputStream in) throws Exception {
 		int lang = nsPSMDetector.CHINESE;
 		nsDetector det = new nsDetector(lang);
-		CharsetDetectionObserverImpl cdoi=new CharsetDetectionObserverImpl();
+		CharsetDetectionObserverImpl cdoi = new CharsetDetectionObserverImpl();
 		det.Init(cdoi);
 		BufferedInputStream imp = new BufferedInputStream(in);
 		byte[] buf = new byte[1024];
@@ -94,11 +102,11 @@ public class Txt2PDFUtil {
 		det.DataEnd();
 		if (isAscii) {
 			return "ASCII";
-		} else if (cdoi.getCharset()!=null) {
+		} else if (cdoi.getCharset() != null) {
 			return cdoi.getCharset();
 		} else {
-			String[] prob=det.getProbableCharsets();
-			if(prob!=null&&prob.length>0) {
+			String[] prob = det.getProbableCharsets();
+			if (prob != null && prob.length > 0) {
 				return prob[0];
 			}
 			return "GBK";

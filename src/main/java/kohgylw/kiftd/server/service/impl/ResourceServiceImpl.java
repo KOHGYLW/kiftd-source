@@ -264,7 +264,6 @@ public class ResourceServiceImpl implements ResourceService {
 							try {
 								t2pu.convertPdf(file, response.getOutputStream());
 								return;
-							} catch (IOException e) {
 							} catch (Exception e) {
 								Printer.instance.print(e.getMessage());
 								lu.writeException(e);
