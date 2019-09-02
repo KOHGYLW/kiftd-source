@@ -94,7 +94,7 @@ public class AudioInfoUtil {
 			final String suffix = e.getFileName().substring(e.getFileName().lastIndexOf(".") + 1);
 			final String nName = this.getFileName(n.getFileName());
 			if (this.getFileName(e.getFileName()).equals(nName) && suffix.equalsIgnoreCase("lrc")) {
-				ai.setLrc("fileblocks/" + e.getFilePath());
+				ai.setLrc("resourceController/getLRContext/" + e.getFileId());
 			}
 			if ((this.getFileName(e.getFileName()).equals(nName)
 					|| ai.getArtist().equals(this.getFileName(e.getFileName())))

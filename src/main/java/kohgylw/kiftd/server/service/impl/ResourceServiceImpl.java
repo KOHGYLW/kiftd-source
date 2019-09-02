@@ -1,8 +1,12 @@
 package kohgylw.kiftd.server.service.impl;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.RandomAccessFile;
 import java.util.Date;
 
@@ -28,6 +32,7 @@ import kohgylw.kiftd.server.util.FolderUtil;
 import kohgylw.kiftd.server.util.LogUtil;
 import kohgylw.kiftd.server.util.PowerPoint2PDFUtil;
 import kohgylw.kiftd.server.util.Txt2PDFUtil;
+import kohgylw.kiftd.server.util.TxtCharsetGetter;
 import kohgylw.kiftd.server.util.VideoTranscodeUtil;
 
 //资源服务类，所有处理非下载流请求的工作均在此完成
@@ -52,6 +57,8 @@ public class ResourceServiceImpl implements ResourceService {
 	private FolderUtil fu;
 	@Resource
 	private FolderMapper fm;
+	@Resource
+	private TxtCharsetGetter tcg;
 
 	// 提供资源的输出流，原理与下载相同，但是个别细节有区别
 	@Override
@@ -329,6 +336,58 @@ public class ResourceServiceImpl implements ResourceService {
 							break;
 						default:
 							break;
+						}
+					}
+				}
+			}
+		}
+		try {
+			response.sendError(500);
+		} catch (Exception e1) {
+		}
+	}
+
+	@Override
+	public void getLRContextByUTF8(String fileId,HttpServletRequest request, HttpServletResponse response) {
+		final String account = (String) request.getSession().getAttribute("ACCOUNT");
+		// 权限检查
+		if (fileId != null) {
+			Node n = nm.queryById(fileId);
+			if (n != null) {
+				if (ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES,
+						fu.getAllFoldersId(n.getFileParentFolder()))
+						&& ConfigureReader.instance().accessFolder(fm.queryById(n.getFileParentFolder()), account)) {
+					File file = fbu.getFileFromBlocks(n);
+					if (file != null && file.isFile()) {
+						// 后缀检查
+						String suffix = "";
+						if (n.getFileName().indexOf(".") >= 0) {
+							suffix = n.getFileName().substring(n.getFileName().lastIndexOf(".")).trim().toLowerCase();
+						}
+						if (".lrc".equals(suffix)) {
+							String contentType = "text/plain";
+							response.setContentType(contentType);
+							// 执行转换并写出输出流
+							try {
+								String inputFileEncode = tcg.getTxtCharset(new FileInputStream(file));
+						        BufferedReader bufferedReader = new BufferedReader(
+						                new InputStreamReader(new FileInputStream(file), inputFileEncode));
+						        BufferedWriter bufferedWriter = new BufferedWriter(
+						                new OutputStreamWriter(response.getOutputStream(), "UTF-8"));
+						        String line;
+						        while ((line = bufferedReader.readLine()) != null) {
+						            bufferedWriter.write(line);
+						            bufferedWriter.newLine();
+						        }
+						        bufferedWriter.close();
+						        bufferedReader.close();
+								return;
+							} catch (IOException e) {
+							} catch (Exception e) {
+								Printer.instance.print(e.getMessage());
+								lu.writeException(e);
+							}
+							
 						}
 					}
 				}

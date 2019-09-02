@@ -64,5 +64,16 @@ public interface ResourceService {
 	 * @return java.lang.String 转码状态，若为FIN则代表转码完毕可直接播放，否则为百分制的进度，例如“1.2”代表完成了1.2%。
 	 */
 	public String getVideoTranscodeStatus(HttpServletRequest request);
+	
+	/**
+	 * 
+	 * <h2>获取LRC文本内容</h2>
+	 * <p>以标准UTF-8编码获取LRC歌词，该方法不支持断点续传。</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @param fileId java.lang.String 要获取LRC歌词文件的节点ID
+	 * @param request javax.servlet.http.HttpServletRequest 请求对象
+	 * @param response javax.servlet.http.HttpServletResponse 响应对象
+	 */
+	public void getLRContextByUTF8(String fileId,HttpServletRequest request,HttpServletResponse response);
 
 }

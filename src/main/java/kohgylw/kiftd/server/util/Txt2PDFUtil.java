@@ -1,15 +1,13 @@
 package kohgylw.kiftd.server.util;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 
-import org.mozilla.intl.chardet.nsDetector;
-import org.mozilla.intl.chardet.nsPSMDetector;
+import javax.annotation.Resource;
+
 import org.springframework.stereotype.Component;
 
 import com.lowagie.text.Document;
@@ -33,7 +31,10 @@ import com.lowagie.text.pdf.PdfWriter;
  */
 @Component
 public class Txt2PDFUtil {
-
+	
+	@Resource
+	private TxtCharsetGetter tcg;
+	
 	/**
 	 * 
 	 * <h2>执行word格式转换（docx）</h2>
@@ -60,7 +61,7 @@ public class Txt2PDFUtil {
 		Font font = new Font(songFont, 12, Font.NORMAL);// 设置字体格式
 		Paragraph paragraph = new Paragraph();
 		paragraph.setFont(font);
-		String charset = getTxtCharset(new FileInputStream(in));// 判断编码格式
+		String charset = tcg.getTxtCharset(new FileInputStream(in));// 判断编码格式
 		BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(in), charset));
 		String line = null;
 		while ((line = reader.readLine()) != null) {
@@ -75,42 +76,6 @@ public class Txt2PDFUtil {
 		doc.close();// 关闭文档
 		pw.flush();
 		pw.close();
-	}
-
-	// 自动判别文本编码集，如果能判断则返回准确编码集名称，例如“UTF-8”，否则返回最大概率的编码集。
-	private String getTxtCharset(InputStream in) throws Exception {
-		int lang = nsPSMDetector.CHINESE;
-		nsDetector det = new nsDetector(lang);
-		CharsetDetectionObserverImpl cdoi = new CharsetDetectionObserverImpl();
-		det.Init(cdoi);
-		BufferedInputStream imp = new BufferedInputStream(in);
-		byte[] buf = new byte[1024];
-		int len;
-		boolean isAscii = true;
-		while ((len = imp.read(buf, 0, buf.length)) != -1) {
-			if (isAscii) {
-				isAscii = det.isAscii(buf, len);
-			}
-			if (!isAscii) {
-				if (det.DoIt(buf, len, false)) {
-					break;
-				}
-			}
-		}
-		imp.close();
-		in.close();
-		det.DataEnd();
-		if (isAscii) {
-			return "ASCII";
-		} else if (cdoi.getCharset() != null) {
-			return cdoi.getCharset();
-		} else {
-			String[] prob = det.getProbableCharsets();
-			if (prob != null && prob.length > 0) {
-				return prob[0];
-			}
-			return "GBK";
-		}
 	}
 
 }
