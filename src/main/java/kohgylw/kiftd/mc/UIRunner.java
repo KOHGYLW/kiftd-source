@@ -129,6 +129,18 @@ public class UIRunner {
 				// TODO 自动生成的方法存根
 				return ConfigureReader.instance().getInitBuffSize();
 			}
+
+			@Override
+			public boolean isAllowChangePassword() {
+				// TODO 自动生成的方法存根
+				return ConfigureReader.instance().isAllowChangePassword();
+			}
+
+			@Override
+			public boolean isOpenFileChain() {
+				// TODO 自动生成的方法存根
+				return ConfigureReader.instance().isOpenFileChain();
+			}
 		});
 		ServerUIModule.setUpdateSetting(new UpdateSetting() {
 

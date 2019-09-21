@@ -33,5 +33,9 @@ public interface GetServerStatus
     
     boolean getMustLogin();
     
+    boolean isAllowChangePassword();
+    
+    boolean isOpenFileChain();
+    
     List<FileSystemPath> getExtendStores();
 }

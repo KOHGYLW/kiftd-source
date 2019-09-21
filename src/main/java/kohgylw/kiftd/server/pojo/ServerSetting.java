@@ -11,6 +11,8 @@ public class ServerSetting {
 	private LogLevel log;
 	private int port;
 	private String fsPath;
+	private boolean fileChain;
+	private boolean changePassword;
 	private List<ExtendStores> extendStores;
 
 	public boolean isMustLogin() {
@@ -67,5 +69,21 @@ public class ServerSetting {
 
 	public void setExtendStores(List<ExtendStores> extendStores) {
 		this.extendStores = extendStores;
+	}
+
+	public boolean isOpenFileChain() {
+		return fileChain;
+	}
+
+	public void setFileChain(boolean fileChain) {
+		this.fileChain = fileChain;
+	}
+
+	public boolean isAllowChangePassword() {
+		return changePassword;
+	}
+
+	public void setChangePassword(boolean changePassword) {
+		this.changePassword = changePassword;
 	}
 }

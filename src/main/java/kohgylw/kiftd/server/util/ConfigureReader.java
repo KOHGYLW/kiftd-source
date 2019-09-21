@@ -7,6 +7,7 @@ import kohgylw.kiftd.server.enumeration.*;
 import kohgylw.kiftd.server.model.Folder;
 import kohgylw.kiftd.server.pojo.*;
 import java.io.*;
+import java.nio.channels.FileLock;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardWatchEventKinds;
@@ -32,23 +33,26 @@ public class ConfigureReader {
 	private KiftdProperties serverp;// 配置设置
 	private KiftdProperties accountp;// 账户设置
 	private int propertiesStatus;// 当前配置检查结果
-	private String path;
-	private String fileSystemPath;
-	private String confdir;
-	private String mustLogin;
-	private int port;
-	private String log;
-	private String vc;
-	private String FSPath;
-	private List<ExtendStores> extendStores;
-	private int bufferSize;
-	private String fileBlockPath;
-	private String fileNodePath;
+	private String path;// 程序主目录路径
+	private String fileSystemPath;// 主文件系统路径
+	private String confdir;// 设置文件夹路径
+	private String mustLogin;// 必须登录
+	private int port;// 端口号
+	private String log;// 日志等级
+	private String vc;// 验证码类型
+	private String FSPath;// 主文件系统路径（设置的原始值）
+	private List<ExtendStores> extendStores;// 扩展存储区路径列表
+	private int bufferSize;// 缓存大小（byte）
+	private String fileBlockPath;// 文件块存储路径（位于文件系统中）
+	private String fileNodePath;// 文件节点存储路径（位于文件系统中）
 	private String TFPath;
 	private String dbURL;
 	private String dbDriver;
 	private String dbUser;
 	private String dbPwd;
+	private boolean allowChangePassword;// 是否允许用户修改密码
+	private boolean openFileChain;// 是否开启永久外部链接
+	private boolean allowSignUp;// 是否允许自由注册新账户（高级）
 	private final String ACCOUNT_PROPERTIES_FILE = "account.properties";
 	private final String SERVER_PROPERTIES_FILE = "server.properties";
 	private final int DEFAULT_BUFFER_SIZE = 1048576;
@@ -62,6 +66,8 @@ public class ConfigureReader {
 	private final String DEFAULT_ACCOUNT_PWD = "000000";
 	private final String DEFAULT_ACCOUNT_AUTH = "cudrm";
 	private final String DEFAULT_AUTH_OVERALL = "l";
+	private final String DEFAULT_PASSWORD_CHANGE_SETTING = "N";
+	private final String DEFAULT_FILE_CHAIN_SETTING = "CLOSE";
 	public static final int INVALID_PORT = 1;
 	public static final int INVALID_LOG = 2;
 	public static final int INVALID_FILE_SYSTEM_PATH = 3;
@@ -72,6 +78,8 @@ public class ConfigureReader {
 	public static final int CANT_CONNECT_DB = 8;
 	public static final int HTTPS_SETTING_ERROR = 9;
 	public static final int INVALID_VC = 10;
+	public static final int INVALID_CHANGE_PASSWORD_SETTING = 11;
+	private static final int INNVALID_FILE_CHAIN_SETTING = 12;
 	public static final int LEGAL_PROPERTIES = 0;
 	private static Thread accountPropertiesUpdateDaemonThread;
 	private String timeZone;
@@ -459,6 +467,8 @@ public class ConfigureReader {
 			Printer.instance.print("正在更新服务器配置...");
 			this.serverp.setProperty("mustLogin", ss.isMustLogin() ? "N" : "O");
 			this.serverp.setProperty("buff.size", ss.getBuffSize() + "");
+			this.serverp.setProperty("password.change", ss.isAllowChangePassword() ? "Y" : "N");
+			this.serverp.setProperty("openFileChain", ss.isOpenFileChain() ? "OPEN" : "CLOSE");
 			String loglevelCode = "E";
 			switch (ss.getLog()) {
 			case Event: {
@@ -570,6 +580,50 @@ public class ConfigureReader {
 				return INVALID_VC;
 			}
 		}
+		// 是否允许用户修改密码
+		final String changePassword = this.serverp.getProperty("password.change");
+		if (changePassword == null) {
+			Printer.instance.print("警告：未找到用户修改密码功能配置，将采用默认值（禁止）。");
+			this.allowChangePassword = false;
+		} else {
+			switch (changePassword) {
+			case "Y":
+				this.allowChangePassword = true;
+				break;
+			case "N":
+				this.allowChangePassword = false;
+				break;
+			default:
+				Printer.instance.print("错误：用户修改密码功能设置无效。");
+				return INVALID_CHANGE_PASSWORD_SETTING;
+			}
+		}
+		// 是否提供永久资源链接
+		final String fileChain = this.serverp.getProperty("openFileChain");
+		if (fileChain == null) {
+			Printer.instance.print("警告：未找到永久资源链接功能配置，将采用默认值（关闭）。");
+			this.openFileChain = false;
+		} else {
+			switch (fileChain) {
+			case "OPEN":
+				this.openFileChain = true;
+				break;
+			case "CLOSE":
+				this.openFileChain = false;
+				break;
+			default:
+				Printer.instance.print("错误：永久资源链接功能设置无效。");
+				return INNVALID_FILE_CHAIN_SETTING;
+			}
+		}
+		// 是否允许访问者自由注册账户
+		final String signUp = this.accountp.getProperty("signUpAuth");
+		if (signUp != null) {
+			this.allowSignUp = true;
+		} else {
+			this.allowSignUp = false;
+		}
+		// 缓存大小
 		final String bufferSizes = this.serverp.getProperty("buff.size");
 		if (bufferSizes == null) {
 			Printer.instance.print("警告：未找到缓冲大小配置，将采用默认值（1048576）。");
@@ -723,6 +777,8 @@ public class ConfigureReader {
 		dsp.setProperty("VC.level", DEFAULT_VC_LEVEL);
 		dsp.setProperty("FS.path", DEFAULT_FILE_SYSTEM_PATH_SETTING);
 		dsp.setProperty("buff.size", DEFAULT_BUFFER_SIZE + "");
+		dsp.setProperty("password.change", DEFAULT_PASSWORD_CHANGE_SETTING);
+		dsp.setProperty("openFileChain", DEFAULT_FILE_CHAIN_SETTING);
 		try {
 			dsp.store(new FileOutputStream(this.confdir + SERVER_PROPERTIES_FILE),
 					"<This is the default kiftd server setting file. >");
@@ -740,9 +796,11 @@ public class ConfigureReader {
 		dap.setProperty(DEFAULT_ACCOUNT_ID + ".pwd", DEFAULT_ACCOUNT_PWD);
 		dap.setProperty(DEFAULT_ACCOUNT_ID + ".auth", DEFAULT_ACCOUNT_AUTH);
 		dap.setProperty("authOverall", DEFAULT_AUTH_OVERALL);
-		try {
-			dap.store(new FileOutputStream(this.confdir + ACCOUNT_PROPERTIES_FILE),
-					"<This is the default kiftd account setting file. >");
+
+		try (FileOutputStream accountSettingOut = new FileOutputStream(this.confdir + ACCOUNT_PROPERTIES_FILE)) {
+			FileLock lock = accountSettingOut.getChannel().lock();
+			dap.store(accountSettingOut, "<This is the default kiftd account setting file. >");
+			lock.release();
 			Printer.instance.print("初始账户配置文件生成完毕。");
 		} catch (FileNotFoundException e) {
 			Printer.instance.print("错误：无法生成初始账户配置文件，存储路径不存在。");
@@ -903,7 +961,9 @@ public class ConfigureReader {
 								Printer.instance.print("正在更新账户配置信息...");
 								final File accountProp = new File(this.confdir + ACCOUNT_PROPERTIES_FILE);
 								final FileInputStream accountPropIn = new FileInputStream(accountProp);
+								FileLock lock = accountPropIn.getChannel().lock(0L, Long.MAX_VALUE, true);
 								this.accountp.load(accountPropIn);
+								lock.release();
 								Printer.instance.print("账户配置更新完成，已加载最新配置。");
 							}
 						}
@@ -1037,34 +1097,78 @@ public class ConfigureReader {
 			String config = it.next();
 			int index = config.lastIndexOf(".auth.");
 			if (index >= 0) {
-				foldersId.add(config.substring(index+6));
+				foldersId.add(config.substring(index + 6));
 			}
 		}
 		return foldersId;
 	}
-	
+
 	public boolean removeAddedAuthByFolderId(List<String> fIds) {
-		if(fIds == null || fIds.size() == 0) {
+		if (fIds == null || fIds.size() == 0) {
 			return false;
 		}
-		Set<String> configs=accountp.stringPropertieNames();
+		Set<String> configs = accountp.stringPropertieNames();
 		List<String> invalidConfigs = new ArrayList<>();
-		for(String fId:fIds) {
-			for (String config:configs) {
-				if(config.endsWith(".auth."+fId)) {
+		for (String fId : fIds) {
+			for (String config : configs) {
+				if (config.endsWith(".auth." + fId)) {
 					invalidConfigs.add(config);
 				}
 			}
 		}
-		for(String config:invalidConfigs) {
+		for (String config : invalidConfigs) {
 			accountp.removeProperty(config);
 		}
-		try {
-			accountp.store(new FileOutputStream(this.confdir + ACCOUNT_PROPERTIES_FILE), null);
+		try (FileOutputStream accountSettingOut = new FileOutputStream(this.confdir + ACCOUNT_PROPERTIES_FILE)) {
+			FileLock lock = accountSettingOut.getChannel().lock();
+			accountp.store(accountSettingOut, null);
+			lock.release();
 			return true;
 		} catch (Exception e) {
 			Printer.instance.print("错误：更新账户配置文件时出现错误，请立即检查账户配置文件。");
 			return false;
 		}
+	}
+
+	/**
+	 * 
+	 * <h2>是否允许用户修改密码</h2>
+	 * <p>
+	 * 判断是否允许用户修改密码，若允许则开启用户修改密码功能。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @return boolean 允许则返回true，否则返回false
+	 */
+	public boolean isAllowChangePassword() {
+		return allowChangePassword;
+	}
+
+	/**
+	 * 
+	 * <h2>是否开启永久资源链接</h2>
+	 * <p>
+	 * 判断是否开启永久资源链接，若开启则提供每个可下载文件的外部链接。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @return boolean 开启则返回true，否则返回false
+	 */
+	public boolean isOpenFileChain() {
+		return openFileChain;
+	}
+
+	/**
+	 * 
+	 * <h2>是否允许注册新账户</h2>
+	 * <p>
+	 * 判断是否允许注册新账户，若允许则访问者可以自由注册新的账户。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @return boolean 允许则返回true，否则返回false
+	 */
+	public boolean signUp() {
+		return allowSignUp;
 	}
 }

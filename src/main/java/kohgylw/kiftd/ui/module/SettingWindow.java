@@ -35,6 +35,8 @@ public class SettingWindow extends KiftdDynamicWindow {
 	private static JComboBox<String> mlinput;
 	private static JComboBox<String> vcinput;
 	private static JComboBox<String> logLevelinput;
+	private static JComboBox<String> changePwdinput;
+	private static JComboBox<String> showChaininput;
 	private static JButton cancel;
 	private static JButton update;
 	private static JButton changeFileSystemPath;
@@ -46,6 +48,10 @@ public class SettingWindow extends KiftdDynamicWindow {
 	private static final String VC_STANDARD = "标准(STANDARD)";
 	private static final String VC_SIMP = "简化(SIMPLIFIED)";
 	private static final String VC_CLOSE = "关闭(CLOSE)";
+	private static final String CHANGE_PWD_OPEN = "允许(ALLOW)";
+	private static final String CHANGE_PWD_CLOSE = "禁止(PROHIBIT)";
+	private static final String SHOW_CHAIN_OPEN = "开启(OPEN)";
+	private static final String SHOW_CHAIN_CLOSE = "关闭(CLOSE)";
 	protected static GetServerStatus st;
 	protected static UpdateSetting us;
 	private static FileSystemPathViewer fspv;
@@ -54,7 +60,7 @@ public class SettingWindow extends KiftdDynamicWindow {
 		setUIFont();// 全局字体设置
 		// 窗口主体相关设置
 		(SettingWindow.window = new JDialog(ServerUIModule.window, "kiftd-设置")).setModal(true);
-		SettingWindow.window.setSize(410, 360);
+		SettingWindow.window.setSize(420, 425);
 		SettingWindow.window.setLocation(150, 150);
 		SettingWindow.window.setDefaultCloseOperation(1);
 		SettingWindow.window.setResizable(false);
@@ -66,7 +72,7 @@ public class SettingWindow extends KiftdDynamicWindow {
 		titlebox.add(title);
 		SettingWindow.window.add(titlebox);
 		// 窗口组件排布
-		final JPanel settingbox = new JPanel(new GridLayout(6, 1, 0, 0));
+		final JPanel settingbox = new JPanel(new GridLayout(8, 1, 0, 0));
 		settingbox.setBorder(new EtchedBorder());
 		final int interval = 0;
 		// 必须登入下拉框
@@ -96,6 +102,7 @@ public class SettingWindow extends KiftdDynamicWindow {
 				.setPreferredSize(new Dimension((int) (120 * proportion), (int) (25 * proportion)));
 		portbox.add(porttitle);
 		portbox.add(SettingWindow.portinput);
+		// 缓存大小输入框
 		final JPanel bufferbox = new JPanel(new FlowLayout(1));
 		bufferbox.setBorder(new EmptyBorder(interval, 0, interval, 0));
 		final JLabel buffertitle = new JLabel("缓存大小(buffer)：");
@@ -105,6 +112,7 @@ public class SettingWindow extends KiftdDynamicWindow {
 		bufferbox.add(buffertitle);
 		bufferbox.add(SettingWindow.bufferinput);
 		bufferbox.add(bufferUnit);
+		// 日志等级选择框
 		final JPanel logbox = new JPanel(new FlowLayout(1));
 		logbox.setBorder(new EmptyBorder(interval, 0, interval, 0));
 		final JLabel logtitle = new JLabel("日志等级(port)：");
@@ -114,18 +122,40 @@ public class SettingWindow extends KiftdDynamicWindow {
 		SettingWindow.logLevelinput.setPreferredSize(new Dimension((int) (170 * proportion), (int) (20 * proportion)));
 		logbox.add(logtitle);
 		logbox.add(SettingWindow.logLevelinput);
+		// 用户修改密码选择框
+		final JPanel cpbox = new JPanel(new FlowLayout(1));
+		cpbox.setBorder(new EmptyBorder(interval, 0, interval, 0));
+		final JLabel cptitle = new JLabel("用户修改密码(change password)：");
+		(SettingWindow.changePwdinput = new JComboBox<String>()).addItem(CHANGE_PWD_CLOSE);
+		SettingWindow.changePwdinput.addItem(CHANGE_PWD_OPEN);
+		SettingWindow.changePwdinput.setPreferredSize(new Dimension((int) (170 * proportion), (int) (20 * proportion)));
+		cpbox.add(cptitle);
+		cpbox.add(SettingWindow.changePwdinput);
+		// 用户修改密码选择框
+		final JPanel scbox = new JPanel(new FlowLayout(1));
+		cpbox.setBorder(new EmptyBorder(interval, 0, interval, 0));
+		final JLabel sctitle = new JLabel("永久资源链接(file chain)：");
+		(SettingWindow.showChaininput = new JComboBox<String>()).addItem(SHOW_CHAIN_CLOSE);
+		SettingWindow.showChaininput.addItem(SHOW_CHAIN_OPEN);
+		SettingWindow.showChaininput.setPreferredSize(new Dimension((int) (170 * proportion), (int) (20 * proportion)));
+		scbox.add(sctitle);
+		scbox.add(SettingWindow.showChaininput);
+		// 文件系统管理按钮
 		final JPanel filePathBox = new JPanel(new FlowLayout(1));
 		filePathBox.setBorder(new EmptyBorder(interval, 0, interval, 0));
 		final JLabel filePathtitle = new JLabel("文件系统路径(file system path)：");
 		SettingWindow.changeFileSystemPath = new JButton("管理(Manage)");
-		changeFileSystemPath.setPreferredSize(new Dimension((int) (140 * proportion), (int) (32 * proportion)));
+		changeFileSystemPath.setPreferredSize(new Dimension((int) (170 * proportion), (int) (32 * proportion)));
 		filePathBox.add(filePathtitle);
 		filePathBox.add(SettingWindow.changeFileSystemPath);
+		// 界面布局顺序
 		settingbox.add(portbox);
 		settingbox.add(mlbox);
 		settingbox.add(vcbox);
 		settingbox.add(bufferbox);
 		settingbox.add(logbox);
+		settingbox.add(cpbox);
+		settingbox.add(scbox);
 		settingbox.add(filePathBox);
 		SettingWindow.window.add(settingbox);
 		final JPanel buttonbox = new JPanel(new FlowLayout(1));
@@ -191,6 +221,26 @@ public class SettingWindow extends KiftdDynamicWindow {
 									break;
 								case 1:
 									ss.setMustLogin(false);
+									break;
+								default:
+									break;
+								}
+								switch (changePwdinput.getSelectedIndex()) {
+								case 0:
+									ss.setChangePassword(false);
+									break;
+								case 1:
+									ss.setChangePassword(true);
+									break;
+								default:
+									break;
+								}
+								switch (showChaininput.getSelectedIndex()) {
+								case 0:
+									ss.setFileChain(false);
+									break;
+								case 1:
+									ss.setFileChain(true);
 									break;
 								default:
 									break;
@@ -292,6 +342,16 @@ public class SettingWindow extends KiftdDynamicWindow {
 					SettingWindow.mlinput.setSelectedIndex(0);
 				} else {
 					SettingWindow.mlinput.setSelectedIndex(1);
+				}
+				if (SettingWindow.st.isAllowChangePassword()) {
+					SettingWindow.changePwdinput.setSelectedIndex(1);
+				} else {
+					SettingWindow.changePwdinput.setSelectedIndex(0);
+				}
+				if (SettingWindow.st.isOpenFileChain()) {
+					SettingWindow.showChaininput.setSelectedIndex(1);
+				} else {
+					SettingWindow.showChaininput.setSelectedIndex(0);
 				}
 				if (SettingWindow.st.getVCLevel() != null) {
 					switch (SettingWindow.st.getVCLevel()) {
