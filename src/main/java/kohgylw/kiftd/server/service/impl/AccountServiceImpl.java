@@ -7,6 +7,8 @@ import com.google.gson.Gson;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -20,6 +22,8 @@ import kohgylw.kiftd.server.pojo.*;
 public class AccountServiceImpl implements AccountService {
 	@Resource
 	private KeyUtil ku;
+	@Resource
+	private LogUtil lu;
 
 	// 登录密钥有效期
 	private static final long TIME_OUT = 30000L;
@@ -28,8 +32,11 @@ public class AccountServiceImpl implements AccountService {
 	private Gson gson;
 
 	private VerificationCodeFactory vcf;
-
+	
+	private CharsetEncoder ios8859_1Encoder;
+	
 	{
+		ios8859_1Encoder = Charset.forName("ISO-8859-1").newEncoder();
 		if (!ConfigureReader.instance().getVCLevel().equals(VCLevel.Close)) {
 			int line = 0;
 			int oval = 0;
@@ -59,8 +66,8 @@ public class AccountServiceImpl implements AccountService {
 
 	public String checkLoginRequest(final HttpServletRequest request, final HttpSession session) {
 		final String encrypted = request.getParameter("encrypted");
-		final String loginInfoStr = DecryptionUtil.dncryption(encrypted, ku.getPrivateKey());
 		try {
+			final String loginInfoStr = DecryptionUtil.dncryption(encrypted, ku.getPrivateKey());
 			final LoginInfoPojo info = gson.fromJson(loginInfoStr, LoginInfoPojo.class);
 			if (System.currentTimeMillis() - Long.parseLong(info.getTime()) > TIME_OUT) {
 				return "error";
@@ -144,6 +151,71 @@ public class AccountServiceImpl implements AccountService {
 			return "pong";//只有登录了的账户才有必要进行应答
 		}else {
 			return "";//未登录则不返回标准提示，但也做应答（此时，前端应停止后续应答以节省线程开支）
+		}
+	}
+
+	@Override
+	public String changePassword(HttpServletRequest request) {
+		// 验证是否开启了用户修改密码功能
+		if(!ConfigureReader.instance().isAllowChangePassword()) {
+			return "illegal";
+		}
+		// 必须登录了一个账户
+		HttpSession session = request.getSession();
+		final String account = (String) session.getAttribute("ACCOUNT");
+		if(account == null) {
+			return "mustlogin";
+		}
+		// 解析修改密码请求
+		final String encrypted = request.getParameter("encrypted");
+		try {
+			final String changePasswordInfoStr = DecryptionUtil.dncryption(encrypted, ku.getPrivateKey());
+			final ChangePasswordInfoPojo info = gson.fromJson(changePasswordInfoStr, ChangePasswordInfoPojo.class);
+			if (System.currentTimeMillis() - Long.parseLong(info.getTime()) > TIME_OUT) {
+				return "error";
+			}
+			// 如果验证码开启且该账户已被关注，则要求提供验证码
+			if(!ConfigureReader.instance().getVCLevel().equals(VCLevel.Close)) {
+				synchronized (focusAccount) {
+					if (focusAccount.contains(account)) {
+						String reqVerCode = request.getParameter("vercode");
+						String trueVerCode = (String) session.getAttribute("VERCODE");
+						session.removeAttribute("VERCODE");// 确保一个验证码只会生效一次，无论对错
+						if (reqVerCode == null || trueVerCode == null || !trueVerCode.equals(reqVerCode.toLowerCase())) {
+							return "needsubmitvercode";
+						}
+					}
+				}
+			}
+			if (ConfigureReader.instance().checkAccountPwd(account, info.getOldPwd())) {
+				// 如果该账户输入正确且是一个被关注的账户，则解除该账户的关注，释放空间
+				if(!ConfigureReader.instance().getVCLevel().equals(VCLevel.Close)) {
+					synchronized (focusAccount) {
+						focusAccount.remove(account);
+					}
+				}
+				String newPassword = info.getNewPwd();
+				// 新密码合法性检查
+				if(newPassword != null && newPassword.length() >= 3 && newPassword.length() <= 32 && ios8859_1Encoder.canEncode(newPassword)) {
+					if(ConfigureReader.instance().changePassword(account, newPassword)) {
+						lu.writeChangePasswordEvent(account, newPassword);
+						return "success";
+					}
+				}
+				return "invalidnewpwd";
+			}else {
+				// 如果账户密码不匹配，则将该账户加入到关注账户集合，避免对方进一步破解
+				synchronized (focusAccount) {
+					if(!ConfigureReader.instance().getVCLevel().equals(VCLevel.Close)) {
+						focusAccount.add(account);
+					}
+				}
+				return "oldpwderror";
+			}
+		} catch (Exception e) {
+			lu.writeException(e);
+			e.printStackTrace();
+			return "cannotchangepwd";
 		}
 	}
 }

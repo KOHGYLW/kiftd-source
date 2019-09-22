@@ -961,9 +961,8 @@ public class ConfigureReader {
 								Printer.instance.print("正在更新账户配置信息...");
 								final File accountProp = new File(this.confdir + ACCOUNT_PROPERTIES_FILE);
 								final FileInputStream accountPropIn = new FileInputStream(accountProp);
-								FileLock lock = accountPropIn.getChannel().lock(0L, Long.MAX_VALUE, true);
+								accountPropIn.getChannel().lock(0L, Long.MAX_VALUE, true);
 								this.accountp.load(accountPropIn);
-								lock.release();
 								Printer.instance.print("账户配置更新完成，已加载最新配置。");
 							}
 						}
@@ -1120,9 +1119,8 @@ public class ConfigureReader {
 			accountp.removeProperty(config);
 		}
 		try (FileOutputStream accountSettingOut = new FileOutputStream(this.confdir + ACCOUNT_PROPERTIES_FILE)) {
-			FileLock lock = accountSettingOut.getChannel().lock();
+			accountSettingOut.getChannel().lock();
 			accountp.store(accountSettingOut, null);
-			lock.release();
 			return true;
 		} catch (Exception e) {
 			Printer.instance.print("错误：更新账户配置文件时出现错误，请立即检查账户配置文件。");
@@ -1170,5 +1168,30 @@ public class ConfigureReader {
 	 */
 	public boolean signUp() {
 		return allowSignUp;
+	}
+	
+	/**
+	 * 
+	 * <h2>将指定账户的密码修改为新密码</h2>
+	 * <p>该操作将修改已存在的账户的密码并写入账户配置文件中生效，该操作仅进行写入而不对新密码进行格式检查。</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @param account java.lang.String 账户ID，该账户必须已经存在，否则会导致修改失败
+	 * @param newPassword java.lang.String 新密码，必须不为null，否则会导致修改失败
+	 * @return boolean 操作是否成功，成功则返回true
+	 */
+	public boolean changePassword(String account,String newPassword) throws Exception{
+		if(account != null && newPassword != null) {
+			if(accountp.getProperty(account + ".pwd") != null) {
+				accountp.setProperty(account + ".pwd", newPassword);
+				try (FileOutputStream accountSettingOut = new FileOutputStream(this.confdir + ACCOUNT_PROPERTIES_FILE)) {
+					accountSettingOut.getChannel().lock();
+					accountp.store(accountSettingOut, null);
+					return true;
+				} catch (Exception e) {
+					throw e;
+				}
+			}
+		}
+		return false;
 	}
 }

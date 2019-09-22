@@ -16,6 +16,7 @@ var constraintLevel;// 当前文件夹限制等级
 var account;// 用户账户
 var isUpLoading=false;// 是否正在执行上传操作
 var isImporting=false;// 是否正在执行上传文件夹操作
+var isChangingPassword=false;// 是否正在执行修改密码操作
 var importFolderName;// 上传文件夹时保存文件夹名称
 var xhr;// 文件或文件夹上传请求对象
 var viewerPageSize = 15; // 显示图片页的最大长度，注意最好是奇数
@@ -332,6 +333,22 @@ $(function() {
 	$('#downloadURLCollapse').on('shown.bs.collapse', function () {
 		getDownloadURL();
 	});
+	
+	// 开启修改密码模态框时初始化状态
+	$('#changePasswordModal').on('show.bs.modal', function(e) {
+		if(!isChangingPassword){
+			$("#changepassword_oldpwd,#changepassword_newpwd,#changepassword_reqnewpwd,#changePasswordButton,#changepassword_vercode").attr('disabled', false);
+			$("#changepassword_oldepwdbox,#changepassword_newpwdbox,#changepassword_reqnewpwdbox").removeClass("has-error");
+			$("#changepassword_oldpwd,#changepassword_newpwd,#changepassword_reqnewpwd").val("");
+			$("#changepasswordalertbox,#changepassword_vccodebox").hide();
+		}
+	});
+	// 并自动聚焦旧密码输入框
+	$('#changePasswordModal').on('shown.bs.modal', function(e) {
+		if(!isChangingPassword){
+			$("#changepassword_oldpwd").focus();
+		}
+	});
 });
 
 // 根据屏幕大小增删表格显示内容
@@ -567,7 +584,7 @@ function sendLoginInfo(encrypted) {
 			case "error":
 				$("#alertbox").addClass("alert");
 				$("#alertbox").addClass("alert-danger");
-				$("#alertbox").text("提示：登录失败，登录请求无法通过效验（可能是请求耗时过长导致的）");
+				$("#alertbox").text("提示：登录失败，登录请求无法通过加密效验（可能是请求耗时过长导致的）");
 				break;
 			default:
 				$("#alertbox").addClass("alert");
@@ -645,7 +662,7 @@ function showAccountView(folderView) {
 	$("#tb,#tb2").html("");
 	account=folderView.account;
 	if (folderView.account != null) {
-		// 说明已经等陆，显示注销按钮
+		// 说明已经登录，显示注销按钮
 		$("#tb")
 				.append(
 						"<button class='btn btn-link rightbtn' data-toggle='modal' data-target='#logoutModal'>注销 ["
@@ -656,6 +673,14 @@ function showAccountView(folderView) {
 						"<button class='btn btn-link' data-toggle='modal' data-target='#logoutModal'>注销 ["
 								+ folderView.account
 								+ "] <span class='glyphicon glyphicon-off' aria-hidden='true'></span></button>");
+		if(folderView.allowChangePassword == 'true'){
+			$("#tb")
+			.append(
+					" <button class='btn btn-link rightbtn' data-toggle='modal' data-target='#changePasswordModal'>修改密码 <span class='glyphicon glyphicon-edit' aria-hidden='true'></span></button>");
+			$("#tb2")
+			.append(
+					" <button class='btn btn-link' data-toggle='modal' data-target='#changePasswordModal'>修改密码 <span class='glyphicon glyphicon-edit' aria-hidden='true'></span></button>");
+		}
 	} else {
 		// 说明用户未登录，显示登录按钮
 		$("#tb")
@@ -2796,4 +2821,126 @@ function abortImport(){
 function changeImportFolderType(type){
 	$("#importfoldertype").text(folderTypes[type]);
 	$("#folderpath").attr("folderConstraintLevel",type+"");
+}
+
+// 修改密码
+function doChangePassword(){
+	// 还原提示状态
+	$("#changepassword_oldepwdbox,#changepassword_newpwdbox,#changepassword_reqnewpwdbox").removeClass("has-error");
+	$("#changepasswordalertbox").hide();
+	var change_oldPassword = $("#changepassword_oldpwd").val();
+	var change_newPassword = $("#changepassword_newpwd").val();
+	var change_reqNewPassword = $("#changepassword_reqnewpwd").val();
+	// 输入非空检查
+	if (change_oldPassword.length == 0) {
+		$("#changepassword_oldepwdbox").addClass("has-error");
+		$("#changepassword_oldpwd").focus();
+		return;
+	}
+	if (change_newPassword.length == 0) {
+		$("#changepassword_newpwdbox").addClass("has-error");
+		$("#changepassword_newpwd").focus();
+		return;
+	}
+	if (change_reqNewPassword.length == 0) {
+		$("#changepassword_reqnewpwdbox").addClass("has-error");
+		$("#changepassword_reqnewpwd").focus();
+		return;
+	}
+	// 确认密码检查
+	isChangingPassword=true;
+	$("#changepassword_oldpwd,#changepassword_newpwd,#changepassword_reqnewpwd,#changePasswordButton,#changepassword_vercode").attr('disabled', true);
+	if (change_newPassword+"" != change_reqNewPassword+"") {
+		showChangePasswordAlert("提示：两次输入的新密码不一致，请检查确认");
+		$("#changepassword_newpwdbox").addClass("has-error");
+		$("#changepassword_reqnewpwdbox").addClass("has-error");
+		return;
+	}
+	// 以加密方式发送修改密码请求
+	$.ajax({
+		url : 'homeController/getPublicKey.ajax',
+		type : 'POST',
+		data : {},
+		dataType : 'text',
+		success : function(result) {
+			// 获取公钥
+			var changepwd_publicKeyInfo=eval("("+result+")");
+			// 生成JSON对象格式的信息
+			var changePasswordInfo = '{oldPwd:"' + change_oldPassword + '",newPwd:"'
+			+ change_newPassword + '",time:"' + changepwd_publicKeyInfo.time + '"}';
+			var encrypt = new JSEncrypt();// 加密插件对象
+			encrypt.setPublicKey(changepwd_publicKeyInfo.publicKey);// 设置公钥
+			var encrypted = encrypt.encrypt(changePasswordInfo);// 进行加密
+			sendChangePasswordInfo(encrypted);
+		},
+		error : function() {
+			showChangePasswordAlert("提示：密码修改失败，请检查网络链接或服务器运行状态");
+		}
+	});
+}
+
+// 将加密数据发送至服务器并显示操作结果
+function sendChangePasswordInfo(encrypted){
+	$.ajax({
+		type : "POST",
+		dataType : "text",
+		url : "homeController/doChangePassword.ajax",
+		data : {
+			encrypted : encrypted,
+			vercode : $("#changepassword_vercode").val()
+		},
+		success : function(result) {
+			$("#changepassword_vccodebox").hide();
+			isChangingPassword=false;
+			switch (result) {
+			case "success":
+				$('#changePasswordModal').modal('hide');
+				break;
+			case "mustlogin":
+				showChangePasswordAlert("提示：登录已失效或尚未登录账户，请刷新并登陆账户");
+				break;
+			case "illegal":
+				showChangePasswordAlert("提示：用户修改密码功能已被禁用，请求被拒绝");
+				break;
+			case "oldpwderror":
+				showChangePasswordAlert("提示：旧密码输入错误，请求被拒绝");
+				$("#changepassword_oldepwdbox").addClass("has-error");
+				break;
+			case "needsubmitvercode":
+				$("#changepassword_oldpwd,#changepassword_newpwd,#changepassword_reqnewpwd,#changePasswordButton").attr('disabled', false);
+				$("#changepassword_vccodebox").html("<label id='changepassword_vercodetitle' class='col-sm-5'><img id='changepassword_showvercode' class='vercodeimg' alt='点击获取验证码' src='homeController/getNewVerCode.do?s="+(new Date()).getTime()+"' onclick='changePasswordGetNewVerCode()'></label><div class='col-sm-7'><input type='text' class='form-control' id='changepassword_vercode' placeholder='验证码……'></div>");
+				$("#changepassword_vccodebox").show();
+				isChangingPassword=false;
+				break;
+			case "invalidnewpwd":
+				showChangePasswordAlert("提示：密码修改失败，新密码不合法。新密码的长度需为3-32个字符，且仅支持ISO-8859-1中的字符（推荐使用英文字母、英文符号及阿拉伯数字）。");
+				break;
+			case "error":
+				showChangePasswordAlert("提示：密码修改失败，修改请求无法通过加密效验（可能是请求耗时过长导致的）");
+				break;
+			case "cannotchangepwd":
+				showChangePasswordAlert("提示：密码修改失败，发生意外错误，请稍后重试或联系管理员");
+				break;
+			default:
+				showChangePasswordAlert("提示：密码修改失败，发生未知错误");
+				break;
+			}
+		},
+		error : function() {
+			showChangePasswordAlert("提示：密码修改失败，请检查网络链接或服务器运行状态");
+		}
+	});
+}
+
+// 显示修改密码错误提示
+function showChangePasswordAlert(txt) {
+	isChangingPassword=false;
+	$("#changepassword_oldpwd,#changepassword_newpwd,#changepassword_reqnewpwd,#changePasswordButton,#changepassword_vercode").attr('disabled', false);
+	$("#changepasswordalertbox").show();
+	$("#changepasswordalertbox").text(txt);
+}
+
+// （修改密码版本的）获取一个新的验证码
+function changePasswordGetNewVerCode(){
+	$("#changepassword_showvercode").attr("src","homeController/getNewVerCode.do?s="+(new Date()).getTime());
 }

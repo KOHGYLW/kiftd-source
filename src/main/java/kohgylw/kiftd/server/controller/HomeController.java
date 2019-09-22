@@ -63,6 +63,13 @@ public class HomeController {
 		as.getNewLoginVerCode(request, response, session);
 	}
 
+	// 修改密码
+	@RequestMapping(value = { "/doChangePassword.ajax" }, produces = { CHARSET_BY_AJAX })
+	@ResponseBody
+	public String doChangePassword(final HttpServletRequest request) {
+		return as.changePassword(request);
+	}
+
 	@RequestMapping(value = { "/getFolderView.ajax" }, produces = { CHARSET_BY_AJAX })
 	@ResponseBody
 	public String getFolderView(final String fid, final HttpSession session, final HttpServletRequest request) {

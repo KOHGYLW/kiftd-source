@@ -12,6 +12,7 @@ public class FolderView{
     private String account;
     private List<String> authList;
     private String publishTime;
+    private String allowChangePassword;
     
     public Folder getFolder() {
         return this.folder;
@@ -68,4 +69,12 @@ public class FolderView{
     public void setPublishTime(final String publishTime) {
         this.publishTime = publishTime;
     }
+
+	public String getAllowChangePassword() {
+		return allowChangePassword;
+	}
+
+	public void setAllowChangePassword(String allowChangePassword) {
+		this.allowChangePassword = allowChangePassword;
+	}
 }

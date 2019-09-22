@@ -54,6 +54,11 @@ public class FolderViewServiceImpl implements FolderViewService {
 		if (account != null) {
 			fv.setAccount(account);
 		}
+		if(ConfigureReader.instance().isAllowChangePassword()) {
+			fv.setAllowChangePassword("true");
+		}else {
+			fv.setAllowChangePassword("false");
+		}
 		final List<String> authList = new ArrayList<String>();
 		if (cr.authorized(account, AccountAuth.UPLOAD_FILES, fu.getAllFoldersId(fid))) {
 			authList.add("U");

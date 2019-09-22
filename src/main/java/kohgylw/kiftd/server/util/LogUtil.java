@@ -228,15 +228,13 @@ public class LogUtil {
 
 	/**
 	 * 
-	 * <h2>简述</h2>
+	 * <h2>记录使用链接下载文件的操作日志</h2>
 	 * <p>
-	 * 详细描述
+	 * 写入一个下载文件日志，该操作由使用外部链接触发。
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param xxx
-	 *            参数描述
-	 * @return xxx
+	 * @param f kohgylw.kiftd.server.model.Node 下载目标
 	 */
 	public void writeDownloadFileByKeyEvent(Node f) {
 		if (ConfigureReader.instance().inspectLogLevel(LogLevel.Event)) {
@@ -442,7 +440,26 @@ public class LogUtil {
 			});
 			t.start();
 		}
-
+	}
+	
+	/**
+	 * 以格式化记录账户修改密码日志
+	 * <p>
+	 * 写入修改密码的信息
+	 * </p>
+	 */
+	public void writeChangePasswordEvent(String account, String newPassword) {
+		if (ConfigureReader.instance().inspectLogLevel(LogLevel.Event)) {
+			if (account == null || account.length() == 0) {
+				account = "Anonymous";
+			}
+			String a = account;
+			Thread t = new Thread(() -> {
+				String content = ">ACCOUNT [" + a + "]\r\n>OPERATE [Change Password]\r\n>NEW PASSWORD [" + newPassword + "]";
+				writeToLog("Event", content);
+			});
+			t.start();
+		}
 	}
 
 }
