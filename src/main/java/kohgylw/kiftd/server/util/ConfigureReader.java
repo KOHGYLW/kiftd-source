@@ -88,6 +88,7 @@ public class ConfigureReader {
 	private String httpsKeyType;
 	private String httpsKeyPass;
 	private int httpsPort;
+	private Set<String> bannedIP;
 
 	private ConfigureReader() {
 		this.propertiesStatus = -1;
@@ -764,6 +765,12 @@ public class ConfigureReader {
 			}
 			openHttps = true;
 		}
+		// 设置禁用IP集合
+		String bannedIPSetting = serverp.getProperty("bannedIP");
+		if(bannedIPSetting != null && bannedIPSetting.length() > 0) {
+			bannedIP = new TreeSet<>();
+			bannedIP.addAll(Arrays.asList(bannedIPSetting.split(";")));
+		}
 		Printer.instance.print("检查完毕。");
 		return 0;
 	}
@@ -1193,5 +1200,28 @@ public class ConfigureReader {
 			}
 		}
 		return false;
+	}
+	
+	/**
+	 * 
+	 * <h2>判断IP地址是否被禁用</h2>
+	 * <p>判断传入的IP是否已被禁用，若被禁用则返回true。</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @param ipAddr java.lang.String 要判断的IP地址
+	 * @return boolean 该地址是否被禁用，被禁用则返回true
+	 */
+	public boolean isBannedIP(String ipAddr) {
+		return bannedIP == null ? false : bannedIP.contains(ipAddr);
+	}
+	
+	/**
+	 * 
+	 * <h2>判断是否存在被禁用的IP</h2>
+	 * <p>该方法用于判断是否存在禁用IP设置，若不存在则无需进行IP禁用过滤。</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @return boolean 存在则返回true，否则返回false
+	 */
+	public boolean hasBannedIP() {
+		return bannedIP != null;
 	}
 }

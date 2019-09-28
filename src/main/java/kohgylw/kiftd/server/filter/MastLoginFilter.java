@@ -10,7 +10,7 @@ import org.springframework.core.annotation.Order;
 import java.io.*;
 
 @WebFilter
-@Order(1)
+@Order(2)
 public class MastLoginFilter implements Filter
 {
     public void init(final FilterConfig filterConfig) throws ServletException {

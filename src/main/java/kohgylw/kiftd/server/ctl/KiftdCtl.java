@@ -49,7 +49,7 @@ public class KiftdCtl {
 		Printer.instance.print("正在初始化服务器设置...");
 		final String[] args = new String[0];
 		if (!KiftdCtl.run) {
-			ConfigureReader.instance().reTestServerPropertiesAndEffect();//启动服务器前重新检查各项设置并加载
+			ConfigureReader.instance().reTestServerPropertiesAndEffect();// 启动服务器前重新检查各项设置并加载
 			if (ConfigureReader.instance().getPropertiesStatus() == 0) {
 				try {
 					Printer.instance.print("正在开启服务器引擎...");
@@ -151,7 +151,8 @@ public class KiftdCtl {
 		}
 		// 设置错误处理页面
 		tomcat.addErrorPages(new ErrorPage[] { new ErrorPage(HttpStatus.NOT_FOUND, "/errorController/pageNotFound.do"),
-				new ErrorPage(HttpStatus.INTERNAL_SERVER_ERROR, "/errorController/pageNotFound.do") });
+				new ErrorPage(HttpStatus.INTERNAL_SERVER_ERROR, "/errorController/pageNotFound.do"),
+				new ErrorPage(HttpStatus.FORBIDDEN, "/prv/forbidden.html") });
 		return tomcat;
 	}
 

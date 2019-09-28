@@ -27,7 +27,7 @@ import java.io.*;
  * @version 1.0
  */
 @WebFilter({ "/fileblocks/*" })
-@Order(2)
+@Order(3)
 public class VCFilter implements Filter {
 
 	private static FolderUtil fu;
