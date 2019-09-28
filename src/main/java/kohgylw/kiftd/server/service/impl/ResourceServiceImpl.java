@@ -229,6 +229,7 @@ public class ResourceServiceImpl implements ResourceService {
 							// 执行转换并写出输出流
 							try {
 								d2pu.convertPdf(new FileInputStream(file), response.getOutputStream());
+								lu.writeDownloadFileEvent(request, n);
 								return;
 							} catch (IOException e) {
 							} catch (Exception e) {
@@ -270,6 +271,7 @@ public class ResourceServiceImpl implements ResourceService {
 							// 执行转换并写出输出流
 							try {
 								t2pu.convertPdf(file, response.getOutputStream());
+								lu.writeDownloadFileEvent(request, n);
 								return;
 							} catch (Exception e) {
 								Printer.instance.print(e.getMessage());
@@ -327,6 +329,7 @@ public class ResourceServiceImpl implements ResourceService {
 							try {
 								p2pu.convertPdf(new FileInputStream(file), response.getOutputStream(),
 										".ppt".equals(suffix) ? PowerPointType.PPT : PowerPointType.PPTX);
+								lu.writeDownloadFileEvent(request, n);
 								return;
 							} catch (IOException e) {
 							} catch (Exception e) {

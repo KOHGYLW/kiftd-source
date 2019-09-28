@@ -200,7 +200,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 									f.setFileCreator("\u533f\u540d\u7528\u6237");
 								}
 								if (fm.update(f) > 0) {
-									this.lu.writeUploadFileEvent(f, account);
+									this.lu.writeUploadFileEvent(request, f, account);
 									return UPLOADSUCCESS;
 								} else {
 									return UPLOADERROR;
@@ -251,7 +251,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 					if (hasRepeatNode(f2)) {
 						return UPLOADERROR;
 					} else {
-						this.lu.writeUploadFileEvent(f2, account);
+						this.lu.writeUploadFileEvent(request, f2, account);
 						return UPLOADSUCCESS;
 					}
 				}
@@ -435,8 +435,8 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 					this.lu.writeDeleteFolderEvent(request, folder, l);
 				}
 			}
-			if(fidList.size() > 0) {
-				CleanInvalidAddedAuthListener.needCheck=true;
+			if (fidList.size() > 0) {
+				CleanInvalidAddedAuthListener.needCheck = true;
 			}
 			return "deleteFileSuccess";
 		} catch (Exception e) {
@@ -714,8 +714,8 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 					}
 				}
 			}
-			if(fidList.size() > 0) {
-				CleanInvalidAddedAuthListener.needCheck=true;
+			if (fidList.size() > 0) {
+				CleanInvalidAddedAuthListener.needCheck = true;
 			}
 			return "moveFilesSuccess";
 		} catch (Exception e) {
@@ -857,8 +857,8 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 					.filter((n) -> n.getFolderName().equals(
 							new String(folderName.getBytes(Charset.forName("UTF-8")), Charset.forName("UTF-8"))))
 					.findAny().get();
-			if (ConfigureReader.instance().accessFolder(testFolder, account)
-					&& ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER,fu.getAllFoldersId(folderId))) {
+			if (ConfigureReader.instance().accessFolder(testFolder, account) && ConfigureReader.instance()
+					.authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER, fu.getAllFoldersId(folderId))) {
 				cifr.setResult("repeatFolder_coverOrBoth");
 			} else {
 				cifr.setResult("repeatFolder_Both");
@@ -889,8 +889,9 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 			return UPLOADERROR;
 		}
 		// 检查上传权限
-		if (!ConfigureReader.instance().authorized(account, AccountAuth.UPLOAD_FILES,fu.getAllFoldersId(folderId))
-				|| !ConfigureReader.instance().authorized(account, AccountAuth.CREATE_NEW_FOLDER,fu.getAllFoldersId(folderId))
+		if (!ConfigureReader.instance().authorized(account, AccountAuth.UPLOAD_FILES, fu.getAllFoldersId(folderId))
+				|| !ConfigureReader.instance().authorized(account, AccountAuth.CREATE_NEW_FOLDER,
+						fu.getAllFoldersId(folderId))
 				|| !ConfigureReader.instance().accessFolder(folder, account)) {
 			return UPLOADERROR;
 		}
@@ -982,7 +983,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 					if (hasRepeatNode(f2)) {
 						return UPLOADERROR;
 					} else {
-						this.lu.writeUploadFileEvent(f2, account);
+						this.lu.writeUploadFileEvent(request,f2, account);
 						return UPLOADSUCCESS;
 					}
 				}

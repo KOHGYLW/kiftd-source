@@ -14,6 +14,13 @@ import kohgylw.kiftd.server.model.*;
 
 import java.io.*;
 
+/**
+ * 
+ * <h2>日志生成工具</h2>
+ * <p>该工具用于生成日志文件并在其中添加标准化日志。</p>
+ * @author 青阳龙野(kohgylw)
+ * @version 1.0
+ */
 @Component
 public class LogUtil {
 
@@ -23,6 +30,8 @@ public class LogUtil {
 	private FolderMapper fm;
 	@Resource
 	private NodeMapper fim;
+	@Resource
+	private IpAddrGetter idg;
 
 	private Executor writerThread;
 
@@ -72,13 +81,14 @@ public class LogUtil {
 				account = "Anonymous";
 			}
 			String a = account;// 方便下方使用终态操作
+			String ip =  idg.getIpAddr(request);
 			Thread t = new Thread(() -> {
 				List<Folder> l = fu.getParentList(f.getFolderId());
 				String pl = new String();
 				for (Folder i : l) {
 					pl = pl + i.getFolderName() + "/";
 				}
-				String content = ">ACCOUNT [" + a + "]\r\n>OPERATE [Create new folder]\r\n>PATH [" + pl + "]\r\n>NAME ["
+				String content = ">IP [" + ip + "]\r\n>ACCOUNT [" + a + "]\r\n>OPERATE [Create new folder]\r\n>PATH [" + pl + "]\r\n>NAME ["
 						+ f.getFolderName() + "]，CONSTRAINT [" + f.getFolderConstraint() + "]";
 				writeToLog("Event", content);
 			});
@@ -99,13 +109,14 @@ public class LogUtil {
 				account = "Anonymous";
 			}
 			String a = account;
+			String ip =  idg.getIpAddr(request);
 			Thread t = new Thread(() -> {
 				List<Folder> l = fu.getParentList(f.getFolderId());
 				String pl = new String();
 				for (Folder i : l) {
 					pl = pl + i.getFolderName() + "/";
 				}
-				String content = ">ACCOUNT [" + a + "]\r\n>OPERATE [Edit folder]\r\n>PATH [" + pl + "]\r\n>NAME ["
+				String content = ">IP [" + ip + "]\r\n>ACCOUNT [" + a + "]\r\n>OPERATE [Edit folder]\r\n>PATH [" + pl + "]\r\n>NAME ["
 						+ f.getFolderName() + "]->[" + newName + "]，CONSTRAINT [" + f.getFolderConstraint() + "]->["
 						+ newConstraint + "]";
 				writeToLog("Event", content);
@@ -127,12 +138,13 @@ public class LogUtil {
 				account = "Anonymous";
 			}
 			String a = account;
+			String ip =  idg.getIpAddr(request);
 			Thread t = new Thread(() -> {
 				String pl = new String();
 				for (Folder i : l) {
 					pl = pl + i.getFolderName() + "/";
 				}
-				String content = ">ACCOUNT [" + a + "]\r\n>OPERATE [Delete folder]\r\n>PATH [" + pl + "]\r\n>NAME ["
+				String content = ">IP [" + ip + "]\r\n>ACCOUNT [" + a + "]\r\n>OPERATE [Delete folder]\r\n>PATH [" + pl + "]\r\n>NAME ["
 						+ f.getFolderName() + "]";
 				writeToLog("Event", content);
 			});
@@ -153,6 +165,7 @@ public class LogUtil {
 				account = "Anonymous";
 			}
 			String a = account;
+			String ip =  idg.getIpAddr(request);
 			Thread t = new Thread(() -> {
 				Folder folder = fm.queryById(f.getFileParentFolder());
 				List<Folder> l = fu.getParentList(folder.getFolderId());
@@ -160,7 +173,7 @@ public class LogUtil {
 				for (Folder i : l) {
 					pl = pl + i.getFolderName() + "/";
 				}
-				String content = ">ACCOUNT [" + a + "]\r\n>OPERATE [Delete file]\r\n>PATH [" + pl
+				String content = ">IP [" + ip + "]\r\n>ACCOUNT [" + a + "]\r\n>OPERATE [Delete file]\r\n>PATH [" + pl
 						+ folder.getFolderName() + "]\r\n>NAME [" + f.getFileName() + "]";
 				writeToLog("Event", content);
 			});
@@ -174,15 +187,16 @@ public class LogUtil {
 	 * 写入上传文件信息
 	 * </p>
 	 */
-	public void writeUploadFileEvent(Node f, String account) {
+	public void writeUploadFileEvent(HttpServletRequest request, Node f, String account) {
 		if (ConfigureReader.instance().inspectLogLevel(LogLevel.Event)) {
 			if (account == null || account.length() == 0) {
 				account = "Anonymous";
 			}
 			String a = account;
+			String ip =  idg.getIpAddr(request);
 			Thread t = new Thread(() -> {
 				Folder folder = fm.queryById(f.getFileParentFolder());
-				if(folder == null) {
+				if (folder == null) {
 					return;
 				}
 				List<Folder> l = fu.getParentList(folder.getFolderId());
@@ -190,8 +204,9 @@ public class LogUtil {
 				for (Folder i : l) {
 					pl = pl + i.getFolderName() + "/";
 				}
-				String content = ">ACCOUNT [" + a + "]\r\n>OPERATE [Upload file]\r\n>PATH [" + pl
-						+ folder.getFolderName() + "]\r\n>NAME [" + f.getFileName() + "]";
+				String content = ">IP [" + ip + "]\r\n>ACCOUNT [" + a
+						+ "]\r\n>OPERATE [Upload file]\r\n>PATH [" + pl + folder.getFolderName() + "]\r\n>NAME ["
+						+ f.getFileName() + "]";
 				writeToLog("Event", content);
 			});
 			t.start();
@@ -211,6 +226,7 @@ public class LogUtil {
 				account = "Anonymous";
 			}
 			String a = account;
+			String ip =  idg.getIpAddr(request);
 			Thread t = new Thread(() -> {
 				Folder folder = fm.queryById(f.getFileParentFolder());
 				List<Folder> l = fu.getParentList(folder.getFolderId());
@@ -218,8 +234,9 @@ public class LogUtil {
 				for (Folder i : l) {
 					pl = pl + i.getFolderName() + "/";
 				}
-				String content = ">ACCOUNT [" + a + "]\r\n>OPERATE [Download file]\r\n>PATH [" + pl
-						+ folder.getFolderName() + "]\r\n>NAME [" + f.getFileName() + "]";
+				String content = ">IP [" + ip + "]\r\n>ACCOUNT [" + a
+						+ "]\r\n>OPERATE [Download file]\r\n>PATH [" + pl + folder.getFolderName() + "]\r\n>NAME ["
+						+ f.getFileName() + "]";
 				writeToLog("Event", content);
 			});
 			t.start();
@@ -234,7 +251,8 @@ public class LogUtil {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param f kohgylw.kiftd.server.model.Node 下载目标
+	 * @param f
+	 *            kohgylw.kiftd.server.model.Node 下载目标
 	 */
 	public void writeDownloadFileByKeyEvent(Node f) {
 		if (ConfigureReader.instance().inspectLogLevel(LogLevel.Event)) {
@@ -269,6 +287,7 @@ public class LogUtil {
 				account = "Anonymous";
 			}
 			String a = account;
+			String ip =  idg.getIpAddr(request);
 			Thread t = new Thread(() -> {
 				Folder folder = fm.queryById(f.getFileParentFolder());
 				List<Folder> l = fu.getParentList(folder.getFolderId());
@@ -276,8 +295,9 @@ public class LogUtil {
 				for (Folder i : l) {
 					pl = pl + i.getFolderName() + "/";
 				}
-				String content = ">ACCOUNT [" + a + "]\r\n>OPERATE [Share Download file URL]\r\n>PATH [" + pl
-						+ folder.getFolderName() + "]\r\n>NAME [" + f.getFileName() + "]";
+				String content = ">IP [" + ip + "]\r\n>ACCOUNT [" + a
+						+ "]\r\n>OPERATE [Share Download file URL]\r\n>PATH [" + pl + folder.getFolderName()
+						+ "]\r\n>NAME [" + f.getFileName() + "]";
 				writeToLog("Event", content);
 			});
 			t.start();
@@ -297,6 +317,7 @@ public class LogUtil {
 				account = "Anonymous";
 			}
 			String a = account;
+			String ip =  idg.getIpAddr(request);
 			Thread t = new Thread(() -> {
 				Folder folder = fm.queryById(f.getFileParentFolder());
 				List<Folder> l = fu.getParentList(folder.getFolderId());
@@ -304,8 +325,9 @@ public class LogUtil {
 				for (Folder i : l) {
 					pl = pl + i.getFolderName() + "/";
 				}
-				String content = ">ACCOUNT [" + a + "]\r\n>OPERATE [Rename file]\r\n>PATH [" + pl
-						+ folder.getFolderName() + "]\r\n>NAME [" + f.getFileName() + "]->[" + newName + "]";
+				String content = ">IP [" + ip + "]\r\n>ACCOUNT [" + a
+						+ "]\r\n>OPERATE [Rename file]\r\n>PATH [" + pl + folder.getFolderName() + "]\r\n>NAME ["
+						+ f.getFileName() + "]->[" + newName + "]";
 				writeToLog("Event", content);
 			});
 			t.start();
@@ -334,6 +356,7 @@ public class LogUtil {
 				account = "Anonymous";
 			}
 			String a = account;
+			String ip =  idg.getIpAddr(request);
 			Thread t = new Thread(() -> {
 				Folder folder = fm.queryById(f.getFileParentFolder());
 				List<Folder> l = fu.getParentList(folder.getFolderId());
@@ -341,8 +364,9 @@ public class LogUtil {
 				for (Folder i : l) {
 					pl = pl + i.getFolderName() + "/";
 				}
-				String content = ">ACCOUNT [" + a + "]\r\n>OPERATE [Move file]\r\n>NEW PATH [" + pl
-						+ folder.getFolderName() + "/" + f.getFileName() + "]";
+				String content = ">IP [" + ip + "]\r\n>ACCOUNT [" + a
+						+ "]\r\n>OPERATE [Move file]\r\n>NEW PATH [" + pl + folder.getFolderName() + "/"
+						+ f.getFileName() + "]";
 				writeToLog("Event", content);
 			});
 			t.start();
@@ -356,6 +380,7 @@ public class LogUtil {
 				account = "Anonymous";
 			}
 			String a = account;
+			String ip =  idg.getIpAddr(request);
 			Thread t = new Thread(() -> {
 				Folder folder = fm.queryById(f.getFolderParent());
 				List<Folder> l = fu.getParentList(folder.getFolderId());
@@ -363,8 +388,9 @@ public class LogUtil {
 				for (Folder i : l) {
 					pl = pl + i.getFolderName() + "/";
 				}
-				String content = ">ACCOUNT [" + a + "]\r\n>OPERATE [Move Folder]\r\n>NEW PATH [" + pl
-						+ folder.getFolderName() + "/" + f.getFolderName() + "]";
+				String content = ">IP [" + ip + "]\r\n>ACCOUNT [" + a
+						+ "]\r\n>OPERATE [Move Folder]\r\n>NEW PATH [" + pl + folder.getFolderName() + "/"
+						+ f.getFolderName() + "]";
 				writeToLog("Event", content);
 			});
 			t.start();
@@ -372,34 +398,36 @@ public class LogUtil {
 	}
 
 	private void writeToLog(String type, String content) {
-		writerThread.execute(()->{
+		writerThread.execute(() -> {
 			String t = ServerTimeUtil.accurateToLogName();
 			File f = new File(logs, t + ".klog");
 			FileWriter fw = null;
-			if (f.exists()) {
-				try {
+			String finalContent = "\r\n\r\nTIME:\r\n" + ServerTimeUtil.accurateToSecond() + "\r\nTYPE:\r\n" + type
+					+ "\r\nCONTENT:\r\n" + content;
+			try {
+				if (f.exists()) {
 					fw = new FileWriter(f, true);
-					fw.write("\r\n\r\nTIME:\r\n" + ServerTimeUtil.accurateToSecond() + "\r\nTYPE:\r\n" + type
-							+ "\r\nCONTENT:\r\n" + content);
-					fw.close();
-				} catch (Exception e1) {
-					if (Printer.instance != null) {
-						Printer.instance.print("KohgylwIFT:[Log]Cannt write to file,message:" + e1.getMessage());
-					} else {
-						System.out.println("KohgylwIFT:[Log]Cannt write to file,message:" + e1.getMessage());
-					}
-				}
-			} else {
-				try {
+					fw.write(finalContent);
+				} else {
 					fw = new FileWriter(f, false);
-					fw.write("TIME:\r\n" + ServerTimeUtil.accurateToSecond() + "\r\nTYPE:\r\n" + type + "\r\nCONTENT:\r\n"
-							+ content);
-					fw.close();
-				} catch (IOException e1) {
-					if (Printer.instance != null) {
-						Printer.instance.print("KohgylwIFT:[Log]Cannt write to file,message:" + e1.getMessage());
-					} else {
-						System.out.println("KohgylwIFT:[Log]Cannt write to file,message:" + e1.getMessage());
+					fw.write(finalContent);
+				}
+			} catch (Exception e1) {
+				if (Printer.instance != null) {
+					Printer.instance.print("KohgylwIFT:[Log]Cannt write to file,message:" + e1.getMessage());
+				} else {
+					System.out.println("KohgylwIFT:[Log]Cannt write to file,message:" + e1.getMessage());
+				}
+			} finally {
+				if (fw != null) {
+					try {
+						fw.close();
+					} catch (IOException e) {
+						if (Printer.instance != null) {
+							Printer.instance.print("KohgylwIFT:[Log]Cannt write to file,message:" + e.getMessage());
+						} else {
+							System.out.println("KohgylwIFT:[Log]Cannt write to file,message:" + e.getMessage());
+						}
 					}
 				}
 			}
@@ -419,9 +447,10 @@ public class LogUtil {
 				account = "Anonymous";
 			}
 			String a = account;
+			String ip =  idg.getIpAddr(request);
 			Thread t = new Thread(() -> {
-				StringBuffer content = new StringBuffer(
-						">ACCOUNT [" + a + "]\r\n>OPERATE [Download checked file]\r\n----------------\r\n");
+				StringBuffer content = new StringBuffer(">IP [" + ip + "]\r\n>ACCOUNT [" + a
+						+ "]\r\n>OPERATE [Download checked file]\r\n----------------\r\n");
 				for (String fid : idList) {
 					Node f = fim.queryById(fid);
 					if (f != null) {
@@ -441,21 +470,23 @@ public class LogUtil {
 			t.start();
 		}
 	}
-	
+
 	/**
 	 * 以格式化记录账户修改密码日志
 	 * <p>
 	 * 写入修改密码的信息
 	 * </p>
 	 */
-	public void writeChangePasswordEvent(String account, String newPassword) {
+	public void writeChangePasswordEvent(HttpServletRequest request, String account, String newPassword) {
 		if (ConfigureReader.instance().inspectLogLevel(LogLevel.Event)) {
 			if (account == null || account.length() == 0) {
 				account = "Anonymous";
 			}
 			String a = account;
+			String ip =  idg.getIpAddr(request);
 			Thread t = new Thread(() -> {
-				String content = ">ACCOUNT [" + a + "]\r\n>OPERATE [Change Password]\r\n>NEW PASSWORD [" + newPassword + "]";
+				String content = ">IP [" + ip + "]\r\n>ACCOUNT [" + a
+						+ "]\r\n>OPERATE [Change Password]\r\n>NEW PASSWORD [" + newPassword + "]";
 				writeToLog("Event", content);
 			});
 			t.start();

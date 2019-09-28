@@ -33,6 +33,7 @@ public class VCFilter implements Filter {
 	private static FolderUtil fu;
 	private static NodeMapper nm;
 	private static FolderMapper fm;
+	private static LogUtil lu;
 
 	public void init(final FilterConfig filterConfig) throws ServletException {
 		ApplicationContext context = WebApplicationContextUtils
@@ -40,6 +41,7 @@ public class VCFilter implements Filter {
 		fu = context.getBean(FolderUtil.class);
 		nm = context.getBean(NodeMapper.class);
 		fm = context.getBean(FolderMapper.class);
+		lu = context.getBean(LogUtil.class);
 	}
 
 	public void doFilter(final ServletRequest request, final ServletResponse response, final FilterChain chain)
@@ -54,6 +56,7 @@ public class VCFilter implements Filter {
 					&& ConfigureReader.instance().accessFolder(fm.queryById(targetNode.getFileParentFolder()),
 							account)) {
 				response.setContentType("application/octet-stream");
+				lu.writeDownloadFileEvent(hsr, targetNode);// 直接访问文件块也算一种下载操作
 				chain.doFilter(request, response);
 			} else {
 				hsr.getRequestDispatcher("/errorController/pageNotFound.do").forward(request, response);
