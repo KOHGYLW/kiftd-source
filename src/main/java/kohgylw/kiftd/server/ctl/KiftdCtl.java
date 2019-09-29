@@ -150,8 +150,8 @@ public class KiftdCtl {
 			tomcat.setPort(ConfigureReader.instance().getPort());
 		}
 		// 设置错误处理页面
-		tomcat.addErrorPages(new ErrorPage[] { new ErrorPage(HttpStatus.NOT_FOUND, "/errorController/pageNotFound.do"),
-				new ErrorPage(HttpStatus.INTERNAL_SERVER_ERROR, "/errorController/pageNotFound.do"),
+		tomcat.addErrorPages(new ErrorPage[] { new ErrorPage(HttpStatus.NOT_FOUND, "/prv/error.html"),
+				new ErrorPage(HttpStatus.INTERNAL_SERVER_ERROR, "/prv/error.html"),
 				new ErrorPage(HttpStatus.FORBIDDEN, "/prv/forbidden.html") });
 		return tomcat;
 	}

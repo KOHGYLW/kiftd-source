@@ -12,50 +12,54 @@ import javax.servlet.annotation.WebFilter;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.springframework.context.ApplicationContext;
 import org.springframework.core.annotation.Order;
-import org.springframework.web.context.support.WebApplicationContextUtils;
 
 import kohgylw.kiftd.server.util.ConfigureReader;
-import kohgylw.kiftd.server.util.IpAddrGetter;
 
 /**
  * 
- * <h2>阻止特定IP访问过滤器</h2>
- * <p>该过滤器用于阻止特定IP进行访问，从而保护用户资源。</p>
+ * <h2>受保护URL禁止直接访问过滤器</h2>
+ * <p>该过滤器主要用于避免访问者直接访问某些资源，这些URL仅支持转发进入而不能直接访问。</p>
  * @author 青阳龙野(kohgylw)
  * @version 1.0
  */
-@WebFilter
-@Order(1)
-public class IPFilter implements Filter {
-
-	private IpAddrGetter idg;
+@WebFilter({ "/prv/*" })
+@Order(4)
+public class ProtectedURLFilter implements Filter{
 
 	@Override
 	public void init(FilterConfig filterConfig) throws ServletException {
-		ApplicationContext context = WebApplicationContextUtils
-				.getWebApplicationContext(filterConfig.getServletContext());
-		idg = context.getBean(IpAddrGetter.class);
+		
 	}
 
 	@Override
 	public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
 			throws IOException, ServletException {
-		if(ConfigureReader.instance().enableIPRule()) {
-			HttpServletRequest hsr = (HttpServletRequest) request;
-			if(ConfigureReader.instance().filterAccessIP(idg.getIpAddr(hsr))) {
-				chain.doFilter(request, response);
+		final HttpServletRequest hsq = (HttpServletRequest)request;
+        final HttpServletResponse hsr = (HttpServletResponse)response;
+        final String url = hsq.getServletPath();
+        switch (url) {
+		case "/prv/forbidden.html":
+		case "/prv/error.html":
+			hsr.sendRedirect("/home.html");
+			break;
+		case "/prv/login.html":
+			final String account = (String) hsq.getSession().getAttribute("ACCOUNT");
+			if(ConfigureReader.instance().foundAccount(account)) {
+				hsr.sendRedirect("/home.html");
 			}else {
-				((HttpServletResponse)response).sendError(HttpServletResponse.SC_FORBIDDEN);
+				chain.doFilter(request, response);
 			}
-		}else {
+			break;
+		default:
 			chain.doFilter(request, response);
+			break;
 		}
 	}
 
 	@Override
 	public void destroy() {
+		
 	}
 
 }

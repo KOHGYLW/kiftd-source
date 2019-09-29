@@ -59,7 +59,7 @@ public class VCFilter implements Filter {
 				lu.writeDownloadFileEvent(hsr, targetNode);// 直接访问文件块也算一种下载操作
 				chain.doFilter(request, response);
 			} else {
-				hsr.getRequestDispatcher("/errorController/pageNotFound.do").forward(request, response);
+				hsr.getRequestDispatcher("/prv/error.html").forward(request, response);
 			}
 		} catch (Exception e) {
 

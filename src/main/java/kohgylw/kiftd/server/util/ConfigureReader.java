@@ -88,7 +88,9 @@ public class ConfigureReader {
 	private String httpsKeyType;
 	private String httpsKeyPass;
 	private int httpsPort;
-	private Set<String> bannedIP;
+	private Set<String> ipRoster;// 需要检查的IP列表
+	private boolean ipAllowOrBanned;// IP规则为允许还是禁止，若为允许则是false，否则应为true
+	private boolean enableIPRule;// 是否启用IP规则检查
 
 	private ConfigureReader() {
 		this.propertiesStatus = -1;
@@ -106,6 +108,7 @@ public class ConfigureReader {
 		this.serverp = new KiftdProperties();
 		this.accountp = new KiftdProperties();
 		extendStores = new ArrayList<>();
+		ipRoster = new TreeSet<>();
 		final File serverProp = new File(this.confdir + SERVER_PROPERTIES_FILE);
 		if (!serverProp.isFile()) {
 			Printer.instance.print("服务器配置文件不存在，需要初始化服务器配置。");
@@ -122,6 +125,7 @@ public class ConfigureReader {
 			this.serverp.load(serverPropIn);
 			final FileInputStream accountPropIn = new FileInputStream(accountProp);
 			this.accountp.load(accountPropIn);
+			initIPRules();
 			Printer.instance.print("配置文件载入完毕。正在检查配置...");
 			this.propertiesStatus = this.testServerPropertiesAndEffect();
 			if (this.propertiesStatus == LEGAL_PROPERTIES) {
@@ -141,6 +145,9 @@ public class ConfigureReader {
 	}
 
 	public boolean foundAccount(final String account) {
+		if(account == null) {
+			return false;
+		}
 		final String accountPwd = this.accountp.getProperty(account + ".pwd");
 		return accountPwd != null && accountPwd.length() > 0;
 	}
@@ -765,12 +772,6 @@ public class ConfigureReader {
 			}
 			openHttps = true;
 		}
-		// 设置禁用IP集合
-		String bannedIPSetting = serverp.getProperty("bannedIP");
-		if(bannedIPSetting != null && bannedIPSetting.length() > 0) {
-			bannedIP = new TreeSet<>();
-			bannedIP.addAll(Arrays.asList(bannedIPSetting.split(";")));
-		}
 		Printer.instance.print("检查完毕。");
 		return 0;
 	}
@@ -970,6 +971,7 @@ public class ConfigureReader {
 								final FileInputStream accountPropIn = new FileInputStream(accountProp);
 								accountPropIn.getChannel().lock(0L, Long.MAX_VALUE, true);
 								this.accountp.load(accountPropIn);
+								initIPRules();
 								Printer.instance.print("账户配置更新完成，已加载最新配置。");
 							}
 						}
@@ -1176,21 +1178,27 @@ public class ConfigureReader {
 	public boolean signUp() {
 		return allowSignUp;
 	}
-	
+
 	/**
 	 * 
 	 * <h2>将指定账户的密码修改为新密码</h2>
-	 * <p>该操作将修改已存在的账户的密码并写入账户配置文件中生效，该操作仅进行写入而不对新密码进行格式检查。</p>
+	 * <p>
+	 * 该操作将修改已存在的账户的密码并写入账户配置文件中生效，该操作仅进行写入而不对新密码进行格式检查。
+	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param account java.lang.String 账户ID，该账户必须已经存在，否则会导致修改失败
-	 * @param newPassword java.lang.String 新密码，必须不为null，否则会导致修改失败
+	 * @param account
+	 *            java.lang.String 账户ID，该账户必须已经存在，否则会导致修改失败
+	 * @param newPassword
+	 *            java.lang.String 新密码，必须不为null，否则会导致修改失败
 	 * @return boolean 操作是否成功，成功则返回true
 	 */
-	public boolean changePassword(String account,String newPassword) throws Exception{
-		if(account != null && newPassword != null) {
-			if(accountp.getProperty(account + ".pwd") != null) {
+	public boolean changePassword(String account, String newPassword) throws Exception {
+		if (account != null && newPassword != null) {
+			if (accountp.getProperty(account + ".pwd") != null) {
 				accountp.setProperty(account + ".pwd", newPassword);
-				try (FileOutputStream accountSettingOut = new FileOutputStream(this.confdir + ACCOUNT_PROPERTIES_FILE)) {
+				try (FileOutputStream accountSettingOut = new FileOutputStream(
+						this.confdir + ACCOUNT_PROPERTIES_FILE)) {
 					accountSettingOut.getChannel().lock();
 					accountp.store(accountSettingOut, null);
 					return true;
@@ -1201,27 +1209,54 @@ public class ConfigureReader {
 		}
 		return false;
 	}
-	
+
 	/**
 	 * 
-	 * <h2>判断IP地址是否被禁用</h2>
-	 * <p>判断传入的IP是否已被禁用，若被禁用则返回true。</p>
+	 * <h2>判断IP地址是否符合访问规则</h2>
+	 * <p>
+	 * 判断传入的IP是否允许访问。
+	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param ipAddr java.lang.String 要判断的IP地址
+	 * @param ipAddr
+	 *            java.lang.String 要判断的IP地址
 	 * @return boolean 该地址是否被禁用，被禁用则返回true
 	 */
-	public boolean isBannedIP(String ipAddr) {
-		return bannedIP == null ? false : bannedIP.contains(ipAddr);
+	public boolean filterAccessIP(String ipAddr) {
+		return enableIPRule == true ? ipAllowOrBanned ^ ipRoster.contains(ipAddr) : false;
 	}
-	
+
 	/**
 	 * 
-	 * <h2>判断是否存在被禁用的IP</h2>
-	 * <p>该方法用于判断是否存在禁用IP设置，若不存在则无需进行IP禁用过滤。</p>
+	 * <h2>判断是否启用IP访问规则</h2>
+	 * <p>
+	 * 该方法用于判断是否启用IP访问规则，若未启用则无需进行IP过滤。
+	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @return boolean 存在则返回true，否则返回false
+	 * @return boolean 启用则返回true，否则返回false
 	 */
-	public boolean hasBannedIP() {
-		return bannedIP != null;
+	public boolean enableIPRule() {
+		return enableIPRule;
+	}
+
+	private void initIPRules() {
+		// 初始化IP访问规则
+		ipRoster.clear();
+		String ipRosterSetting = accountp.getProperty("IP.allow");
+		if (ipRosterSetting != null && ipRosterSetting.length() > 0) {
+			ipAllowOrBanned = false;
+			enableIPRule = true;
+			ipRoster.addAll(Arrays.asList(ipRosterSetting.split(";")));
+			return;
+		}
+		ipRosterSetting = accountp.getProperty("IP.banned");
+		if (ipRosterSetting != null && ipRosterSetting.length() > 0) {
+			ipAllowOrBanned = true;
+			enableIPRule = true;
+			ipRoster.addAll(Arrays.asList(ipRosterSetting.split(";")));
+			return;
+		}
+		enableIPRule = false;
 	}
 }
