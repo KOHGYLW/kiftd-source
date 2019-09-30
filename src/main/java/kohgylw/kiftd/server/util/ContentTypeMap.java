@@ -1,5 +1,7 @@
 package kohgylw.kiftd.server.util;
 
+import org.springframework.stereotype.Component;
+
 /**
  * 
  * <h2>后缀名与ContentType对照表</h2>
@@ -7,6 +9,7 @@ package kohgylw.kiftd.server.util;
  * @author 青阳龙野(kohgylw)
  * @version 1.0
  */
+@Component
 public class ContentTypeMap {
 	
 	/**

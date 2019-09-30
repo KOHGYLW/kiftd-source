@@ -54,9 +54,9 @@ public class FolderViewServiceImpl implements FolderViewService {
 		if (account != null) {
 			fv.setAccount(account);
 		}
-		if(ConfigureReader.instance().isAllowChangePassword()) {
+		if (ConfigureReader.instance().isAllowChangePassword()) {
 			fv.setAllowChangePassword("true");
-		}else {
+		} else {
 			fv.setAllowChangePassword("false");
 		}
 		final List<String> authList = new ArrayList<String>();
@@ -74,6 +74,11 @@ public class FolderViewServiceImpl implements FolderViewService {
 		}
 		if (cr.authorized(account, AccountAuth.DOWNLOAD_FILES, fu.getAllFoldersId(fid))) {
 			authList.add("L");
+			if (cr.isOpenFileChain()) {
+				fv.setShowFileChain("true");// 显示永久资源链接
+			}else {
+				fv.setShowFileChain("false");
+			}
 		}
 		if (cr.authorized(account, AccountAuth.MOVE_FILES, fu.getAllFoldersId(fid))) {
 			authList.add("M");
@@ -125,11 +130,21 @@ public class FolderViewServiceImpl implements FolderViewService {
 		if (account != null) {
 			sv.setAccount(account);
 		}
+		if (ConfigureReader.instance().isAllowChangePassword()) {
+			sv.setAllowChangePassword("true");
+		} else {
+			sv.setAllowChangePassword("false");
+		}
 		// 设置操作权限，对于搜索视图而言，只能进行下载操作（因为是虚拟的）
 		final List<String> authList = new ArrayList<String>();
 		// 搜索结果只接受“下载”操作
 		if (cr.authorized(account, AccountAuth.DOWNLOAD_FILES, fu.getAllFoldersId(fid))) {
 			authList.add("L");
+			if (cr.isOpenFileChain()) {
+				sv.setShowFileChain("true");// 显示永久资源链接
+			}else {
+				sv.setShowFileChain("false");
+			}
 		}
 		// 同时额外具备普通文件夹没有的“定位”功能。
 		authList.add("O");

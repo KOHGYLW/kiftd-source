@@ -85,19 +85,16 @@ public class RangeFileStreamWriter {
 			contentLength = fileLength; // 客户端要求全文下载
 		}
 		response.setHeader("Content-Length", "" + contentLength);// 设置请求体长度
-		if (startOffset != 0) {
-			// 设置Content-Range，格式为“bytes 起始偏移-结束偏移/文件的总大小”
-			String contentRange;
-			if (!hasEnd) {
-				contentRange = new StringBuffer("bytes ").append("" + startOffset).append("-")
-						.append("" + (fileLength - 1)).append("/").append("" + fileLength).toString();
-				response.setHeader("Content-Range", contentRange);
-			} else {
-				contentRange = new StringBuffer("bytes ").append(rangeBytes).append("/").append("" + fileLength)
-						.toString();
-			}
-			response.setHeader("Content-Range", contentRange);
+		// 设置Content-Range，格式为“bytes 起始偏移-结束偏移/文件的总大小”
+		String contentRange;
+		if (!hasEnd) {
+			contentRange = new StringBuffer("bytes ").append("" + startOffset).append("-")
+					.append("" + (fileLength - 1)).append("/").append("" + fileLength).toString();
+		} else {
+			contentRange = new StringBuffer("bytes ").append(rangeBytes).append("/").append("" + fileLength)
+					.toString();
 		}
+		response.setHeader("Content-Range", contentRange);
 		// 写出缓冲
 		byte[] buf = new byte[ConfigureReader.instance().getBuffSize()];
 		// 读取文件并写处至输出流

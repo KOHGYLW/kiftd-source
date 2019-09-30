@@ -974,6 +974,16 @@ function showFolderTable(folderView) {
 					+ '"'
 					+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-sunglasses'></span> 定位</button>";
 		}
+		if (aL && folderView.showFileChain == 'true') {
+			fileRow = fileRow
+			+ "<button onclick='getFileChain("
+			+ '"'
+			+ fi.fileId
+			+ '","'
+			+ fi.fileName
+			+ '"'
+			+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-link'></span> 链接</button>";
+		}
 		if (!aR && !aD && !aL && !aO) {
 			fileRow = fileRow + "--";
 		}
@@ -2943,4 +2953,17 @@ function showChangePasswordAlert(txt) {
 // （修改密码版本的）获取一个新的验证码
 function changePasswordGetNewVerCode(){
 	$("#changepassword_showvercode").attr("src","homeController/getNewVerCode.do?s="+(new Date()).getTime());
+}
+
+// 显示永久资源链接
+function getFileChain(fileId,fileName){
+	var getChainFileName=fileName.replace("#","%23").replace("%","%25").replace("?","%3F");
+	$("#fileChainTextarea").text(encodeURI(window.location.protocol+"//"+window.location.host+"/externalLinksController/chain/"+getChainFileName+"?fid="+fileId));
+	$('#fileChainModal').modal('show');
+}
+
+// 复制链接内容
+function copyFileChain(){
+	$("#fileChainTextarea")[0].select();
+    document.execCommand("Copy");
 }

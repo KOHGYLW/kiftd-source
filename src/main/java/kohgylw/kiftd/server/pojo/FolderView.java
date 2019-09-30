@@ -13,6 +13,7 @@ public class FolderView{
     private List<String> authList;
     private String publishTime;
     private String allowChangePassword;
+    private String showFileChain;
     
     public Folder getFolder() {
         return this.folder;
@@ -76,5 +77,13 @@ public class FolderView{
 
 	public void setAllowChangePassword(String allowChangePassword) {
 		this.allowChangePassword = allowChangePassword;
+	}
+
+	public String getShowFileChain() {
+		return showFileChain;
+	}
+
+	public void setShowFileChain(String showFileChain) {
+		this.showFileChain = showFileChain;
 	}
 }

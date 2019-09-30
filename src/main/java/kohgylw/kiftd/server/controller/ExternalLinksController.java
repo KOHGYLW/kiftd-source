@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import kohgylw.kiftd.server.service.ExternalDownloadService;
+import kohgylw.kiftd.server.service.FileChainService;
 
 /**
  * 
@@ -25,6 +26,8 @@ public class ExternalLinksController {
 	
 	@Resource
 	private ExternalDownloadService eds;//分享下载链接的相关处理
+	@Resource
+	private FileChainService fcs;
 	
 	@RequestMapping("/getDownloadKey.ajax")
 	public @ResponseBody String getDownloadKey(HttpServletRequest request) {
@@ -34,6 +37,11 @@ public class ExternalLinksController {
 	@RequestMapping("/downloadFileByKey/{fileName}")
 	public void downloadFileByKey(HttpServletRequest request,HttpServletResponse response) {
 		eds.downloadFileByKey(request, response);
+	}
+	
+	@RequestMapping("/chain/{fileName}")
+	public void chain(HttpServletRequest request,HttpServletResponse response) {
+		fcs.getResourceBychain(request, response);
 	}
 
 }

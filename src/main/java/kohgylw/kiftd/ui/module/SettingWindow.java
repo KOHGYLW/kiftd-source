@@ -49,7 +49,7 @@ public class SettingWindow extends KiftdDynamicWindow {
 	private static final String VC_SIMP = "简化(SIMPLIFIED)";
 	private static final String VC_CLOSE = "关闭(CLOSE)";
 	private static final String CHANGE_PWD_OPEN = "允许(ALLOW)";
-	private static final String CHANGE_PWD_CLOSE = "禁止(PROHIBIT)";
+	private static final String CHANGE_PWD_CLOSE = "禁用(PROHIBIT)";
 	private static final String SHOW_CHAIN_OPEN = "开启(OPEN)";
 	private static final String SHOW_CHAIN_CLOSE = "关闭(CLOSE)";
 	protected static GetServerStatus st;

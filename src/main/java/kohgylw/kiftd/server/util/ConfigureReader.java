@@ -1239,7 +1239,8 @@ public class ConfigureReader {
 	public boolean enableIPRule() {
 		return enableIPRule;
 	}
-
+	
+	//从账户配置文件中加载IP访问规则
 	private void initIPRules() {
 		// 初始化IP访问规则
 		ipRoster.clear();
