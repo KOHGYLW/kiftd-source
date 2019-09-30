@@ -2964,6 +2964,18 @@ function getFileChain(fileId,fileName){
 
 // 复制链接内容
 function copyFileChain(){
-	$("#fileChainTextarea")[0].select();
-    document.execCommand("Copy");
+	let node = document.getElementById('fileChainTextarea');// input框
+	let issafariBrowser = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+	if(issafariBrowser){
+		node.setSelectionRange(0, 9999);
+	}
+	else{
+		const range = document.createRange();
+		range.selectNode(node);
+		const selection = window.getSelection();
+		if(selection.rangeCount > 0) selection.removeAllRanges();
+		selection.addRange(range);
+	}
+
+	document.execCommand('copy');
 }
