@@ -29,10 +29,18 @@ public class MastLoginFilter implements Filter {
 			chain.doFilter(request, response);// 对于外部链接控制器和验证码的请求直接放行。
 			return;
 		}
-		// 如果是访问登录页面的请求，那么直接放行（如果访问者已经登录，那么会被后面的过滤器重定向至主页，此处无需处理）
-		if (url.equals("/prv/login.html") || url.equals("//prv/login.html")) {
+		// 如果是无需登录的请求，那么直接放行（如果访问者已经登录，那么会被后面的过滤器重定向至主页，此处无需处理）
+		switch (url) {
+		case "/prv/login.html":
+		case "//prv/login.html":
+		case "/homeController/askForAllowSignUpOrNot.ajax":
+		case "//homeController/askForAllowSignUpOrNot.ajax":
+		case "/prv/signup.html":
+		case "//prv/signup.html":
 			chain.doFilter(request, response);
 			return;
+		default:
+			break;
 		}
 		if (s) {
 			if (url.equals("/") || url.endsWith(".html") || url.endsWith(".do")) {
@@ -47,7 +55,8 @@ public class MastLoginFilter implements Filter {
 					hsr.sendRedirect("/prv/login.html");
 				}
 			} else if (url.endsWith(".ajax")) {
-				if (url.equals("/homeController/doLogin.ajax") || url.equals("/homeController/getPublicKey.ajax")) {
+				if (url.equals("/homeController/doLogin.ajax") || url.equals("/homeController/getPublicKey.ajax")
+						|| url.equals("/homeController/doSigUp.ajax")) {
 					chain.doFilter(request, response);
 				} else if (session.getAttribute("ACCOUNT") != null) {
 					final String account = (String) session.getAttribute("ACCOUNT");

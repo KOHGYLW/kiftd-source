@@ -217,8 +217,68 @@ public class AccountServiceImpl implements AccountService {
 			}
 		} catch (Exception e) {
 			lu.writeException(e);
-			e.printStackTrace();
 			return "cannotchangepwd";
+		}
+	}
+
+	@Override
+	public String isAllowSignUp() {
+		return ConfigureReader.instance().isAllowSignUp() ? "true" : "false";
+	}
+
+	@Override
+	public String doSignUp(HttpServletRequest request) {
+		// 验证是否开启了注册功能
+		if (!ConfigureReader.instance().isAllowSignUp()) {
+			return "illegal";
+		}
+		HttpSession session = request.getSession();
+		// 如果已经登入一个账户了，必须先注销
+		if (session.getAttribute("ACCOUNT") != null) {
+			return "mustlogout";
+		}
+		// 如果开启了验证码则必须输入
+		String reqVerCode = request.getParameter("vercode");
+		if (!ConfigureReader.instance().getVCLevel().equals(VCLevel.Close)) {
+			String trueVerCode = (String) session.getAttribute("VERCODE");
+			session.removeAttribute("VERCODE");// 确保一个验证码只会生效一次，无论对错
+			if (reqVerCode == null || trueVerCode == null || !trueVerCode.equals(reqVerCode.toLowerCase())) {
+				return "needvercode";
+			}
+		}
+		// 解析注册请求
+		final String encrypted = request.getParameter("encrypted");
+		try {
+			final String signUpInfoStr = DecryptionUtil.dncryption(encrypted, ku.getPrivateKey());
+			final SignUpInfoPojo info = gson.fromJson(signUpInfoStr, SignUpInfoPojo.class);
+			if (System.currentTimeMillis() - Long.parseLong(info.getTime()) > TIME_OUT) {
+				return "error";
+			}
+			if (ConfigureReader.instance().foundAccount(info.getAccount())) {
+				return "accountexists";
+			}
+			String account = info.getAccount();
+			String password = info.getPwd();
+			// 新密码合法性检查
+			if (account != null && account.length() >= 3 && account.length() <= 32
+					&& ios8859_1Encoder.canEncode(account)) {
+				if(password != null && password.length() >= 3 && password.length() <= 32 && ios8859_1Encoder.canEncode(password)) {
+					if (ConfigureReader.instance().createNewAccount(account, password)) {
+						lu.writeSignUpEvent(request, account, password);
+						session.setAttribute("ACCOUNT", account);
+						return "success";
+					}else {
+						return "cannotsignup";
+					}
+				}else {
+					return "invalidpwd";
+				}
+			}else {
+				return "invalidaccount";
+			}
+		} catch (Exception e) {
+			lu.writeException(e);
+			return "cannotsignup";
 		}
 	}
 }

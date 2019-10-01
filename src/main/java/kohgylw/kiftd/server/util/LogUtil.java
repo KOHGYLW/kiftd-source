@@ -239,7 +239,7 @@ public class LogUtil {
 			});
 		}
 	}
-	
+
 	/**
 	 * 以格式化记录永久资源链接请求日志
 	 * <p>
@@ -256,8 +256,8 @@ public class LogUtil {
 				for (Folder i : l) {
 					pl = pl + i.getFolderName() + "/";
 				}
-				String content = ">IP [" + ip + "]\r\n>OPERATE [Request Chain]\r\n>PATH [" + pl
-						+ folder.getFolderName() + "]\r\n>NAME [" + f.getFileName() + "]";
+				String content = ">IP [" + ip + "]\r\n>OPERATE [Request Chain]\r\n>PATH [" + pl + folder.getFolderName()
+						+ "]\r\n>NAME [" + f.getFileName() + "]";
 				writeToLog("Event", content);
 			});
 		}
@@ -480,14 +480,27 @@ public class LogUtil {
 	 */
 	public void writeChangePasswordEvent(HttpServletRequest request, String account, String newPassword) {
 		if (ConfigureReader.instance().inspectLogLevel(LogLevel.Event)) {
-			if (account == null || account.length() == 0) {
-				account = "Anonymous";
-			}
-			String a = account;
 			String ip = idg.getIpAddr(request);
 			writerThread.execute(() -> {
-				String content = ">IP [" + ip + "]\r\n>ACCOUNT [" + a
+				String content = ">IP [" + ip + "]\r\n>ACCOUNT [" + account
 						+ "]\r\n>OPERATE [Change Password]\r\n>NEW PASSWORD [" + newPassword + "]";
+				writeToLog("Event", content);
+			});
+		}
+	}
+
+	/**
+	 * 以格式化记录新账户注册日志
+	 * <p>
+	 * 写入新账户的注册信息
+	 * </p>
+	 */
+	public void writeSignUpEvent(HttpServletRequest request, String account, String password) {
+		if (ConfigureReader.instance().inspectLogLevel(LogLevel.Event)) {
+			String ip = idg.getIpAddr(request);
+			writerThread.execute(() -> {
+				String content = ">IP [" + ip + "]\r\n>OPERATE [Sign Up]\r\n>NEW ACCOUNT [" + account + "]\r\n>PASSWORD ["
+						+ password + "]";
 				writeToLog("Event", content);
 			});
 		}

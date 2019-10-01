@@ -388,13 +388,12 @@ function getServerOS() {
 	$.ajax({
 		type : "POST",
 		dataType : "text",
-		data : {
-
-		},
+		data : {},
 		url : "homeController/getServerOS.ajax",
 		success : function(result) {
 			if (result == "mustLogin") {
 				window.location.href = "login.html";
+				return;
 			}
 			$("#serverOS").text(result);
 		},
@@ -689,6 +688,14 @@ function showAccountView(folderView) {
 		$("#tb2")
 				.append(
 						"<button class='btn btn-link' data-toggle='modal' data-target='#loginModal'>登入 <span class='glyphicon glyphicon-user' aria-hidden='true'></span></button>");
+		if(folderView.allowSignUp == 'true'){
+			$("#tb")
+			.append(
+					" <button class='btn btn-link rightbtn' onclick='window.location.href = \"/prv/signup.html\"'>立即注册 <span class='glyphicon glyphicon-log-in' aria-hidden='true'></span></button>");
+			$("#tb2")
+			.append(
+					" <button class='btn btn-link' onclick='window.location.href = \"prv/signup.html\"'>立即注册 <span class='glyphicon glyphicon-log-in' aria-hidden='true'></span></button>");
+		}
 	}
 	var authList = folderView.authList;
 	// 对操作菜单进行初始化，根据权限显示可操作的按钮（并非约束）。

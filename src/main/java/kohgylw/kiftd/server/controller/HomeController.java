@@ -263,4 +263,18 @@ public class HomeController {
 	public String pong(final HttpServletRequest request) {
 		return as.doPong(request);
 	}
+	
+	// 询问是否开启自由注册新账户功能
+	@RequestMapping(value = { "/askForAllowSignUpOrNot.ajax" }, produces = { CHARSET_BY_AJAX })
+	@ResponseBody
+	public String askForAllowSignUpOrNot(final HttpServletRequest request) {
+		return as.isAllowSignUp();
+	}
+	
+	// 处理注册新账户请求
+	@RequestMapping(value = { "/doSigUp.ajax" }, produces = { CHARSET_BY_AJAX })
+	@ResponseBody
+	public String doSigUp(final HttpServletRequest request) {
+		return as.doSignUp(request);
+	}
 }

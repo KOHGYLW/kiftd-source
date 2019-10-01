@@ -53,6 +53,7 @@ public class ConfigureReader {
 	private boolean allowChangePassword;// 是否允许用户修改密码
 	private boolean openFileChain;// 是否开启永久外部链接
 	private boolean allowSignUp;// 是否允许自由注册新账户（高级）
+	private String signUpAuth;// 注册新账户的权限标识符（高级）
 	private final String ACCOUNT_PROPERTIES_FILE = "account.properties";
 	private final String SERVER_PROPERTIES_FILE = "server.properties";
 	private final int DEFAULT_BUFFER_SIZE = 1048576;
@@ -126,6 +127,7 @@ public class ConfigureReader {
 			final FileInputStream accountPropIn = new FileInputStream(accountProp);
 			this.accountp.load(accountPropIn);
 			initIPRules();
+			initSignUpRules();
 			Printer.instance.print("配置文件载入完毕。正在检查配置...");
 			this.propertiesStatus = this.testServerPropertiesAndEffect();
 			if (this.propertiesStatus == LEGAL_PROPERTIES) {
@@ -145,7 +147,7 @@ public class ConfigureReader {
 	}
 
 	public boolean foundAccount(final String account) {
-		if(account == null) {
+		if (account == null) {
 			return false;
 		}
 		final String accountPwd = this.accountp.getProperty(account + ".pwd");
@@ -624,13 +626,6 @@ public class ConfigureReader {
 				return INNVALID_FILE_CHAIN_SETTING;
 			}
 		}
-		// 是否允许访问者自由注册账户
-		final String signUp = this.accountp.getProperty("signUpAuth");
-		if (signUp != null) {
-			this.allowSignUp = true;
-		} else {
-			this.allowSignUp = false;
-		}
 		// 缓存大小
 		final String bufferSizes = this.serverp.getProperty("buff.size");
 		if (bufferSizes == null) {
@@ -972,6 +967,7 @@ public class ConfigureReader {
 								accountPropIn.getChannel().lock(0L, Long.MAX_VALUE, true);
 								this.accountp.load(accountPropIn);
 								initIPRules();
+								initSignUpRules();
 								Printer.instance.print("账户配置更新完成，已加载最新配置。");
 							}
 						}
@@ -1175,7 +1171,7 @@ public class ConfigureReader {
 	 * @author 青阳龙野(kohgylw)
 	 * @return boolean 允许则返回true，否则返回false
 	 */
-	public boolean signUp() {
+	public boolean isAllowSignUp() {
 		return allowSignUp;
 	}
 
@@ -1239,8 +1235,8 @@ public class ConfigureReader {
 	public boolean enableIPRule() {
 		return enableIPRule;
 	}
-	
-	//从账户配置文件中加载IP访问规则
+
+	// 从账户配置文件中加载IP访问规则
 	private void initIPRules() {
 		// 初始化IP访问规则
 		ipRoster.clear();
@@ -1259,5 +1255,51 @@ public class ConfigureReader {
 			return;
 		}
 		enableIPRule = false;
+	}
+
+	// 从配置文件中加载账户注册规则
+	private void initSignUpRules() {
+		// 是否允许访问者自由注册账户
+		final String signUp = this.accountp.getProperty("authSignup");
+		if (signUp != null) {
+			this.allowSignUp = true;
+			this.signUpAuth = signUp;
+		} else {
+			this.allowSignUp = false;
+		}
+	}
+
+	/**
+	 * 
+	 * <h2>注册新账户</h2>
+	 * <p>
+	 * 该方法用于在账户配置文件中写入一个新账户设置并设置新账户的权限。注意：该方法不对写入的账户名和密码进行格式检查。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @param newAccount
+	 *            java.lang.String 要写入的新账户名
+	 * @param newPassword
+	 *            java.lang.String 新账户的密码
+	 * @return boolean 是否写入成功。仅当账户名不存在且写入成功时返回true，否则返回false
+	 * @throws Exception
+	 *             写入时发生的异常
+	 */
+	public boolean createNewAccount(String newAccount, String newPassword) throws Exception {
+		if (newAccount != null && newPassword != null) {
+			if (accountp.getProperty(newAccount + ".pwd") == null) {
+				accountp.setProperty(newAccount + ".pwd", newPassword);
+				accountp.setProperty(newAccount + ".auth", signUpAuth);
+				try (FileOutputStream accountSettingOut = new FileOutputStream(
+						this.confdir + ACCOUNT_PROPERTIES_FILE)) {
+					accountSettingOut.getChannel().lock();
+					accountp.store(accountSettingOut, null);
+					return true;
+				} catch (Exception e) {
+					throw e;
+				}
+			}
+		}
+		return false;
 	}
 }

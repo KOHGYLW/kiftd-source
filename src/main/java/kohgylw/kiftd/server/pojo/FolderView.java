@@ -14,6 +14,7 @@ public class FolderView{
     private String publishTime;
     private String allowChangePassword;
     private String showFileChain;
+    private String allowSignUp;
     
     public Folder getFolder() {
         return this.folder;
@@ -85,5 +86,13 @@ public class FolderView{
 
 	public void setShowFileChain(String showFileChain) {
 		this.showFileChain = showFileChain;
+	}
+
+	public String getAllowSignUp() {
+		return allowSignUp;
+	}
+
+	public void setAllowSignUp(String allowSignUp) {
+		this.allowSignUp = allowSignUp;
 	}
 }
