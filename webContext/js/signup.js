@@ -2,6 +2,14 @@
  * For signup.html
  */
 $(function(){
+	// 回车键快捷操作
+	$("body").keypress(function(e) {
+		var keyCode = e.keyCode ? e.keyCode : e.which ? e.which : e.charCode;
+		if (keyCode == 13) {
+			var g = $("#signupBtn").click();
+			return false;
+		}
+	});
 	$("#accountid").focus();//再自动聚焦账户输入框
 })
 

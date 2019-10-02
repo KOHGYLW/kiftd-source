@@ -109,7 +109,7 @@ public class FileSystemPathViewer extends KiftdDynamicWindow {
 		});
 		changeBtn.addActionListener((e) -> {
 			disableAllButtons();
-			if (JOptionPane.showConfirmDialog(window, "确认要修改该路径么？警告：若该路径中已经存储数据，则设置新路径后将丢失。", "修改路径",
+			if (JOptionPane.showConfirmDialog(window, "确认要修改该存储路径么？警告：修改为新路径后，该存储区内原先存放的数据将会丢失。", "修改路径",
 					JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) {
 				return;
 			}
@@ -163,7 +163,7 @@ public class FileSystemPathViewer extends KiftdDynamicWindow {
 		});
 		removeBtn.addActionListener((e) -> {
 			disableAllButtons();
-			if (JOptionPane.showConfirmDialog(window, "确认要移除该扩展存储区么？该存储区内的文件将丢失。警告：设置生效后不可恢复。", "移除扩展存储区",
+			if (JOptionPane.showConfirmDialog(window, "确认要移除该扩展存储区么？警告：移除后，该存储区内原先存放的数据将丢失，且设置生效后不可恢复。", "移除扩展存储区",
 					JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
 				short index=pathsTable.getSelectFileSystemIndex();
 				for(int i=0;i<SettingWindow.extendStores.size();i++) {

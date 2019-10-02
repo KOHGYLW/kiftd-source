@@ -593,7 +593,7 @@ public class ConfigureReader {
 		// 是否允许用户修改密码
 		final String changePassword = this.serverp.getProperty("password.change");
 		if (changePassword == null) {
-			Printer.instance.print("警告：未找到用户修改密码功能配置，将采用默认值（禁止）。");
+			Printer.instance.print("警告：未找到用户修改密码功能配置，将采用默认值（禁用）。");
 			this.allowChangePassword = false;
 		} else {
 			switch (changePassword) {
@@ -611,7 +611,7 @@ public class ConfigureReader {
 		// 是否提供永久资源链接
 		final String fileChain = this.serverp.getProperty("openFileChain");
 		if (fileChain == null) {
-			Printer.instance.print("警告：未找到永久资源链接功能配置，将采用默认值（关闭）。");
+			Printer.instance.print("警告：未找到永久资源链接功能配置，将采用默认值（禁用）。");
 			this.openFileChain = false;
 		} else {
 			switch (fileChain) {
@@ -645,7 +645,7 @@ public class ConfigureReader {
 		}
 		this.FSPath = this.serverp.getProperty("FS.path");
 		if (this.FSPath == null) {
-			Printer.instance.print("警告：未找到文件系统配置，将采用默认值。");
+			Printer.instance.print("警告：未找到主文件系统路径配置，将采用默认值。");
 			this.fileSystemPath = this.DEFAULT_FILE_SYSTEM_PATH;
 		} else if (this.FSPath.equals("DEFAULT")) {
 			this.fileSystemPath = this.DEFAULT_FILE_SYSTEM_PATH;

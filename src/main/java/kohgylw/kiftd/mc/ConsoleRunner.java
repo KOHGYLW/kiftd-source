@@ -10,7 +10,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import kohgylw.kiftd.printer.*;
@@ -37,7 +37,7 @@ public class ConsoleRunner {
 	private static FolderView currentFolder;
 	private Scanner reader;
 
-	private Executor worker;
+	private ExecutorService worker;
 
 	private ConsoleRunner() {
 		Printer.init(false);
@@ -149,6 +149,7 @@ public class ConsoleRunner {
 		if (ConsoleRunner.ctl.started() && ConsoleRunner.ctl.stop()) {
 			Printer.instance.print("服务器已关闭，停止所有访问。");
 		}
+		worker.shutdown();
 		Printer.instance.print("退出应用。");
 		System.exit(0);
 	}

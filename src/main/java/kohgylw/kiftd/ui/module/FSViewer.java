@@ -16,7 +16,7 @@ import java.io.File;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import javax.swing.JButton;
@@ -60,7 +60,7 @@ public class FSViewer extends KiftdDynamicWindow {
 
 	private static FSViewer fsv;// 该窗口的唯一实例
 	private static FolderView currentView;// 当前显示的视图
-	private static Executor worker;// 操作线程池
+	private static ExecutorService worker;// 操作线程池
 
 	// 资源加载
 	private FSViewer() throws SQLException {
@@ -521,6 +521,12 @@ public class FSViewer extends KiftdDynamicWindow {
 			backToParentFolder.setEnabled(true);
 			homeBtn.setEnabled(true);
 		}
+	}
+	
+	@Override
+	protected void finalize() throws Throwable {
+		super.finalize();
+		worker.shutdown();
 	}
 
 }

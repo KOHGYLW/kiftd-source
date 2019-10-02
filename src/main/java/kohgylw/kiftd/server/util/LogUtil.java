@@ -7,7 +7,7 @@ import kohgylw.kiftd.printer.Printer;
 import kohgylw.kiftd.server.enumeration.*;
 import javax.servlet.http.*;
 import java.util.*;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import kohgylw.kiftd.server.model.*;
@@ -36,7 +36,7 @@ public class LogUtil {
 	@Resource
 	private IpAddrGetter idg;
 
-	private Executor writerThread;
+	private ExecutorService writerThread;
 	private FileWriter writer;
 	private String logName;
 
@@ -512,6 +512,7 @@ public class LogUtil {
 		if (writer != null) {
 			writer.close();
 		}
+		writerThread.shutdown();
 	}
 
 }
