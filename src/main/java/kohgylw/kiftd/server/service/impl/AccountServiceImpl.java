@@ -21,7 +21,7 @@ import kohgylw.kiftd.server.pojo.*;
 @Service
 public class AccountServiceImpl implements AccountService {
 	@Resource
-	private KeyUtil ku;
+	private RSAKeyUtil ku;
 	@Resource
 	private LogUtil lu;
 
@@ -67,7 +67,7 @@ public class AccountServiceImpl implements AccountService {
 	public String checkLoginRequest(final HttpServletRequest request, final HttpSession session) {
 		final String encrypted = request.getParameter("encrypted");
 		try {
-			final String loginInfoStr = DecryptionUtil.dncryption(encrypted, ku.getPrivateKey());
+			final String loginInfoStr = RSADecryptUtil.dncryption(encrypted, ku.getPrivateKey());
 			final LoginInfoPojo info = gson.fromJson(loginInfoStr, LoginInfoPojo.class);
 			if (System.currentTimeMillis() - Long.parseLong(info.getTime()) > TIME_OUT) {
 				return "error";
@@ -170,7 +170,7 @@ public class AccountServiceImpl implements AccountService {
 		// 解析修改密码请求
 		final String encrypted = request.getParameter("encrypted");
 		try {
-			final String changePasswordInfoStr = DecryptionUtil.dncryption(encrypted, ku.getPrivateKey());
+			final String changePasswordInfoStr = RSADecryptUtil.dncryption(encrypted, ku.getPrivateKey());
 			final ChangePasswordInfoPojo info = gson.fromJson(changePasswordInfoStr, ChangePasswordInfoPojo.class);
 			if (System.currentTimeMillis() - Long.parseLong(info.getTime()) > TIME_OUT) {
 				return "error";
@@ -249,7 +249,7 @@ public class AccountServiceImpl implements AccountService {
 		// 解析注册请求
 		final String encrypted = request.getParameter("encrypted");
 		try {
-			final String signUpInfoStr = DecryptionUtil.dncryption(encrypted, ku.getPrivateKey());
+			final String signUpInfoStr = RSADecryptUtil.dncryption(encrypted, ku.getPrivateKey());
 			final SignUpInfoPojo info = gson.fromJson(signUpInfoStr, SignUpInfoPojo.class);
 			if (System.currentTimeMillis() - Long.parseLong(info.getTime()) > TIME_OUT) {
 				return "error";
