@@ -392,7 +392,7 @@ function getServerOS() {
 		url : "homeController/getServerOS.ajax",
 		success : function(result) {
 			if (result == "mustLogin") {
-				window.location.href = "login.html";
+				window.location.href = "prv/login.html";
 				return;
 			}
 			$("#serverOS").text(result);
@@ -421,7 +421,7 @@ function showFolderView(fid,targetId) {
 				$("#publishTime").html("<span class='graytext'>获取失败，请尝试刷新</span>");
 				$("#parentlistbox").html("<span class='graytext'>获取失败，请尝试刷新</span>");
 			} else if (result == "mustLogin") {
-				window.location.href = "login.html";
+				window.location.href = "prv/login.html";
 			} else if(result == "NOT_FOUND") {
 				document.cookie = "folder_id=" + escape("root");// 归位记忆路径
 				window.location.href="/";
@@ -1038,7 +1038,7 @@ function createfolder() {
 			url : "homeController/newFolder.ajax",
 			success : function(result) {
 				if (result == "mustLogin") {
-					window.location.href = "login.html";
+					window.location.href = "prv/login.html";
 				} else {
 					if (result == "noAuthorized") {
 						showFolderAlert("提示：您的操作未被授权，创建文件夹失败。");
@@ -1104,7 +1104,7 @@ function deleteFolder(folderId) {
 		url : "homeController/deleteFolder.ajax",
 		success : function(result) {
 			if (result == "mustLogin") {
-				window.location.href = "login.html";
+				window.location.href = "prv/login.html";
 			} else {
 				if (result == "noAuthorized") {
 					$('#deleteFolderMessage').text("提示：您的操作未被授权，删除文件夹失败");
@@ -1172,7 +1172,7 @@ function renameFolder(folderId) {
 			url : "homeController/renameFolder.ajax",
 			success : function(result) {
 				if (result == "mustLogin") {
-					window.location.href = "login.html";
+					window.location.href = "prv/login.html";
 				} else {
 					if (result == "noAuthorized") {
 						showRFolderAlert("提示：您的操作未被授权，编辑失败。");
@@ -1287,7 +1287,7 @@ function checkUploadFile() {
 				url : "homeController/checkUploadFile.ajax",
 				success : function(result) {
 					if (result == "mustLogin") {
-						window.location.href = "login.html";
+						window.location.href = "prv/login.html";
 					} else {
 						if (result == "errorParameter") {
 							showUploadFileAlert("提示：参数不正确，无法开始上传");
@@ -1541,7 +1541,7 @@ function deleteFile(fileId) {
 		url : "homeController/deleteFile.ajax",
 		success : function(result) {
 			if (result == "mustLogin") {
-				window.location.href = "login.html";
+				window.location.href = "prv/login.html";
 			} else {
 				if (result == "noAuthorized") {
 					$('#deleteFileMessage').text("提示：您的操作未被授权，删除失败");
@@ -1598,7 +1598,7 @@ function renameFile(fileId) {
 					url : "homeController/renameFile.ajax",
 					success : function(result) {
 						if (result == "mustLogin") {
-							window.location.href = "login.html";
+							window.location.href = "prv/login.html";
 						} else {
 							if (result == "cannotRenameFile") {
 								showRFileAlert("提示：出现意外错误，可能未能重命名文件，请刷新后重试。");
@@ -1992,7 +1992,7 @@ function deleteAllChecked() {
 		url : "homeController/deleteCheckedFiles.ajax",
 		success : function(result) {
 			if (result == "mustLogin") {
-				window.location.href = "login.html";
+				window.location.href = "prv/login.html";
 			} else {
 				if (result == "noAuthorized") {
 					$('#deleteFileMessage').text("提示：您的操作未被授权，删除失败");
@@ -2259,7 +2259,7 @@ function doMoveFiles(){
 		url : "homeController/confirmMoveFiles.ajax",
 		success : function(result) {
 			if (result == "mustLogin") {
-				window.location.href = "login.html";
+				window.location.href = "prv/login.html";
 			} else {
 				if (result == "noAuthorized") {
 					$('#moveFilesMessage').text("提示：您的操作未被授权，移动失败");
@@ -2353,7 +2353,7 @@ function sendMoveFilesReq(){
 		url : "homeController/moveCheckedFiles.ajax",
 		success : function(result) {
 			if (result == "mustLogin") {
-				window.location.href = "login.html";
+				window.location.href = "prv/login.html";
 			} else {
 				if (result == "noAuthorized") {
 					$('#moveFilesMessage').text("提示：您的操作未被授权，移动失败");
@@ -2455,7 +2455,7 @@ function selectInCompletePath(keyworld){
 				$("#publishTime").html("<span class='graytext'>获取失败，请尝试刷新</span>");
 				$("#parentlistbox").html("<span class='graytext'>获取失败，请尝试刷新</span>");
 			} else if (result == "mustLogin") {
-				window.location.href = "login.html";
+				window.location.href = "prv/login.html";
 			} else if(result == "notAccess"){
 				document.cookie = "folder_id=" + escape("root");
 				window.location.href="/";
@@ -2630,7 +2630,7 @@ function checkImportFolder(){
 						showImportFolderAlert("提示：参数不正确，无法开始上传");
 						break;
 					case 'mustLogin':
-						window.location.href = "login.html";
+						window.location.href = "prv/login.html";
 						break;
 					case 'fileOverSize':
 						showImportFolderAlert("提示：文件["+ifs[maxFileIndex].webkitRelativePath+"]的体积超过最大限制（"+resJson.maxSize+"），无法开始上传");
@@ -2962,11 +2962,37 @@ function changePasswordGetNewVerCode(){
 	$("#changepassword_showvercode").attr("src","homeController/getNewVerCode.do?s="+(new Date()).getTime());
 }
 
-// 显示永久资源链接
+// 获取永久资源链接
 function getFileChain(fileId,fileName){
-	var getChainFileName=fileName.replace("#","%23").replace("%","%25").replace("?","%3F");
-	$("#fileChainTextarea").text(encodeURI(window.location.protocol+"//"+window.location.host+"/externalLinksController/chain/"+getChainFileName+"?fid="+fileId));
+	$("#fileChainTextarea").text("正在获取……");
+	$("#copyChainBtn").attr('disabled', true);
 	$('#fileChainModal').modal('show');
+	$.ajax({
+		type : "POST",
+		dataType : "text",
+		url : "homeController/getFileChainKey.ajax",
+		data : {
+			fid : fileId
+		},
+		success : function(result) {
+			switch (result) {
+			case "ERROR":
+				$("#fileChainTextarea").text("提示：获取失败，请刷新页面或稍后再试。");
+				break;
+			case "mustlogin":
+				window.location.href = "prv/login.html";
+				break;
+			default:
+				var getChainFileName=fileName.replace("#","%23").replace("%","%25").replace("?","%3F");
+				$("#fileChainTextarea").text(encodeURI(window.location.protocol+"//"+window.location.host+"/externalLinksController/chain/"+getChainFileName+"?ckey=")+encodeURIComponent(result));
+				$("#copyChainBtn").attr('disabled', false);
+				break;
+			}
+		},
+		error : function() {
+			$("#fileChainTextarea").text("提示：获取失败，无法连接服务器。");
+		}
+	});
 }
 
 // 复制链接内容
@@ -2975,14 +3001,12 @@ function copyFileChain(){
 	let issafariBrowser = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
 	if(issafariBrowser){
 		node.setSelectionRange(0, 9999);
-	}
-	else{
+	}else{
 		const range = document.createRange();
 		range.selectNode(node);
 		const selection = window.getSelection();
 		if(selection.rangeCount > 0) selection.removeAllRanges();
 		selection.addRange(range);
 	}
-
 	document.execCommand('copy');
 }

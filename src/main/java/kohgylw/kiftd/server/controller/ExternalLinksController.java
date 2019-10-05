@@ -41,7 +41,7 @@ public class ExternalLinksController {
 	
 	@RequestMapping("/chain/{fileName}")
 	public void chain(HttpServletRequest request,HttpServletResponse response) {
-		fcs.getResourceBychain(request, response);
+		fcs.getResourceByChainKey(request, response);
 	}
 
 }

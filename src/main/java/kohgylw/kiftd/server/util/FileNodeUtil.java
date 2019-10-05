@@ -81,15 +81,20 @@ public class FileNodeUtil {
 					ResultSet indexCount = state4.executeQuery("SHOW INDEX FROM FILE WHERE Key_name = 'file_index'");
 					if (!indexCount.next()) {
 						final Statement state41 = conn.createStatement();
-						state41.execute("CREATE INDEX file_index ON FILE (file_id,file_name)");
+						state41.execute("CREATE INDEX file_index ON FILE (file_name)");
 						state41.close();
 					}
 					state4.close();
 				} else {
 					final Statement state4 = conn.createStatement();
-					state4.execute("CREATE INDEX IF NOT EXISTS file_index ON FILE (file_id,file_name)");
+					state4.execute("CREATE INDEX IF NOT EXISTS file_index ON FILE (file_name)");
 					state4.close();
 				}
+				// 生成用于持久化保存的、系统自动生成的、和文件系统相关设置项的存储表
+				final Statement state5 = conn.createStatement();
+				state5.execute(
+						"CREATE TABLE IF NOT EXISTS PROPERTIES(propertie_key VARCHAR(128) PRIMARY KEY,propertie_value VARCHAR(128) NOT NULL)");
+				state5.close();
 			}
 			Printer.instance.print("文件节点初始化完毕。");
 		} catch (Exception e) {
