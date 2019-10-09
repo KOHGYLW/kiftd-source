@@ -69,8 +69,8 @@ public class ConfigureReader {
 	private final String DEFAULT_AUTH_OVERALL = "l";
 	private final String DEFAULT_PASSWORD_CHANGE_SETTING = "N";
 	private final String DEFAULT_FILE_CHAIN_SETTING = "CLOSE";
-	public static final int INVALID_PORT = 1;
-	public static final int INVALID_LOG = 2;
+	public static final int INVALID_PORT = 1;//端口无效
+	public static final int INVALID_LOG = 2;//日志设置无效
 	public static final int INVALID_FILE_SYSTEM_PATH = 3;
 	public static final int INVALID_BUFFER_SIZE = 4;
 	public static final int CANT_CREATE_FILE_BLOCK_PATH = 5;
@@ -644,6 +644,7 @@ public class ConfigureReader {
 				return 4;
 			}
 		}
+		// 加载主文件系统路径配置
 		this.FSPath = this.serverp.getProperty("FS.path");
 		if (this.FSPath == null) {
 			Printer.instance.print("警告：未找到主文件系统路径配置，将采用默认值。");
@@ -651,7 +652,7 @@ public class ConfigureReader {
 		} else if (this.FSPath.equals("DEFAULT")) {
 			this.fileSystemPath = this.DEFAULT_FILE_SYSTEM_PATH;
 		} else {
-			this.fileSystemPath = this.FSPath;
+			this.fileSystemPath = this.FSPath.replaceAll("\\\\:", ":").replaceAll("\\\\\\\\", "\\\\");//后面的替换是为了兼容以前版本的设置
 		}
 		if (!fileSystemPath.endsWith(File.separator)) {
 			fileSystemPath = fileSystemPath + File.separator;
@@ -660,7 +661,7 @@ public class ConfigureReader {
 		for (short i = 1; i < 32; i++) {
 			if (serverp.getProperty("FS.extend." + i) != null) {
 				ExtendStores es = new ExtendStores();
-				es.setPath(new File(serverp.getProperty("FS.extend." + i)));
+				es.setPath(new File(serverp.getProperty("FS.extend." + i).replaceAll("\\\\:", ":").replaceAll("\\\\\\\\", "\\\\")));
 				es.setIndex(i);
 				extendStores.add(es);
 			}
