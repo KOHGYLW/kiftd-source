@@ -1,6 +1,6 @@
 Manifest-Version: 1.0
 Implementation-Title: kiftd
-Implementation-Version: 1.0.23-RELEASE
+Implementation-Version: 1.0.24-RELEASE
 Built-By: kohgylw
 Implementation-Vendor-Id: kohgylw
 Class-Path: libs/spring-boot-starter-web-2.0.2.RELEASE.jar libs/spring

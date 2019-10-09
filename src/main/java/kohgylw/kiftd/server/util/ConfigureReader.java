@@ -587,6 +587,7 @@ public class ConfigureReader {
 				this.vc = vcl;
 				break;
 			default:
+				Printer.instance.print("错误：登录验证码配置无效。");
 				return INVALID_VC;
 			}
 		}

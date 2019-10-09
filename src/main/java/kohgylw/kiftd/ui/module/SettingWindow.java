@@ -170,7 +170,6 @@ public class SettingWindow extends KiftdDynamicWindow {
 		SettingWindow.cancel.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				// TODO 自动生成的方法存根
 				window.setVisible(false);
 			}
 		});
@@ -178,7 +177,6 @@ public class SettingWindow extends KiftdDynamicWindow {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				// TODO 自动生成的方法存根
 				// 仅在服务器停止时才可以进行修改
 				if (st.getServerStatus()) {
 					getServerStatus();
@@ -189,9 +187,7 @@ public class SettingWindow extends KiftdDynamicWindow {
 								ServerSetting ss = new ServerSetting();
 								ss.setPort(Integer.parseInt(portinput.getText()));
 								ss.setBuffSize(Integer.parseInt(bufferinput.getText()) * 1024);
-								if (chooserPath.isDirectory()) {
-									ss.setFsPath(chooserPath.getAbsolutePath());
-								}
+								ss.setFsPath(chooserPath.getAbsolutePath());
 								List<ExtendStores> ess = new ArrayList<>();
 								for (FileSystemPath fsp : extendStores) {
 									ExtendStores es = new ExtendStores();
@@ -266,8 +262,8 @@ public class SettingWindow extends KiftdDynamicWindow {
 									window.setVisible(false);
 								}
 							} catch (Exception exc) {
-								exc.printStackTrace();
-								Printer.instance.print("错误：无法应用设置");
+								Printer.instance.print(exc.getMessage());
+								Printer.instance.print("错误：无法更新服务器设置");
 							}
 						} else {
 							window.setVisible(false);
