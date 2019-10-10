@@ -4,6 +4,8 @@ import java.awt.BorderLayout;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.io.File;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -19,6 +21,7 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
 import kohgylw.kiftd.printer.Printer;
+import kohgylw.kiftd.server.util.ConfigureReader;
 import kohgylw.kiftd.ui.pojo.FileSystemPath;
 import kohgylw.kiftd.ui.util.PathsTable;
 
@@ -34,6 +37,7 @@ import kohgylw.kiftd.ui.util.PathsTable;
  */
 public class FileSystemPathViewer extends KiftdDynamicWindow {
 
+	private static final String INVALID_PATH_ALTER = "错误：该路径中含有程序无法识别的字符，请使用其他路径（推荐使用纯英文路径）。";
 	protected static JDialog window;// 窗体对象
 	private JButton addBtn;// 添加扩展存储路径按钮
 	private JButton changeBtn;// 修改按钮
@@ -42,9 +46,11 @@ public class FileSystemPathViewer extends KiftdDynamicWindow {
 
 	private static FileSystemPathViewer fsv;// 该窗口的唯一实例
 	private static List<FileSystemPath> paths;// 当前显示的视图
+	private CharsetEncoder encoder;// ISO-8859-1编码器
 
 	// 资源加载
 	private FileSystemPathViewer() {
+		encoder = Charset.forName("ISO-8859-1").newEncoder();
 		setUIFont();
 		(window = new JDialog(SettingWindow.window, "管理文件系统路径")).setModal(true);
 		window.setSize(600, 240);
@@ -87,16 +93,22 @@ public class FileSystemPathViewer extends KiftdDynamicWindow {
 							JOptionPane.showMessageDialog(window, "错误：该路径已被其他扩展存储区占用。", "错误",
 									JOptionPane.WARNING_MESSAGE);
 						} else {
-							Short[] indexs=SettingWindow.extendStores.parallelStream().map((s)->s.getIndex()).toArray(Short[]::new);
-							short index=1;
-							while(Arrays.binarySearch(indexs, index)>=0) {
-								index++;
+							if(encoder.canEncode(newExtendStores.getAbsolutePath())) {
+								Short[] indexs = SettingWindow.extendStores.parallelStream().map((s) -> s.getIndex())
+										.toArray(Short[]::new);
+								short index = 1;
+								while (Arrays.binarySearch(indexs, index) >= 0) {
+									index++;
+								}
+								FileSystemPath nfsp = new FileSystemPath();
+								nfsp.setIndex(index);
+								nfsp.setType(FileSystemPath.EXTEND_STORES_NAME);
+								nfsp.setPath(addExtendStoresChooer.getSelectedFile());
+								SettingWindow.extendStores.add(nfsp);
+							}else {
+								JOptionPane.showMessageDialog(window, INVALID_PATH_ALTER, "错误",
+										JOptionPane.WARNING_MESSAGE);
 							}
-							FileSystemPath nfsp = new FileSystemPath();
-							nfsp.setIndex(index);
-							nfsp.setType(FileSystemPath.EXTEND_STORES_NAME);
-							nfsp.setPath(addExtendStoresChooer.getSelectedFile());
-							SettingWindow.extendStores.add(nfsp);
 						}
 					} else {
 						JOptionPane.showMessageDialog(window, "错误：该路径不可用，必须选择可读写的文件夹。", "错误",
@@ -128,7 +140,19 @@ public class FileSystemPathViewer extends KiftdDynamicWindow {
 				if (mainFileSystemPathChooer.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
 					File selectPath = mainFileSystemPathChooer.getSelectedFile();
 					if (selectPath.isDirectory() && selectPath.canWrite() && selectPath.canRead()) {
-						SettingWindow.chooserPath = mainFileSystemPathChooer.getSelectedFile();
+						if (!SettingWindow.extendStores.parallelStream()
+								.anyMatch(f -> f.getPath().equals(selectPath))) {
+							if (new File(ConfigureReader.instance().getInitFileSystemPath()).equals(selectPath)
+									|| encoder.canEncode(selectPath.getAbsolutePath())) {
+								SettingWindow.chooserPath = mainFileSystemPathChooer.getSelectedFile();
+							} else {
+								JOptionPane.showMessageDialog(window, INVALID_PATH_ALTER, "错误",
+										JOptionPane.WARNING_MESSAGE);
+							}
+						} else {
+							JOptionPane.showMessageDialog(window, "错误：该路径已被某个扩展存储区占用。", "错误",
+									JOptionPane.WARNING_MESSAGE);
+						}
 					} else {
 						JOptionPane.showMessageDialog(window, "错误：该路径不可用，必须选择可读写的文件夹。", "错误",
 								JOptionPane.WARNING_MESSAGE);
@@ -138,9 +162,9 @@ public class FileSystemPathViewer extends KiftdDynamicWindow {
 				JFileChooser mainFileSystemPathChooer = new JFileChooser();
 				mainFileSystemPathChooer.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 				mainFileSystemPathChooer.setPreferredSize(fileChooerSize);
-				FileSystemPath fsp=null;
-				for(int i=0;i<SettingWindow.extendStores.size();i++) {
-					if(SettingWindow.extendStores.get(i).getIndex() == index) {
+				FileSystemPath fsp = null;
+				for (int i = 0; i < SettingWindow.extendStores.size(); i++) {
+					if (SettingWindow.extendStores.get(i).getIndex() == index) {
 						fsp = SettingWindow.extendStores.get(i);
 						mainFileSystemPathChooer.setCurrentDirectory(fsp.getPath());
 						mainFileSystemPathChooer.setDialogTitle("请选择扩展存储区路径");
@@ -148,7 +172,18 @@ public class FileSystemPathViewer extends KiftdDynamicWindow {
 							disableAllButtons();
 							File selectPath = mainFileSystemPathChooer.getSelectedFile();
 							if (selectPath.isDirectory() && selectPath.canWrite() && selectPath.canRead()) {
-								fsp.setPath(mainFileSystemPathChooer.getSelectedFile());
+								if (fsp.getPath().equals(selectPath) || !SettingWindow.extendStores.parallelStream()
+										.anyMatch(f -> f.getPath().equals(selectPath))) {
+									if (encoder.canEncode(selectPath.getAbsolutePath())) {
+										fsp.setPath(mainFileSystemPathChooer.getSelectedFile());
+									} else {
+										JOptionPane.showMessageDialog(window, INVALID_PATH_ALTER, "错误",
+												JOptionPane.WARNING_MESSAGE);
+									}
+								} else {
+									JOptionPane.showMessageDialog(window, "错误：该路径已被其他扩展存储区占用。", "错误",
+											JOptionPane.WARNING_MESSAGE);
+								}
 							} else {
 								JOptionPane.showMessageDialog(window, "错误：该路径不可用，必须选择可读写的文件夹。", "错误",
 										JOptionPane.WARNING_MESSAGE);
@@ -165,9 +200,9 @@ public class FileSystemPathViewer extends KiftdDynamicWindow {
 			disableAllButtons();
 			if (JOptionPane.showConfirmDialog(window, "确认要移除该扩展存储区么？警告：移除后，该存储区内原先存放的数据将丢失，且设置生效后不可恢复。", "移除扩展存储区",
 					JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
-				short index=pathsTable.getSelectFileSystemIndex();
-				for(int i=0;i<SettingWindow.extendStores.size();i++) {
-					if(SettingWindow.extendStores.get(i).getIndex()==index) {
+				short index = pathsTable.getSelectFileSystemIndex();
+				for (int i = 0; i < SettingWindow.extendStores.size(); i++) {
+					if (SettingWindow.extendStores.get(i).getIndex() == index) {
 						SettingWindow.extendStores.remove(i);
 						break;
 					}
@@ -209,7 +244,7 @@ public class FileSystemPathViewer extends KiftdDynamicWindow {
 		FileSystemPath mainfsp = new FileSystemPath();
 		mainfsp.setType(FileSystemPath.MAIN_FILE_SYSTEM_NAME);
 		mainfsp.setPath(SettingWindow.chooserPath);
-		mainfsp.setIndex((short) 0);//主文件系统路径的编号必须是0！
+		mainfsp.setIndex((short) 0);// 主文件系统路径的编号必须是0！
 		paths.add(mainfsp);
 		if (SettingWindow.extendStores != null) {
 			paths.addAll(SettingWindow.extendStores);
