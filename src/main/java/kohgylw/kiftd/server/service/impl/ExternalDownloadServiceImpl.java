@@ -91,7 +91,7 @@ public class ExternalDownloadServiceImpl extends RangeFileStreamWriter implement
 					if (target != null && target.isFile()) {
 						writeRangeFileStream(request, response, target, f.getFileName(), CONTENT_TYPE);
 						if (request.getHeader("Range") == null) {
-							this.lu.writeDownloadFileByKeyEvent(f);
+							this.lu.writeDownloadFileByKeyEvent(request, f);
 						}
 						return;
 					}

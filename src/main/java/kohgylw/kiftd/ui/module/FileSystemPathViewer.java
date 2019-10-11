@@ -37,7 +37,6 @@ import kohgylw.kiftd.ui.util.PathsTable;
  */
 public class FileSystemPathViewer extends KiftdDynamicWindow {
 
-	private static final String INVALID_PATH_ALTER = "错误：该路径中含有程序无法识别的字符，请使用其他路径（推荐使用纯英文路径）。";
 	protected static JDialog window;// 窗体对象
 	private JButton addBtn;// 添加扩展存储路径按钮
 	private JButton changeBtn;// 修改按钮
@@ -47,6 +46,9 @@ public class FileSystemPathViewer extends KiftdDynamicWindow {
 	private static FileSystemPathViewer fsv;// 该窗口的唯一实例
 	private static List<FileSystemPath> paths;// 当前显示的视图
 	private CharsetEncoder encoder;// ISO-8859-1编码器
+
+	// 错误提示信息
+	private static final String INVALID_PATH_ALTER = "错误：该路径中含有程序无法识别的字符，请使用其他路径（推荐使用纯英文路径）。";
 
 	// 资源加载
 	private FileSystemPathViewer() {
@@ -93,7 +95,9 @@ public class FileSystemPathViewer extends KiftdDynamicWindow {
 							JOptionPane.showMessageDialog(window, "错误：该路径已被其他扩展存储区占用。", "错误",
 									JOptionPane.WARNING_MESSAGE);
 						} else {
-							if(encoder.canEncode(newExtendStores.getAbsolutePath())) {
+							String pathName = newExtendStores.getAbsolutePath();
+							if (encoder.canEncode(pathName) && pathName.indexOf("\\:") < 0
+									&& pathName.indexOf("\\\\") < 0) {
 								Short[] indexs = SettingWindow.extendStores.parallelStream().map((s) -> s.getIndex())
 										.toArray(Short[]::new);
 								short index = 1;
@@ -105,7 +109,7 @@ public class FileSystemPathViewer extends KiftdDynamicWindow {
 								nfsp.setType(FileSystemPath.EXTEND_STORES_NAME);
 								nfsp.setPath(addExtendStoresChooer.getSelectedFile());
 								SettingWindow.extendStores.add(nfsp);
-							}else {
+							} else {
 								JOptionPane.showMessageDialog(window, INVALID_PATH_ALTER, "错误",
 										JOptionPane.WARNING_MESSAGE);
 							}
@@ -142,8 +146,10 @@ public class FileSystemPathViewer extends KiftdDynamicWindow {
 					if (selectPath.isDirectory() && selectPath.canWrite() && selectPath.canRead()) {
 						if (!SettingWindow.extendStores.parallelStream()
 								.anyMatch(f -> f.getPath().equals(selectPath))) {
+							String pathName = selectPath.getAbsolutePath();
 							if (new File(ConfigureReader.instance().getInitFileSystemPath()).equals(selectPath)
-									|| encoder.canEncode(selectPath.getAbsolutePath())) {
+									|| (encoder.canEncode(pathName) && pathName.indexOf("\\:") < 0
+											&& pathName.indexOf("\\\\") < 0)) {
 								SettingWindow.chooserPath = mainFileSystemPathChooer.getSelectedFile();
 							} else {
 								JOptionPane.showMessageDialog(window, INVALID_PATH_ALTER, "错误",
@@ -174,7 +180,9 @@ public class FileSystemPathViewer extends KiftdDynamicWindow {
 							if (selectPath.isDirectory() && selectPath.canWrite() && selectPath.canRead()) {
 								if (fsp.getPath().equals(selectPath) || !SettingWindow.extendStores.parallelStream()
 										.anyMatch(f -> f.getPath().equals(selectPath))) {
-									if (encoder.canEncode(selectPath.getAbsolutePath())) {
+									String pathName = selectPath.getAbsolutePath();
+									if (encoder.canEncode(pathName) && pathName.indexOf("\\:") < 0
+											&& pathName.indexOf("\\\\") < 0) {
 										fsp.setPath(mainFileSystemPathChooer.getSelectedFile());
 									} else {
 										JOptionPane.showMessageDialog(window, INVALID_PATH_ALTER, "错误",

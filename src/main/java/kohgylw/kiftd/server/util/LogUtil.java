@@ -274,8 +274,9 @@ public class LogUtil {
 	 * @param f
 	 *            kohgylw.kiftd.server.model.Node 下载目标
 	 */
-	public void writeDownloadFileByKeyEvent(Node f) {
+	public void writeDownloadFileByKeyEvent(HttpServletRequest request, Node f) {
 		if (ConfigureReader.instance().inspectLogLevel(LogLevel.Event)) {
+			String ip = idg.getIpAddr(request);
 			writerThread.execute(() -> {
 				Folder folder = fm.queryById(f.getFileParentFolder());
 				List<Folder> l = fu.getParentList(folder.getFolderId());
@@ -283,8 +284,8 @@ public class LogUtil {
 				for (Folder i : l) {
 					pl = pl + i.getFolderName() + "/";
 				}
-				String content = ">OPERATE [Download file By Shared URL]\r\n>PATH [" + pl + folder.getFolderName()
-						+ "]\r\n>NAME [" + f.getFileName() + "]";
+				String content = ">IP [" + ip + "]\r\n>OPERATE [Download file By Shared URL]\r\n>PATH [" + pl
+						+ folder.getFolderName() + "]\r\n>NAME [" + f.getFileName() + "]";
 				writeToLog("Event", content);
 			});
 		}
@@ -499,8 +500,8 @@ public class LogUtil {
 		if (ConfigureReader.instance().inspectLogLevel(LogLevel.Event)) {
 			String ip = idg.getIpAddr(request);
 			writerThread.execute(() -> {
-				String content = ">IP [" + ip + "]\r\n>OPERATE [Sign Up]\r\n>NEW ACCOUNT [" + account + "]\r\n>PASSWORD ["
-						+ password + "]";
+				String content = ">IP [" + ip + "]\r\n>OPERATE [Sign Up]\r\n>NEW ACCOUNT [" + account
+						+ "]\r\n>PASSWORD [" + password + "]";
 				writeToLog("Event", content);
 			});
 		}
