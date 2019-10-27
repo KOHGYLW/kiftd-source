@@ -7,7 +7,6 @@ import kohgylw.kiftd.server.enumeration.*;
 import kohgylw.kiftd.server.model.Folder;
 import kohgylw.kiftd.server.pojo.*;
 import java.io.*;
-import java.nio.channels.FileLock;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardWatchEventKinds;
@@ -803,9 +802,7 @@ public class ConfigureReader {
 		dap.setProperty("authOverall", DEFAULT_AUTH_OVERALL);
 
 		try (FileOutputStream accountSettingOut = new FileOutputStream(this.confdir + ACCOUNT_PROPERTIES_FILE)) {
-			FileLock lock = accountSettingOut.getChannel().lock();
 			dap.store(accountSettingOut, "<This is the default kiftd account setting file. >");
-			lock.release();
 			Printer.instance.print("初始账户配置文件生成完毕。");
 		} catch (FileNotFoundException e) {
 			Printer.instance.print("错误：无法生成初始账户配置文件，存储路径不存在。");
@@ -966,8 +963,9 @@ public class ConfigureReader {
 								Printer.instance.print("正在更新账户配置信息...");
 								final File accountProp = new File(this.confdir + ACCOUNT_PROPERTIES_FILE);
 								final FileInputStream accountPropIn = new FileInputStream(accountProp);
-								accountPropIn.getChannel().lock(0L, Long.MAX_VALUE, true);
-								this.accountp.load(accountPropIn);
+								synchronized (accountp) {
+									this.accountp.load(accountPropIn);
+								}
 								initIPRules();
 								initSignUpRules();
 								Printer.instance.print("账户配置更新完成，已加载最新配置。");
@@ -1122,16 +1120,17 @@ public class ConfigureReader {
 				}
 			}
 		}
-		for (String config : invalidConfigs) {
-			accountp.removeProperty(config);
-		}
-		try (FileOutputStream accountSettingOut = new FileOutputStream(this.confdir + ACCOUNT_PROPERTIES_FILE)) {
-			accountSettingOut.getChannel().lock();
-			accountp.store(accountSettingOut, null);
-			return true;
-		} catch (Exception e) {
-			Printer.instance.print("错误：更新账户配置文件时出现错误，请立即检查账户配置文件。");
-			return false;
+		synchronized (accountp) {
+			for (String config : invalidConfigs) {
+				accountp.removeProperty(config);
+			}
+			try (FileOutputStream accountSettingOut = new FileOutputStream(this.confdir + ACCOUNT_PROPERTIES_FILE)) {
+				accountp.store(accountSettingOut, null);
+				return true;
+			} catch (Exception e) {
+				Printer.instance.print("错误：更新账户配置文件时出现错误，请立即检查账户配置文件。");
+				return false;
+			}
 		}
 	}
 
@@ -1194,14 +1193,15 @@ public class ConfigureReader {
 	public boolean changePassword(String account, String newPassword) throws Exception {
 		if (account != null && newPassword != null) {
 			if (accountp.getProperty(account + ".pwd") != null) {
-				accountp.setProperty(account + ".pwd", newPassword);
-				try (FileOutputStream accountSettingOut = new FileOutputStream(
-						this.confdir + ACCOUNT_PROPERTIES_FILE)) {
-					accountSettingOut.getChannel().lock();
-					accountp.store(accountSettingOut, null);
-					return true;
-				} catch (Exception e) {
-					throw e;
+				synchronized (accountp) {
+					accountp.setProperty(account + ".pwd", newPassword);
+					try (FileOutputStream accountSettingOut = new FileOutputStream(
+							this.confdir + ACCOUNT_PROPERTIES_FILE)) {
+						accountp.store(accountSettingOut, null);
+						return true;
+					} catch (Exception e) {
+						throw e;
+					}
 				}
 			}
 		}
@@ -1290,15 +1290,16 @@ public class ConfigureReader {
 	public boolean createNewAccount(String newAccount, String newPassword) throws Exception {
 		if (newAccount != null && newPassword != null) {
 			if (accountp.getProperty(newAccount + ".pwd") == null) {
-				accountp.setProperty(newAccount + ".pwd", newPassword);
-				accountp.setProperty(newAccount + ".auth", signUpAuth);
-				try (FileOutputStream accountSettingOut = new FileOutputStream(
-						this.confdir + ACCOUNT_PROPERTIES_FILE)) {
-					accountSettingOut.getChannel().lock();
-					accountp.store(accountSettingOut, null);
-					return true;
-				} catch (Exception e) {
-					throw e;
+				synchronized (accountp) {
+					accountp.setProperty(newAccount + ".pwd", newPassword);
+					accountp.setProperty(newAccount + ".auth", signUpAuth);
+					try (FileOutputStream accountSettingOut = new FileOutputStream(
+							this.confdir + ACCOUNT_PROPERTIES_FILE)) {
+						accountp.store(accountSettingOut, null);
+						return true;
+					} catch (Exception e) {
+						throw e;
+					}
 				}
 			}
 		}
