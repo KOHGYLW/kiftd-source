@@ -141,6 +141,12 @@ public class UIRunner {
 				// TODO 自动生成的方法存根
 				return ConfigureReader.instance().isOpenFileChain();
 			}
+
+			@Override
+			public int getMaxExtendStoresNum() {
+				// TODO 自动生成的方法存根
+				return ConfigureReader.instance().getMaxExtendstoresNum();
+			}
 		});
 		ServerUIModule.setUpdateSetting(new UpdateSetting() {
 

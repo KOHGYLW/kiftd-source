@@ -68,8 +68,8 @@ public class ConfigureReader {
 	private final String DEFAULT_AUTH_OVERALL = "l";
 	private final String DEFAULT_PASSWORD_CHANGE_SETTING = "N";
 	private final String DEFAULT_FILE_CHAIN_SETTING = "CLOSE";
-	public static final int INVALID_PORT = 1;//端口无效
-	public static final int INVALID_LOG = 2;//日志设置无效
+	public static final int INVALID_PORT = 1;// 端口无效
+	public static final int INVALID_LOG = 2;// 日志设置无效
 	public static final int INVALID_FILE_SYSTEM_PATH = 3;
 	public static final int INVALID_BUFFER_SIZE = 4;
 	public static final int CANT_CREATE_FILE_BLOCK_PATH = 5;
@@ -92,15 +92,17 @@ public class ConfigureReader {
 	private boolean ipAllowOrBanned;// IP规则为允许还是禁止，若为允许则是false，否则应为true
 	private boolean enableIPRule;// 是否启用IP规则检查
 
+	private static final int MAX_EXTENDSTORES_NUM = 255;// 扩展存储区最大数目
+
 	private ConfigureReader() {
 		this.propertiesStatus = -1;
-		this.path = System.getProperty("user.dir");// 开发环境下
+		this.path = System.getProperty("user.dir");// 开发环境下使用项目工程路径
 		String classPath = System.getProperty("java.class.path");
 		if (classPath.indexOf(File.pathSeparator) < 0) {
 			File f = new File(classPath);
 			classPath = f.getAbsolutePath();
 			if (classPath.endsWith(".jar")) {
-				this.path = classPath.substring(0, classPath.lastIndexOf(File.separator));// 使用环境下
+				this.path = classPath.substring(0, classPath.lastIndexOf(File.separator));// 使用环境下使用程序主目录
 			}
 		}
 		this.DEFAULT_FILE_SYSTEM_PATH = this.path + File.separator + "filesystem" + File.separator;
@@ -651,16 +653,17 @@ public class ConfigureReader {
 		} else if (this.FSPath.equals("DEFAULT")) {
 			this.fileSystemPath = this.DEFAULT_FILE_SYSTEM_PATH;
 		} else {
-			this.fileSystemPath = this.FSPath.replaceAll("\\\\:", ":").replaceAll("\\\\\\\\", "\\\\");//后面的替换是为了兼容以前版本的设置
+			this.fileSystemPath = this.FSPath.replaceAll("\\\\:", ":").replaceAll("\\\\\\\\", "\\\\");// 后面的替换是为了兼容以前版本的设置
 		}
 		if (!fileSystemPath.endsWith(File.separator)) {
 			fileSystemPath = fileSystemPath + File.separator;
 		}
 		extendStores.clear();
-		for (short i = 1; i < 32; i++) {
+		for (short i = 1; i < MAX_EXTENDSTORES_NUM + 1; i++) {
 			if (serverp.getProperty("FS.extend." + i) != null) {
 				ExtendStores es = new ExtendStores();
-				es.setPath(new File(serverp.getProperty("FS.extend." + i).replaceAll("\\\\:", ":").replaceAll("\\\\\\\\", "\\\\")));
+				es.setPath(new File(
+						serverp.getProperty("FS.extend." + i).replaceAll("\\\\:", ":").replaceAll("\\\\\\\\", "\\\\")));
 				es.setIndex(i);
 				extendStores.add(es);
 			}
@@ -1304,5 +1307,19 @@ public class ConfigureReader {
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * 
+	 * <h2>获取允许扩展存储区的最大数量</h2>
+	 * <p>
+	 * 该方法用于获得系统允许创建的扩展存储区最大数目。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @return int 扩展存储区最大数目
+	 */
+	public int getMaxExtendstoresNum() {
+		return MAX_EXTENDSTORES_NUM;
 	}
 }

@@ -38,4 +38,6 @@ public interface GetServerStatus
     boolean isOpenFileChain();
     
     List<FileSystemPath> getExtendStores();
+    
+    int getMaxExtendStoresNum();
 }

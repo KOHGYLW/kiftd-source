@@ -42,6 +42,7 @@ public class FileSystemPathViewer extends KiftdDynamicWindow {
 	private JButton changeBtn;// 修改按钮
 	private JButton removeBtn;// 删除按钮
 	private PathsTable pathsTable;// 文件列表对象
+	private int maxExtendStoresNum;//最大扩展存储区数目
 
 	private static FileSystemPathViewer fsv;// 该窗口的唯一实例
 	private static List<FileSystemPath> paths;// 当前显示的视图
@@ -79,10 +80,10 @@ public class FileSystemPathViewer extends KiftdDynamicWindow {
 		toolBar.addSeparator();
 		c.add(toolBar, BorderLayout.NORTH);
 		// 各个工具栏按钮的功能实现
-
+		maxExtendStoresNum=SettingWindow.st==null?0:SettingWindow.st.getMaxExtendStoresNum();
 		addBtn.addActionListener((e) -> {
 			disableAllButtons();
-			if (SettingWindow.extendStores.size() < 32) {
+			if (SettingWindow.extendStores.size() < maxExtendStoresNum) {
 				JFileChooser addExtendStoresChooer = new JFileChooser();
 				addExtendStoresChooer.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 				addExtendStoresChooer.setPreferredSize(fileChooerSize);
@@ -308,7 +309,7 @@ public class FileSystemPathViewer extends KiftdDynamicWindow {
 	// 解锁可用按钮
 	private void enableAllButtons() {
 		// 针对一些常规按钮的解锁
-		if (SettingWindow.extendStores.size() < 32) {
+		if (SettingWindow.extendStores.size() < maxExtendStoresNum) {
 			addBtn.setEnabled(true);
 		} else {
 			addBtn.setEnabled(false);

@@ -397,14 +397,13 @@ public class LogUtil {
 			String a = account;
 			String ip = idg.getIpAddr(request);
 			writerThread.execute(() -> {
-				Folder folder = fm.queryById(f.getFolderParent());
-				List<Folder> l = fu.getParentList(folder.getFolderId());
+				List<Folder> l = fu.getParentList(f.getFolderId());
 				String pl = new String();
 				for (Folder i : l) {
 					pl = pl + i.getFolderName() + "/";
 				}
 				String content = ">IP [" + ip + "]\r\n>ACCOUNT [" + a + "]\r\n>OPERATE [Move Folder]\r\n>NEW PATH ["
-						+ pl + folder.getFolderName() + "/" + f.getFolderName() + "]";
+						+ pl + f.getFolderName() + "]";
 				writeToLog("Event", content);
 			});
 		}

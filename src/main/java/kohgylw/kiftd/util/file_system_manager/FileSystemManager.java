@@ -3,6 +3,7 @@ package kohgylw.kiftd.util.file_system_manager;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
@@ -763,25 +764,29 @@ public class FileSystemManager {
 		// 如果存在扩展存储区，则优先在最大的扩展存储区中存放文件（避免占用主文件系统）
 		List<ExtendStores> ess = ConfigureReader.instance().getExtendStores();// 得到全部扩展存储区
 		if (ess.size() > 0) {// 如果存在
-			// 找到剩余容量最大的一个
-			ExtendStores maxExtendStores = Collections.max(ConfigureReader.instance().getExtendStores(),
-					new Comparator<ExtendStores>() {
-						@Override
-						public int compare(ExtendStores o1, ExtendStores o2) {
-							// TODO 自动生成的方法存根
-							return (int) (o1.getPath().getFreeSpace() - o2.getPath().getFreeSpace());
-						}
-					});
-			// 如果该存储区的空余容量大于要存放的文件
-			if (maxExtendStores.getPath().getFreeSpace() > f.length()) {
-				final String id = UUID.randomUUID().toString().replace("-", "");
-				final String path = maxExtendStores.getIndex() + "_" + id + ".block";
-				final File target = new File(maxExtendStores.getPath(), path);
-				try {
-					transferFile(f, target);// 则执行存放，并将文件命名为“{存储区编号}_{UUID}.block”的形式
-					return path;
-				} catch (Exception e) {
-
+			Collections.sort(ess, new Comparator<ExtendStores>() {
+				@Override
+				public int compare(ExtendStores o1, ExtendStores o2) {
+					return o1.getPath().list().length - o2.getPath().list().length;
+				}
+			});
+			// 遍历这些扩展存储区，并尝试将新文件存入一个已有文件数目最少、同时容量又足够的扩展存储区中
+			for (ExtendStores es : ess) {
+				// 如果该存储区的空余容量大于要存放的文件
+				if (es.getPath().getFreeSpace() > f.length()) {
+					final String id = UUID.randomUUID().toString().replace("-", "");
+					final String path = es.getIndex() + "_" + id + ".block";
+					final File file = new File(es.getPath(), path);
+					try {
+						transferFile(f, file);// 则执行存放，并将文件命名为“{存储区编号}_{UUID}.block”的形式
+						return path;
+					} catch (IOException e) {
+						//如果无法存入（由于体积过大或其他问题），那么继续尝试其他扩展存储区
+						continue;
+					} catch (Exception e) {
+						Printer.instance.print(e.getMessage());
+						continue;
+					}
 				}
 			}
 		}
