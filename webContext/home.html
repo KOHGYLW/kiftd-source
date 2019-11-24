@@ -135,7 +135,8 @@
 									aria-hidden="true" style="float: right"></span></th>
 								<th class="hiddenColumn" onclick="sortbycn()">创建者<span
 									id="sortByCN" aria-hidden="true" style="float: right"></span></th>
-								<th onclick="showOriginFolderView()">操作</th>
+								<th onclick="showOriginFolderView()">操作<span id="sortByOR"
+									aria-hidden="true" style="float: right"></span></th>
 							</tr>
 						</thead>
 						<tbody id="foldertable"></tbody>
@@ -797,10 +798,12 @@
 					</h4>
 				</div>
 				<div class="modal-body">
-					<textarea id="fileChainTextarea" class="form-control" rows="3" readonly></textarea>
+					<textarea id="fileChainTextarea" class="form-control" rows="3"
+						readonly></textarea>
 				</div>
 				<div class="modal-footer">
-					<button id="copyChainBtn" type="button" class="btn btn-info" onclick="copyFileChain()">复制链接</button>
+					<button id="copyChainBtn" type="button" class="btn btn-info"
+						onclick="copyFileChain()">复制链接</button>
 					<button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
 				</div>
 			</div>
@@ -827,5 +830,5 @@
 <!-- 音乐播放器 -->
 <script type="text/javascript" src="js/APlayer.min.js"></script>
 <!-- 页面操作定义 -->
-<script type="text/javascript" src="js/home.min.js"></script>
+<script type="text/javascript" src="js/home.js"></script>
 </html>

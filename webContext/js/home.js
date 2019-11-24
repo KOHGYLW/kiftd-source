@@ -2113,20 +2113,26 @@ function sortbyfn(){
 	$("#sortByCN").removeClass();
 	var order=1;
 	if($("#sortByFN").hasClass('glyphicon-triangle-bottom')){
-		$("#sortByFN").removeClass();
-		$("#sortByFN").addClass("glyphicon glyphicon-triangle-top");
 		order=-1;
-	}else{
-		$("#sortByFN").removeClass();
-		$("#sortByFN").addClass("glyphicon glyphicon-triangle-bottom");
 	}
-	folderView.fileList.sort(function(v1,v2){
-		return order * v2.fileName.localeCompare(v1.fileName,"zh");
-	});
-	folderView.folderList.sort(function(v1,v2){
-		return order * v2.folderName.localeCompare(v1.folderName,"zh");
-	});
-	showFolderTable(folderView);
+	$("#sortByFN").removeClass();
+	$("#sortByFN").addClass("glyphicon glyphicon-hourglass");
+	// 另开一个计时器进行排序操作，避免因卡死导致加载动画无法显示
+	setTimeout(function(){
+		folderView.fileList.sort(function(v1,v2){
+			return order * v2.fileName.localeCompare(v1.fileName,"zh");
+		});
+		folderView.folderList.sort(function(v1,v2){
+			return order * v2.folderName.localeCompare(v1.folderName,"zh");
+		});
+		showFolderTable(folderView);
+		$("#sortByFN").removeClass();
+		if(order == -1){
+			$("#sortByFN").addClass("glyphicon glyphicon-triangle-top");
+		}else{
+			$("#sortByFN").addClass("glyphicon glyphicon-triangle-bottom");
+		}
+	}, 0);
 }
 
 // 按创建日期排序
@@ -2136,26 +2142,31 @@ function sortbycd(){
 	$("#sortByCN").removeClass();
 	var order=1;
 	if($("#sortByCD").hasClass('glyphicon-triangle-bottom')){
-		$("#sortByCD").removeClass();
-		$("#sortByCD").addClass("glyphicon glyphicon-triangle-top");
 		order=-1;
-	}else{
-		$("#sortByCD").removeClass();
-		$("#sortByCD").addClass("glyphicon glyphicon-triangle-bottom");
 	}
-	folderView.fileList.sort(function(v1,v2){
-		var v1DateStr=v1.fileCreationDate.replace("年","-").replace("月","-").replace("日","");
-		var v2DateStr=v2.fileCreationDate.replace("年","-").replace("月","-").replace("日","");
-		var res=((new Date(Date.parse(v1DateStr)).getTime())-(new Date(Date.parse(v2DateStr)).getTime()));
-		return order * res;
-	});
-	folderView.folderList.sort(function(v1,v2){
-		var v1DateStr=v1.folderCreationDate.replace("年","-").replace("月","-").replace("日","");
-		var v2DateStr=v2.folderCreationDate.replace("年","-").replace("月","-").replace("日","");
-		var res=((new Date(Date.parse(v1DateStr)).getTime())-(new Date(Date.parse(v2DateStr)).getTime()));
-		return order * res;
-	});
-	showFolderTable(folderView);
+	$("#sortByCD").removeClass();
+	$("#sortByCD").addClass("glyphicon glyphicon-hourglass");
+	setTimeout(function(){
+		folderView.fileList.sort(function(v1,v2){
+			var v1DateStr=v1.fileCreationDate.replace("年","-").replace("月","-").replace("日","");
+			var v2DateStr=v2.fileCreationDate.replace("年","-").replace("月","-").replace("日","");
+			var res=((new Date(Date.parse(v1DateStr)).getTime())-(new Date(Date.parse(v2DateStr)).getTime()));
+			return order * res;
+		});
+		folderView.folderList.sort(function(v1,v2){
+			var v1DateStr=v1.folderCreationDate.replace("年","-").replace("月","-").replace("日","");
+			var v2DateStr=v2.folderCreationDate.replace("年","-").replace("月","-").replace("日","");
+			var res=((new Date(Date.parse(v1DateStr)).getTime())-(new Date(Date.parse(v2DateStr)).getTime()));
+			return order * res;
+		});
+		showFolderTable(folderView);
+		$("#sortByCD").removeClass();
+		if(order == -1){
+			$("#sortByCD").addClass("glyphicon glyphicon-triangle-top");
+		}else{
+			$("#sortByCD").addClass("glyphicon glyphicon-triangle-bottom");
+		}
+	}, 0);
 }
 
 // 按文件大小排序
@@ -2163,21 +2174,24 @@ function sortbyfs(){
 	$("#sortByFN").removeClass();
 	$("#sortByCD").removeClass();
 	$("#sortByCN").removeClass();
-	// 正倒序判断
+	var order=1;
 	if($("#sortByFS").hasClass("glyphicon-triangle-bottom")){
-		$("#sortByFS").removeClass();
-		$("#sortByFS").addClass("glyphicon glyphicon-triangle-top");
-		folderView.fileList.sort(function(v1,v2){
-			return v2.fileSize - v1.fileSize;
-		});
-	}else{
-		$("#sortByFS").removeClass();
-		$("#sortByFS").addClass("glyphicon glyphicon-triangle-bottom");
-		folderView.fileList.sort(function(v1,v2){
-			return v1.fileSize - v2.fileSize;
-		});
+		order=-1;
 	}
-	showFolderTable(folderView);
+	$("#sortByFS").removeClass();
+	$("#sortByFS").addClass("glyphicon glyphicon-hourglass");
+	setTimeout(function(){
+		folderView.fileList.sort(function(v1,v2){
+			return order * (v1.fileSize - v2.fileSize);
+		});
+		showFolderTable(folderView);
+		$("#sortByFS").removeClass();
+		if(order == -1){
+			$("#sortByFS").addClass("glyphicon glyphicon-triangle-top");
+		}else{
+			$("#sortByFS").addClass("glyphicon glyphicon-triangle-bottom");
+		}
+	}, 0);
 }
 
 // 按创建者排序
@@ -2187,20 +2201,25 @@ function sortbycn(){
 	$("#sortByFS").removeClass();
 	var order=1;
 	if($("#sortByCN").hasClass('glyphicon-triangle-bottom')){
-		$("#sortByCN").removeClass();
-		$("#sortByCN").addClass("glyphicon glyphicon-triangle-top");
 		order=-1;
-	}else{
-		$("#sortByCN").removeClass();
-		$("#sortByCN").addClass("glyphicon glyphicon-triangle-bottom");
 	}
-	folderView.fileList.sort(function(v1,v2){
-		return order * v2.fileCreator.localeCompare(v1.fileCreator,"zh");
-	});
-	folderView.folderList.sort(function(v1,v2){
-		return order * v2.folderCreator.localeCompare(v1.folderCreator,"zh");
-	});
-	showFolderTable(folderView);
+	$("#sortByCN").removeClass();
+	$("#sortByCN").addClass("glyphicon glyphicon-hourglass");
+	setTimeout(function(){
+		folderView.fileList.sort(function(v1,v2){
+			return order * v2.fileCreator.localeCompare(v1.fileCreator,"zh");
+		});
+		folderView.folderList.sort(function(v1,v2){
+			return order * v2.folderCreator.localeCompare(v1.folderCreator,"zh");
+		});
+		showFolderTable(folderView);
+		$("#sortByCN").removeClass();
+		if(order == -1){
+			$("#sortByCN").addClass("glyphicon glyphicon-triangle-top");
+		}else{
+			$("#sortByCN").addClass("glyphicon glyphicon-triangle-bottom");
+		}
+	}, 0);
 }
 
 // 显示原始的顺序
@@ -2209,12 +2228,16 @@ function showOriginFolderView(){
 	$("#sortByCD").removeClass();
 	$("#sortByFS").removeClass();
 	$("#sortByCN").removeClass();
-	if(screenedFoldrView!=null){
-		folderView=$.extend(true, {}, screenedFoldrView);
-	}else{
-		folderView=$.extend(true, {}, originFolderView);
-	}
-	showFolderTable(folderView);
+	$("#sortByOR").addClass("glyphicon glyphicon-hourglass");
+	setTimeout(function(){
+		if(screenedFoldrView!=null){
+			folderView=$.extend(true, {}, screenedFoldrView);
+		}else{
+			folderView=$.extend(true, {}, originFolderView);
+		}
+		showFolderTable(folderView);
+		$("#sortByOR").removeClass();
+	}, 0);
 }
 
 // 确认文件移动（剪切-粘贴）操作
