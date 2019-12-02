@@ -27,14 +27,17 @@ var pvl;// 预览图片列表的JSON格式对象
 var checkFilesTip="提示：您还未选择任何文件，请先选中一些文件后再执行本操作：<br /><br /><kbd>单击</kbd>：选中某一文件<br /><br /><kbd><kbd>Shift</kbd>+<kbd>单击</kbd></kbd>：选中多个文件<br /><br /><kbd><kbd>Shift</kbd>+<kbd>双击</kbd></kbd>：选中连续的文件<br /><br /><kbd><kbd>Shitf</kbd>+<kbd>A</kbd></kbd>：选中/取消选中所有文件";// 选取文件提示
 var winHeight;// 窗口高度
 var pingInt;// 定时应答器的定时装置
+var noticeInited=false;// 公告信息的md5标识
 
 // 界面功能方法定义
 // 页面初始化
 $(function() {
 	window.onresize = function(){
 		changeFilesTableStyle();
+		updateWinHeight();
     }
 	getServerOS();// 得到服务器操作系统信息
+	subscribeNotice();// 获取服务器的公告信息，如果有则显示
 	// 查询是否存在记忆路径，若有，则直接显示记忆路径的内容，否则显示ROOT根路径
 	var arr = document.cookie.match(new RegExp("(^| )folder_id=([^;]*)(;|$)"));
     if (arr != null){
@@ -315,11 +318,7 @@ $(function() {
 		$('#downloadURLCollapse').collapse('hide');
 	});
 	// 获取窗口高度
-	if (window.innerHeight){
-		winHeight = window.innerHeight;
-	}else if ((document.body) && (document.body.clientHeight)){
-		winHeight = document.body.clientHeight;
-	}
+	updateWinHeight();
 	// 根据屏幕下拉程度自动显示、隐藏“返回顶部”按钮
 	$(window).scroll(function(){
 		if($(this).scrollTop() > 2*winHeight){
@@ -349,7 +348,42 @@ $(function() {
 			$("#changepassword_oldpwd").focus();
 		}
 	});
+	// 开启公告信息模态框前自动判断是否已经勾选“30天不再显示”
+	$('#noticeModal').on('show.bs.modal', function(e) {
+		var cookieMd530 = document.cookie.match(new RegExp("(^| )notice_md5_30=([^;]*)(;|$)"));
+		if(cookieMd530){
+			$("#dontShowSomeNoticeAt30Day").attr("checked","checked");
+		}else{
+			$("#dontShowSomeNoticeAt30Day").attr("checked",false);
+		}
+	});
+	// 关闭公告信息模态框后根据是否已经勾选“30天不再显示”设置cookie
+	$('#noticeModal').on('hidden.bs.modal', function(e) {
+		var noticed = new Date();
+		if($("#dontShowSomeNoticeAt30Day").prop("checked")){
+			noticed.setTime(noticed.getTime() + (30*24*60*60*1000));
+			var cookieMd5 = document.cookie.match(new RegExp("(^| )notice_md5=([^;]*)(;|$)"));
+			if(cookieMd5){
+				document.cookie = "notice_md5_30=" + escape(unescape(cookieMd5[2])) + ";expires=" + noticed.toUTCString();
+			}
+		}else{
+			noticed.setTime(0);
+			var cookieMd530 = document.cookie.match(new RegExp("(^| )notice_md5_30=([^;]*)(;|$)"));
+			if(cookieMd530){
+				document.cookie = "notice_md5_30=0;expires=" + noticed.toUTCString();
+			}
+		}
+	});
 });
+
+// 更新页面高度
+function updateWinHeight(){
+	if (window.innerHeight){
+		winHeight = window.innerHeight;
+	}else if ((document.body) && (document.body.clientHeight)){
+		winHeight = document.body.clientHeight;
+	}
+}
 
 // 根据屏幕大小增删表格显示内容
 function changeFilesTableStyle(){
@@ -767,6 +801,7 @@ function refreshFolderView() {
 	} else {
 		showFolderView('root');
 	}
+	subscribeNotice();
 }
 
 // 返回上一级文件夹
@@ -3032,4 +3067,74 @@ function copyFileChain(){
 		selection.addRange(range);
 	}
 	document.execCommand('copy');
+}
+
+// 显示公告模态框
+function showNoticeModal(){
+	$('#noticeModal').modal('show');
+}
+
+// 加载公告内容并初始化公告模态框
+function initNoticeModal(){
+	$("#noticeModalBody").load("resourceController/getNoticeContext.do",function(){
+		$('#noticeModalBody img').css("max-width","100%");
+		if(winHeight >= 300){
+			$('#noticeModalBody').css("max-height",(winHeight - 180)+"px");
+		}else{
+			$('#noticeModalBody').css("max-height","300px");
+		}
+		noticeInited = true;
+		showNoticeModal();
+		showNoticeBtn();
+	});
+}
+
+// 打开主页时自动订阅未阅读过的公告信息并显示，如果该公告已经阅读过则不会显示。
+function subscribeNotice(){
+	$.ajax({
+		url:'resourceController/getNoticeMD5.ajax',
+		data:{},
+		type:'POST',
+		dataType:'text',
+		success:function(result){
+			if(result != ""){
+				var cookieMd5 = document.cookie.match(new RegExp("(^| )notice_md5=([^;]*)(;|$)"));
+				if(cookieMd5){
+					if(result == unescape(cookieMd5[2])){
+						showNoticeBtn();
+						return;
+					}
+				}else{
+					var cookieMd530 = document.cookie.match(new RegExp("(^| )notice_md5_30=([^;]*)(;|$)"));
+					if(cookieMd530){
+						if(result == unescape(cookieMd530[2])){
+							showNoticeBtn();
+							document.cookie = "notice_md5=" + escape(result);
+							return;
+						}
+					}
+				}
+				initNoticeModal();
+				document.cookie = "notice_md5=" + escape(result);
+			}
+		},
+		error:function(){
+			console.log("错误：无法从服务器获取公告信息，请尝试刷新页面。");
+		}
+	});
+}
+
+// 显示“公告”浮动按钮，方便用户手动打开公告
+function showNoticeBtn() {
+	$("#shownoticebox").removeClass("hidden");
+	$("#shownoticebox").addClass("show");
+}
+
+// 手动显示公告
+function showNotice() {
+	if(noticeInited) {
+		showNoticeModal();
+	}else{
+		initNoticeModal();
+	}
 }

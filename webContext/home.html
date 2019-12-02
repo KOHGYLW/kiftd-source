@@ -14,7 +14,7 @@
 <!-- Bootstrap基本框架 -->
 <link rel="stylesheet" href="css/bootstrap.min.css">
 <!-- 全局样式 -->
-<link rel="stylesheet" href="css/overrall.min.css">
+<link rel="stylesheet" href="css/overrall.css">
 <!-- 图片查看器插件 -->
 <link rel="stylesheet" href="css/viewer.min.css">
 <!-- 音乐播放器插件 -->
@@ -810,6 +810,37 @@
 		</div>
 	</div>
 	<!-- end 永久资源链接 -->
+	<!-- 公告信息栏 -->
+	<div class="modal fade" id="noticeModal" tabindex="-1" role="dialog"
+		aria-labelledby="noticeModalLabel">
+		<div class="modal-dialog modal-lg" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal"
+						aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+					<h4 class="modal-title" id="noticeModalLabel">公告信息</h4>
+				</div>
+				<div class="modal-body" style="overflow: scroll;"
+					id="noticeModalBody"></div>
+				<div class="modal-footer">
+					<label class="text-muted"> <input type="checkbox" id="dontShowSomeNoticeAt30Day">
+						30天内不再显示相同的公告信息 
+					</label>
+					<button type="button" class="btn btn-primary" data-dismiss="modal">关闭</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- end 公告信息栏 -->
+	<!-- 显示公告按钮 -->
+	<div id="shownoticebox" class="shownoticebox text-center hidden">
+		<button type="button" onclick="showNotice()" class="shownoticebutton">
+			<span class="glyphicon glyphicon-bookmark" aria-hidden="true"></span><br />公告
+		</button>
+	</div>
+	<!-- end 显示公告按钮 -->
 	<!-- 返回顶部按钮（隐藏式） -->
 	<div id="gobacktotopbox" class="gobacktopbox text-center hidden">
 		<button type="button" onclick="goBackToTop()" class="gobacktopbutton">

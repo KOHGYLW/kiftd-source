@@ -57,5 +57,17 @@ public class ResourceController {
 	public @ResponseBody String getVideoTranscodeStatus(HttpServletRequest request) {
 		return rs.getVideoTranscodeStatus(request);
 	}
+	
+	// 获取公告新的的MD5，如果没有公告信息，则返回n
+	@RequestMapping("/getNoticeMD5.ajax")
+	public @ResponseBody String getNoticeMD5() {
+		return rs.getNoticeMD5();
+	}
+	
+	// 获取公告信息的HTML文本
+	@RequestMapping("/getNoticeContext.do")
+	public void getNoticeContext(HttpServletRequest request,HttpServletResponse response) {
+		rs.getNoticeContext(request, response);
+	}
 
 }

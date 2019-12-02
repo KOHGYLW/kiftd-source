@@ -75,5 +75,24 @@ public interface ResourceService {
 	 * @param response javax.servlet.http.HttpServletResponse 响应对象
 	 */
 	public void getLRContextByUTF8(String fileId,HttpServletRequest request,HttpServletResponse response);
+	
+	/**
+	 * 
+	 * <h2>获取公告信息的MD5</h2>
+	 * <p>该方法用于获取公告信息的md5值，如果无公告则会返回null。</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @return java.lang.String 公告信息的md5值，无公告时返回null。
+	 */
+	public String getNoticeMD5();
+	
+	/**
+	 * 
+	 * <h2>获取公告信息的HTML内容</h2>
+	 * <p>该方法将以text/html格式返回公告信息的HTML内容，将其加入到div容器内即可直接显示了。</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @param request javax.servlet.http.HttpServletRequest 请求对象
+	 * @param response javax.servlet.http.HttpServletResponse 响应对象
+	 */
+	public void getNoticeContext(HttpServletRequest request,HttpServletResponse response);
 
 }

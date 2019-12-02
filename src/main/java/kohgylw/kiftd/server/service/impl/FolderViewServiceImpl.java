@@ -24,6 +24,8 @@ public class FolderViewServiceImpl implements FolderViewService {
 	private NodeMapper flm;
 	@Resource
 	private Gson gson;
+	@Resource
+	private NoticeUtil nu;
 
 	@Override
 	public String getFolderViewToJson(final String fid, final HttpSession session, final HttpServletRequest request) {
@@ -90,6 +92,7 @@ public class FolderViewServiceImpl implements FolderViewService {
 		}
 		fv.setAuthList(authList);
 		fv.setPublishTime(ServerTimeUtil.accurateToMinute());
+		fv.setNoticeMd5(nu.getMd5());
 		return gson.toJson(fv);
 	}
 

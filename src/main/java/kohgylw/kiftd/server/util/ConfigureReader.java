@@ -957,12 +957,12 @@ public class ConfigureReader {
 				try {
 					while (true) {
 						WatchService ws = confPath.getFileSystem().newWatchService();
-						confPath.register(ws, StandardWatchEventKinds.ENTRY_MODIFY);
+						confPath.register(ws, StandardWatchEventKinds.ENTRY_MODIFY,
+								StandardWatchEventKinds.ENTRY_DELETE, StandardWatchEventKinds.ENTRY_CREATE);
 						WatchKey wk = ws.take();
 						List<WatchEvent<?>> es = wk.pollEvents();
 						for (WatchEvent<?> we : es) {
-							if (we.kind() == StandardWatchEventKinds.ENTRY_MODIFY
-									&& ACCOUNT_PROPERTIES_FILE.equals(we.context().toString())) {
+							if (ACCOUNT_PROPERTIES_FILE.equals(we.context().toString())) {
 								Printer.instance.print("正在更新账户配置信息...");
 								final File accountProp = new File(this.confdir + ACCOUNT_PROPERTIES_FILE);
 								final FileInputStream accountPropIn = new FileInputStream(accountProp);

@@ -42,7 +42,8 @@ Class-Path: libs/spring-boot-starter-web-2.0.2.RELEASE.jar libs/spring
  g-api-1.1.jar libs/jave-nativebin-win32-2.5.0.jar libs/jave-nativebin
  -win64-2.5.0.jar libs/jave-nativebin-linux32-2.5.0.jar libs/jave-nati
  vebin-linux64-2.5.0.jar libs/jave-nativebin-osx64-2.5.0.jar libs/comm
- ons-codec-1.11.jar
+ ons-codec-1.11.jar libs/flexmark-0.50.44.jar libs/flexmark-util-0.50.
+ 44.jar
 Build-Jdk: 1.8.0_131
 Implementation-URL: https://kohgylw.gitee.io
 Created-By: Maven Integration for Eclipse

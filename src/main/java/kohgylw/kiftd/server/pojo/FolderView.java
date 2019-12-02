@@ -15,6 +15,7 @@ public class FolderView{
     private String allowChangePassword;
     private String showFileChain;
     private String allowSignUp;
+    private String noticeMd5;
     
     public Folder getFolder() {
         return this.folder;
@@ -94,5 +95,13 @@ public class FolderView{
 
 	public void setAllowSignUp(String allowSignUp) {
 		this.allowSignUp = allowSignUp;
+	}
+	
+	public String getNoticeMd5() {
+		return noticeMd5;
+	}
+	
+	public void setNoticeMd5(String noticeMd5) {
+		this.noticeMd5 = noticeMd5;
 	}
 }

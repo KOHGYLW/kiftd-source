@@ -160,6 +160,15 @@
 			<artifactId>commons-codec</artifactId>
 		</dependency>
 		<!-- end MD5 -->
+		
+		<!-- Markdown 文本解析器 -->
+		<!-- https://mvnrepository.com/artifact/com.vladsch.flexmark/flexmark -->
+		<dependency>
+			<groupId>com.vladsch.flexmark</groupId>
+			<artifactId>flexmark</artifactId>
+			<version>0.50.44</version>
+		</dependency>
+		<!-- end Markdown解析器 -->
 
 	</dependencies>
 	<!-- end 外部资源 -->

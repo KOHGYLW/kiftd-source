@@ -7,6 +7,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.io.RandomAccessFile;
 import java.util.Date;
 
@@ -30,6 +31,7 @@ import kohgylw.kiftd.server.util.Docx2PDFUtil;
 import kohgylw.kiftd.server.util.FileBlockUtil;
 import kohgylw.kiftd.server.util.FolderUtil;
 import kohgylw.kiftd.server.util.LogUtil;
+import kohgylw.kiftd.server.util.NoticeUtil;
 import kohgylw.kiftd.server.util.PowerPoint2PDFUtil;
 import kohgylw.kiftd.server.util.Txt2PDFUtil;
 import kohgylw.kiftd.server.util.TxtCharsetGetter;
@@ -59,6 +61,8 @@ public class ResourceServiceImpl implements ResourceService {
 	private FolderMapper fm;
 	@Resource
 	private TxtCharsetGetter tcg;
+	@Resource
+	private NoticeUtil nu;
 
 	// 提供资源的输出流，原理与下载相同，但是个别细节有区别
 	@Override
@@ -400,6 +404,30 @@ public class ResourceServiceImpl implements ResourceService {
 			response.sendError(500);
 		} catch (Exception e1) {
 		}
+	}
+
+	@Override
+	public void getNoticeContext(HttpServletRequest request, HttpServletResponse response) {
+		File noticeHTML = new File(ConfigureReader.instance().getTemporaryfilePath(),NoticeUtil.NOTICE_OUTPUT_NAME);
+		String contentType = "text/html";
+		if(noticeHTML.isFile() && noticeHTML.canRead()) {
+			sendResource(noticeHTML, NoticeUtil.NOTICE_FILE_NAME, contentType, request, response);
+		}else {
+			try {
+				response.setContentType(contentType);
+				response.setCharacterEncoding("UTF-8");
+				PrintWriter writer =  response.getWriter();
+				writer.write("<p class=\"lead\">暂无新公告。</p>");
+				writer.flush();
+				writer.close();
+			} catch (IOException e) {
+			}
+		}
+	}
+
+	@Override
+	public String getNoticeMD5() {
+		return nu.getMd5();
 	}
 
 }
