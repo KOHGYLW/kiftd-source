@@ -3109,7 +3109,6 @@ function subscribeNotice(){
 					if(cookieMd530){
 						if(result == unescape(cookieMd530[2])){
 							showNoticeBtn();
-							document.cookie = "notice_md5=" + escape(result);
 							return;
 						}
 					}

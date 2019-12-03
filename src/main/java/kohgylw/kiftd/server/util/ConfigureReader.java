@@ -965,13 +965,18 @@ public class ConfigureReader {
 							if (ACCOUNT_PROPERTIES_FILE.equals(we.context().toString())) {
 								Printer.instance.print("正在更新账户配置信息...");
 								final File accountProp = new File(this.confdir + ACCOUNT_PROPERTIES_FILE);
-								final FileInputStream accountPropIn = new FileInputStream(accountProp);
-								synchronized (accountp) {
-									this.accountp.load(accountPropIn);
+								if(accountProp.isFile() && accountProp.canRead()) {
+									final FileInputStream accountPropIn = new FileInputStream(accountProp);
+									synchronized (accountp) {
+										this.accountp.load(accountPropIn);
+									}
+									initIPRules();
+									initSignUpRules();
+									Printer.instance.print("账户配置更新完成，已加载最新配置。");
+								}else {
+									accountp.clear();
+									Printer.instance.print("警告：账户配置文件已被删除或无法读取，账户信息已清空。");
 								}
-								initIPRules();
-								initSignUpRules();
-								Printer.instance.print("账户配置更新完成，已加载最新配置。");
 							}
 						}
 					}
