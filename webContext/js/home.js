@@ -365,6 +365,11 @@ $(function() {
 			var cookieMd5 = document.cookie.match(new RegExp("(^| )notice_md5=([^;]*)(;|$)"));
 			if(cookieMd5){
 				document.cookie = "notice_md5_30=" + escape(unescape(cookieMd5[2])) + ";expires=" + noticed.toUTCString();
+			}else{
+				cookieMd5 = document.cookie.match(new RegExp("(^| )notice_md5_30=([^;]*)(;|$)"));
+				if(cookieMd5){
+					document.cookie = "notice_md5_30=" + escape(unescape(cookieMd5[2])) + ";expires=" + noticed.toUTCString();
+				}
 			}
 		}else{
 			noticed.setTime(0);
@@ -3105,9 +3110,9 @@ function subscribeNotice(){
 						return;
 					}
 				}else{
-					var cookieMd530 = document.cookie.match(new RegExp("(^| )notice_md5_30=([^;]*)(;|$)"));
-					if(cookieMd530){
-						if(result == unescape(cookieMd530[2])){
+					cookieMd5 = document.cookie.match(new RegExp("(^| )notice_md5_30=([^;]*)(;|$)"));
+					if(cookieMd5){
+						if(result == unescape(cookieMd5[2])){
 							showNoticeBtn();
 							return;
 						}
