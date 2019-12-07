@@ -53,6 +53,7 @@ public class ConfigureReader {
 	private boolean openFileChain;// 是否开启永久外部链接
 	private boolean allowSignUp;// 是否允许自由注册新账户（高级）
 	private String signUpAuth;// 注册新账户的权限标识符（高级）
+	private String signUpGroup;// 注册新账户的组标识符（高级）
 	private final String ACCOUNT_PROPERTIES_FILE = "account.properties";
 	private final String SERVER_PROPERTIES_FILE = "server.properties";
 	private final int DEFAULT_BUFFER_SIZE = 1048576;
@@ -79,7 +80,8 @@ public class ConfigureReader {
 	public static final int HTTPS_SETTING_ERROR = 9;
 	public static final int INVALID_VC = 10;
 	public static final int INVALID_CHANGE_PASSWORD_SETTING = 11;
-	private static final int INNVALID_FILE_CHAIN_SETTING = 12;
+	public static final int INVALID_FILE_CHAIN_SETTING = 12;
+	public static final int INVALID_IP_XFF_SETTING = 13;
 	public static final int LEGAL_PROPERTIES = 0;
 	private static Thread accountPropertiesUpdateDaemonThread;
 	private String timeZone;
@@ -91,6 +93,7 @@ public class ConfigureReader {
 	private Set<String> ipRoster;// 需要检查的IP列表
 	private boolean ipAllowOrBanned;// IP规则为允许还是禁止，若为允许则是false，否则应为true
 	private boolean enableIPRule;// 是否启用IP规则检查
+	private boolean ipXFFAnalysis = true;// 是否启用XFF解析
 
 	private static final int MAX_EXTENDSTORES_NUM = 255;// 扩展存储区最大数目
 
@@ -625,7 +628,7 @@ public class ConfigureReader {
 				break;
 			default:
 				Printer.instance.print("错误：永久资源链接功能设置无效。");
-				return INNVALID_FILE_CHAIN_SETTING;
+				return INVALID_FILE_CHAIN_SETTING;
 			}
 		}
 		// 缓存大小
@@ -770,6 +773,23 @@ public class ConfigureReader {
 				}
 			}
 			openHttps = true;
+		}
+		// 是否启用XFF解析
+		String xffConf =  serverp.getProperty("IP.xff");
+		if(xffConf != null) {
+			switch (xffConf) {
+			case "disable":
+				ipXFFAnalysis = false;
+				break;
+			case "enable":
+				ipXFFAnalysis =  true;
+				break;
+			default:
+				Printer.instance.print("错误：IP地址xff解析配置不正确（只能设置为“disable”或“enable”），请重新检查。");
+				return INVALID_IP_XFF_SETTING;
+			}
+		}else {
+			ipXFFAnalysis = true;
 		}
 		Printer.instance.print("检查完毕。");
 		return 0;
@@ -965,7 +985,7 @@ public class ConfigureReader {
 							if (ACCOUNT_PROPERTIES_FILE.equals(we.context().toString())) {
 								Printer.instance.print("正在更新账户配置信息...");
 								final File accountProp = new File(this.confdir + ACCOUNT_PROPERTIES_FILE);
-								if(accountProp.isFile() && accountProp.canRead()) {
+								if (accountProp.isFile() && accountProp.canRead()) {
 									final FileInputStream accountPropIn = new FileInputStream(accountProp);
 									synchronized (accountp) {
 										this.accountp.load(accountPropIn);
@@ -973,7 +993,7 @@ public class ConfigureReader {
 									initIPRules();
 									initSignUpRules();
 									Printer.instance.print("账户配置更新完成，已加载最新配置。");
-								}else {
+								} else {
 									accountp.clear();
 									Printer.instance.print("警告：账户配置文件已被删除或无法读取，账户信息已清空。");
 								}
@@ -1270,10 +1290,12 @@ public class ConfigureReader {
 	// 从配置文件中加载账户注册规则
 	private void initSignUpRules() {
 		// 是否允许访问者自由注册账户
-		final String signUp = this.accountp.getProperty("authSignup");
-		if (signUp != null) {
+		final String signUpAuth = this.accountp.getProperty("authSignup");
+		final String signUpGroup = this.accountp.getProperty("groupSignup");
+		if (signUpAuth != null || signUpGroup != null) {
 			this.allowSignUp = true;
-			this.signUpAuth = signUp;
+			this.signUpAuth = signUpAuth;
+			this.signUpGroup = signUpGroup;
 		} else {
 			this.allowSignUp = false;
 		}
@@ -1300,7 +1322,12 @@ public class ConfigureReader {
 			if (accountp.getProperty(newAccount + ".pwd") == null) {
 				synchronized (accountp) {
 					accountp.setProperty(newAccount + ".pwd", newPassword);
-					accountp.setProperty(newAccount + ".auth", signUpAuth);
+					if(signUpAuth != null) {
+						accountp.setProperty(newAccount + ".auth", signUpAuth);
+					}
+					if(signUpGroup != null) {
+						accountp.setProperty(newAccount + ".group", signUpGroup);
+					}
 					try (FileOutputStream accountSettingOut = new FileOutputStream(
 							this.confdir + ACCOUNT_PROPERTIES_FILE)) {
 						accountp.store(accountSettingOut, null);
@@ -1326,5 +1353,19 @@ public class ConfigureReader {
 	 */
 	public int getMaxExtendstoresNum() {
 		return MAX_EXTENDSTORES_NUM;
+	}
+
+	/**
+	 * 
+	 * <h2>是否启用IP地址的XFF解析功能</h2>
+	 * <p>
+	 * 该功能用于返回是否禁用了IP地址的XFF解析功能。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @return boolean 启用返回true，否则返回false
+	 */
+	public boolean isIpXFFAnalysis() {
+		return ipXFFAnalysis;
 	}
 }

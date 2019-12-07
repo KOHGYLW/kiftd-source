@@ -30,14 +30,16 @@ public class IpAddrGetter {
 	 * @return java.lang.String 请求来源IP地址 
 	 */
 	public String getIpAddr(HttpServletRequest request) {
-		for (String ipAddrHeader : ipAddrHeaders) {
-			String ipAddress = request.getHeader(ipAddrHeader);
-			if (ipAddress != null && ipAddress.length() > 0 && !"unknown".equalsIgnoreCase(ipAddress)) {
-				int indexOfIpSeparator = ipAddress.indexOf(",");
-				if (indexOfIpSeparator >= 0) {
-					return ipAddress.substring(0, indexOfIpSeparator).trim();
-				} else {
-					return ipAddress.trim();
+		if(ConfigureReader.instance().isIpXFFAnalysis()) {
+			for (String ipAddrHeader : ipAddrHeaders) {
+				String ipAddress = request.getHeader(ipAddrHeader);
+				if (ipAddress != null && ipAddress.length() > 0 && !"unknown".equalsIgnoreCase(ipAddress)) {
+					int indexOfIpSeparator = ipAddress.indexOf(",");
+					if (indexOfIpSeparator >= 0) {
+						return ipAddress.substring(0, indexOfIpSeparator).trim();
+					} else {
+						return ipAddress.trim();
+					}
 				}
 			}
 		}
