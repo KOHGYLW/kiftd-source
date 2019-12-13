@@ -7,6 +7,26 @@ public interface FolderMapper
 {
     Folder queryById(final String fid);
     
+    /**
+     * 
+     * <h2>按照父文件夹的ID查找其下的所有文件夹（分页）</h2>
+     * <p>该方法需要传入一个Map作为查询条件，其中需要包含pid（父文件夹的ID），offset（起始偏移），rows（查询行数）。</p>
+     * @author 青阳龙野(kohgylw)
+     * @param keyMap java.util.Map 封装查询条件的Map对象
+     * @return java.util.List 查询结果
+     */
+    List<Folder> queryByParentIdSection(final Map<String, Object> keyMap);
+    
+    /**
+     * 
+     * <h2>按照父文件夹的ID统计其下的所有文件夹数目</h2>
+     * <p>该方法主要用于配合queryByParentIdSection方法实现分页加载。</p>
+     * @author 青阳龙野(kohgylw)
+     * @param pfid java.lang.String 父文件夹ID
+     * @return long 文件夹总数
+     */
+    long countByParentId(final String pid);
+    
     List<Folder> queryByParentId(final String pid);
     
     Folder queryByParentIdAndFolderName(final Map<String, String> map);

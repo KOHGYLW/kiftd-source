@@ -35,4 +35,14 @@ public interface FolderViewService{
      * @return java.lang.String 该文件夹视图的JSON格式，原型详见kohgylw.kiftd.server.pojo.SreachView类。
      */
     String getSreachViewToJson(final HttpServletRequest request);
+
+    /**
+     * 
+     * <h2>根据主键获取文件夹的后续视图</h2>
+     * <p>该方法用于获取指定文件夹下的分段文件数据列表，从而确保页面加载完整的文件夹数据。该方法可视作getFolderViewToJson方法的后续操作。</p>
+     * @author 青阳龙野(kohgylw)
+     * @param request javax.servlet.http.HttpServletRequest 请求对象
+     * @return java.lang.String 该文件夹后续视图的JSON格式，原型详见kohgylw.kiftd.server.pojo.RemainingFolderView类。
+     */
+	String getRemainingFolderViewToJson(HttpServletRequest request);
 }

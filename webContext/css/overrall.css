@@ -121,3 +121,13 @@ td {
 	max-height: 35px;
 	cursor: pointer
 }
+
+.loadingremaininngbox {
+	width: 100%;
+	height: 40px;
+	position: fixed;
+	bottom: 0px;
+	left: 0px;
+	line-height: 40px;
+	color: #104E8B; alpha (Opacity=70);
+}

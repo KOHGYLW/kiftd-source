@@ -499,7 +499,7 @@ public class FileSystemManager {
 				folder.setFolderName(newName);
 				folder.setFolderConstraint(parent.getFolderConstraint());
 				folder.setFolderParent(folderId);
-				folder.setFolderCreator("SYS_IN");
+				folder.setFolderCreator(parent.getFolderCreator());
 				folder.setFolderCreationDate(ServerTimeUtil.accurateToDay());
 				int i = 0;
 				while (true) {
@@ -611,10 +611,11 @@ public class FileSystemManager {
 		message = "正在删除文件：" + n.getFileName();
 		if (n != null) {
 			// 删除文件节点对应的数据块
-			if (getFileFormBlocks(n).delete()) {
+			File block = getFileFormBlocks(n);
+			if (block == null || block.delete()) {
 				per = 80;
 				// 删除节点信息
-				if (deleteNodeById(nodeId) > 0) {
+				if (deleteNodeById(nodeId) >= 0) {
 					per = 100;
 					return;
 				}

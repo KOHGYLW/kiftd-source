@@ -89,7 +89,7 @@
 										<input id="sreachKeyWordIn" type="text" class="form-control"
 											placeholder="请输入文件名...">
 									</div>
-									<button type="button" class="btn btn-default"
+									<button id="searchbtn" type="button" class="btn btn-default"
 										onclick="doSearchFile()">搜索</button>
 								</form>
 								<ul class="nav navbar-nav navbar-right">
@@ -825,8 +825,8 @@
 				<div class="modal-body" style="overflow: scroll;"
 					id="noticeModalBody"></div>
 				<div class="modal-footer">
-					<label class="text-muted"> <input type="checkbox" id="dontShowSomeNoticeAt30Day">
-						30天内不再显示相同的公告信息 
+					<label class="text-muted"> <input type="checkbox"
+						id="dontShowSomeNoticeAt30Day"> 30天内不再显示相同的公告信息
 					</label>
 					<button type="button" class="btn btn-primary" data-dismiss="modal">关闭</button>
 				</div>
@@ -848,6 +848,13 @@
 		</button>
 	</div>
 	<!-- end 返回顶部按钮 -->
+	<!-- 加载余下部分的提示 -->
+	<div id="loadingremaininngbox"
+		class="loadingremaininngbox text-center bg-info hidden">
+		正在加载文件列表：<span id="loadingrate">0%</span>... <span
+			class="glyphicon glyphicon-hourglass" aria-hidden="true"></span>
+	</div>
+	<!-- end 加载余下部分的提示 -->
 </body>
 <!-- jquery基本框架 -->
 <script type="text/javascript" src="js/jquery-1.12.4.min.js"></script>

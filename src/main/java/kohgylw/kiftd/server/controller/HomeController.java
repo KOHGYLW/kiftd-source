@@ -77,6 +77,12 @@ public class HomeController {
 	public String getFolderView(final String fid, final HttpSession session, final HttpServletRequest request) {
 		return fvs.getFolderViewToJson(fid, session, request);
 	}
+	
+	@RequestMapping(value = { "/getRemainingFolderView.ajax" }, produces = { CHARSET_BY_AJAX })
+	@ResponseBody
+	public String getRemainingFolderView(final HttpServletRequest request) {
+		return fvs.getRemainingFolderViewToJson(request);
+	}
 
 	@RequestMapping({ "/doLogout.ajax" })
 	public @ResponseBody String doLogout(final HttpSession session) {

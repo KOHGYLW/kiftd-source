@@ -16,6 +16,9 @@ import com.google.gson.*;
 
 @Service
 public class FolderViewServiceImpl implements FolderViewService {
+
+	private static int SELECT_STEP = 256;// 每次查询的文件或文件夹的最大限额，即查询步进长度
+
 	@Resource
 	private FolderUtil fu;
 	@Resource
@@ -43,16 +46,32 @@ public class FolderViewServiceImpl implements FolderViewService {
 			return "notAccess";// 如无访问权限则直接返回该字段，令页面回到ROOT视图。
 		}
 		final FolderView fv = new FolderView();
+		fv.setSelectStep(SELECT_STEP);// 返回查询步长
 		fv.setFolder(vf);
 		fv.setParentList(this.fu.getParentList(fid));
+		long foldersOffset = this.fm.countByParentId(fid);// 第一波文件夹数据按照最后的记录作为查询偏移量
+		fv.setFoldersOffset(foldersOffset);
+		Map<String, Object> keyMap1 = new HashMap<>();
+		keyMap1.put("pid", fid);
+		long fOffset = foldersOffset - SELECT_STEP;
+		keyMap1.put("offset", fOffset > 0L ? fOffset : 0L);// 进行查询
+		keyMap1.put("rows", SELECT_STEP);
+		List<Folder> folders = this.fm.queryByParentIdSection(keyMap1);
 		List<Folder> fs = new LinkedList<>();
-		for (Folder f : this.fm.queryByParentId(fid)) {
+		for (Folder f : folders) {
 			if (ConfigureReader.instance().accessFolder(f, account)) {
 				fs.add(f);
 			}
 		}
 		fv.setFolderList(fs);
-		fv.setFileList(this.flm.queryByParentFolderId(fid));
+		long filesOffset = this.flm.countByParentFolderId(fid);// 文件的查询逻辑与文件夹基本相同
+		fv.setFilesOffset(filesOffset);
+		Map<String, Object> keyMap2 = new HashMap<>();
+		keyMap2.put("pfid", fid);
+		long fiOffset = filesOffset - SELECT_STEP;
+		keyMap2.put("offset", fiOffset > 0L ? fiOffset : 0L);
+		keyMap2.put("rows", SELECT_STEP);
+		fv.setFileList(this.flm.queryByParentFolderIdSection(keyMap2));
 		if (account != null) {
 			fv.setAccount(account);
 		}
@@ -61,9 +80,9 @@ public class FolderViewServiceImpl implements FolderViewService {
 		} else {
 			fv.setAllowChangePassword("false");
 		}
-		if(ConfigureReader.instance().isAllowSignUp()) {
+		if (ConfigureReader.instance().isAllowSignUp()) {
 			fv.setAllowSignUp("true");
-		}else {
+		} else {
 			fv.setAllowSignUp("false");
 		}
 		final List<String> authList = new ArrayList<String>();
@@ -83,7 +102,7 @@ public class FolderViewServiceImpl implements FolderViewService {
 			authList.add("L");
 			if (cr.isOpenFileChain()) {
 				fv.setShowFileChain("true");// 显示永久资源链接
-			}else {
+			} else {
 				fv.setShowFileChain("false");
 			}
 		}
@@ -134,6 +153,10 @@ public class FolderViewServiceImpl implements FolderViewService {
 		sreachFilesAndFolders(fid, keyWorld, account, ns, fs);
 		sv.setFileList(ns);
 		sv.setFolderList(fs);
+		// 搜索不支持分段加载，所以统计数据直接写入实际查询到的列表大小
+		sv.setFoldersOffset(0L);
+		sv.setFilesOffset(0L);
+		sv.setSelectStep(SELECT_STEP);
 		// 账户视图与文件夹相同
 		if (account != null) {
 			sv.setAccount(account);
@@ -150,7 +173,7 @@ public class FolderViewServiceImpl implements FolderViewService {
 			authList.add("L");
 			if (cr.isOpenFileChain()) {
 				sv.setShowFileChain("true");// 显示永久资源链接
-			}else {
+			} else {
 				sv.setShowFileChain("false");
 			}
 		}
@@ -181,5 +204,63 @@ public class FolderViewServiceImpl implements FolderViewService {
 				ns.add(n);
 			}
 		}
+	}
+
+	@Override
+	public String getRemainingFolderViewToJson(HttpServletRequest request) {
+		final String fid = request.getParameter("fid");
+		final String foldersOffset = request.getParameter("foldersOffset");
+		final String filesOffset = request.getParameter("filesOffset");
+		if (fid == null || fid.length() == 0) {
+			return "ERROR";
+		}
+		Folder vf = this.fm.queryById(fid);
+		if (vf == null) {
+			return "NOT_FOUND";// 如果用户请求一个不存在的文件夹，则返回“NOT_FOUND”，令页面回到ROOT视图
+		}
+		final String account = (String) request.getSession().getAttribute("ACCOUNT");
+		// 检查访问文件夹视图请求是否合法
+		if (!ConfigureReader.instance().accessFolder(vf, account)) {
+			return "notAccess";// 如无访问权限则直接返回该字段，令页面回到ROOT视图。
+		}
+		final RemainingFolderView fv = new RemainingFolderView();
+		if (foldersOffset != null) {
+			try {
+				long newFoldersOffset = Long.parseLong(foldersOffset);
+				if (newFoldersOffset > 0L) {
+					Map<String, Object> keyMap1 = new HashMap<>();
+					keyMap1.put("pid", fid);
+					long nfOffset = newFoldersOffset - SELECT_STEP;
+					keyMap1.put("offset", nfOffset > 0L ? nfOffset : 0L);
+					keyMap1.put("rows", nfOffset > 0L ? SELECT_STEP : SELECT_STEP + nfOffset);
+					List<Folder> folders = this.fm.queryByParentIdSection(keyMap1);
+					List<Folder> fs = new LinkedList<>();
+					for (Folder f : folders) {
+						if (ConfigureReader.instance().accessFolder(f, account)) {
+							fs.add(f);
+						}
+					}
+					fv.setFolderList(fs);
+				}
+			} catch (NumberFormatException e) {
+				return "ERROR";
+			}
+		}
+		if (filesOffset != null) {
+			try {
+				long newFilesOffset = Long.parseLong(filesOffset);
+				if (newFilesOffset > 0L) {
+					Map<String, Object> keyMap2 = new HashMap<>();
+					keyMap2.put("pfid", fid);
+					long nfiOffset = newFilesOffset - SELECT_STEP;
+					keyMap2.put("offset", nfiOffset > 0L ? nfiOffset : 0L);
+					keyMap2.put("rows", nfiOffset > 0L ? SELECT_STEP : SELECT_STEP + nfiOffset);
+					fv.setFileList(this.flm.queryByParentFolderIdSection(keyMap2));
+				}
+			} catch (NumberFormatException e) {
+				return "ERROR";
+			}
+		}
+		return gson.toJson(fv);
 	}
 }

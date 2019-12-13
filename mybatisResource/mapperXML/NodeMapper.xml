@@ -19,6 +19,19 @@
 		#{pfid,jdbcType=VARCHAR}
 	</select>
 
+	<select id="queryByParentFolderIdSection" parameterType="java.util.Map"
+		resultMap="BaseResultMap">
+		SELECT * FROM FILE WHERE file_parent_folder =
+		#{pfid,jdbcType=VARCHAR} LIMIT
+		#{offset,jdbcType=INTEGER},#{rows,jdbcType=INTEGER}
+	</select>
+	
+	<select id="countByParentFolderId" parameterType="java.lang.String"
+		resultType="java.lang.Long">
+		SELECT COUNT(file_id) FROM FILE WHERE file_parent_folder =
+		#{pfid,jdbcType=VARCHAR}
+	</select>
+
 	<insert id="insert" parameterType="kohgylw.kiftd.server.model.Node">
 		INSERT INTO FILE
 		VALUES(#{fileId,jdbcType=VARCHAR},#{fileName,jdbcType=VARCHAR},#{fileSize,jdbcType=VARCHAR},#{fileParentFolder,jdbcType=VARCHAR},#{fileCreationDate,jdbcType=VARCHAR},#{fileCreator,jdbcType=VARCHAR},#{filePath,jdbcType=VARCHAR})
