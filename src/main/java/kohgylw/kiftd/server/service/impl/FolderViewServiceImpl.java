@@ -232,7 +232,7 @@ public class FolderViewServiceImpl implements FolderViewService {
 					keyMap1.put("pid", fid);
 					long nfOffset = newFoldersOffset - SELECT_STEP;
 					keyMap1.put("offset", nfOffset > 0L ? nfOffset : 0L);
-					keyMap1.put("rows", nfOffset > 0L ? SELECT_STEP : SELECT_STEP + nfOffset);
+					keyMap1.put("rows", nfOffset > 0L ? SELECT_STEP : newFoldersOffset);
 					List<Folder> folders = this.fm.queryByParentIdSection(keyMap1);
 					List<Folder> fs = new LinkedList<>();
 					for (Folder f : folders) {
@@ -254,7 +254,7 @@ public class FolderViewServiceImpl implements FolderViewService {
 					keyMap2.put("pfid", fid);
 					long nfiOffset = newFilesOffset - SELECT_STEP;
 					keyMap2.put("offset", nfiOffset > 0L ? nfiOffset : 0L);
-					keyMap2.put("rows", nfiOffset > 0L ? SELECT_STEP : SELECT_STEP + nfiOffset);
+					keyMap2.put("rows", nfiOffset > 0L ? SELECT_STEP : newFilesOffset);
 					fv.setFileList(this.flm.queryByParentFolderIdSection(keyMap2));
 				}
 			} catch (NumberFormatException e) {
