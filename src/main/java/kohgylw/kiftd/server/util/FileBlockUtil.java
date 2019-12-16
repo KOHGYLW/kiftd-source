@@ -8,6 +8,9 @@ import kohgylw.kiftd.server.mapper.*;
 import javax.annotation.*;
 import org.springframework.web.multipart.*;
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 import kohgylw.kiftd.server.model.*;
 import kohgylw.kiftd.server.pojo.ExtendStores;
 
@@ -35,7 +38,7 @@ public class FileBlockUtil {
 	@Resource
 	private LogUtil lu;// 日志工具
 	@Resource
-	private FolderUtil fu;
+	private FolderUtil fu;// 文件夹操作工具
 
 	/**
 	 * 
@@ -182,43 +185,48 @@ public class FileBlockUtil {
 	 */
 	public void checkFileBlocks() {
 		Thread checkThread = new Thread(() -> {
-			// 检查是否存在未正确对应文件块的文件节点信息，若有则删除
-			List<Node> nodes = fm.queryAll();
-			for (Node node : nodes) {
-				File block = getFileFromBlocks(node);
-				if (block == null || !block.exists()) {
-					fm.deleteById(node.getFileId());
-				}
-			}
-			// 反向检查是否存在未应文件节点信息的文件块，如有则删除
+			// 检查是否存在未正确对应文件块的文件节点信息，若有则删除，从而确保文件节点信息不出现遗留问题
+			checkNodes("root");
+			// 检查是否存在未正确对应文件节点的文件块，若有则删除，从而确保文件块不出现遗留问题
 			List<File> paths = new ArrayList<>();
 			paths.add(new File(ConfigureReader.instance().getFileBlockPath()));
 			for (ExtendStores es : ConfigureReader.instance().getExtendStores()) {
 				paths.add(es.getPath());
 			}
-			for (File p : paths) {
-				String[] bn = p.list();
-				for (String n : bn) {
-					Node node = fm.queryByPath(n);
-					if (node == null) {
-						File file = null;
-						if (n.startsWith("file_")) {// 存放于主文件系统中
-							// 直接从主文件系统的文件块存放区获得对应的文件块
-							file = new File(ConfigureReader.instance().getFileBlockPath(), n);
-						} else {// 存放于扩展存储区
-							short index = Short.parseShort(n.substring(0, n.indexOf('_')));
-							// 根据编号查到对应的扩展存储区路径，进而获取对应的文件块
-							file = new File(ConfigureReader.instance().getExtendStores().parallelStream()
-									.filter((e) -> e.getIndex() == index).findAny().get().getPath(), n);
-						}
-						if (file != null && file.isFile()) {
-							file.delete();
+			for (File path : paths) {
+				try {
+					Iterator<Path> blocks = Files.newDirectoryStream(path.toPath()).iterator();
+					while(blocks.hasNext()) {
+						Node node = fm.queryByPath(blocks.next().toFile().getName());
+						if (node == null) {
+							File file = getFileFromBlocks(node);
+							if (file != null && file.isFile()) {
+								file.delete();
+							}
 						}
 					}
+				} catch (IOException e) {
+					Printer.instance.print("警告：文件节点效验时发生意外错误，可能未能正确完成文件节点效验。错误信息："+e.getMessage());
+					lu.writeException(e);
 				}
 			}
 		});
 		checkThread.start();
+	}
+	
+	//校对文件节点，要求某一节点必须有对应的文件块，否则将其移除（避免出现死节点）
+	private void checkNodes(String fid) {
+		List<Node> nodes = fm.queryByParentFolderId(fid);
+		for (Node node : nodes) {
+			File block = getFileFromBlocks(node);
+			if (block == null || !block.exists()) {
+				fm.deleteById(node.getFileId());
+			}
+		}
+		List<Folder> folders = flm.queryByParentId(fid);
+		for(Folder fl:folders) {
+			checkNodes(fl.getFolderId());
+		}
 	}
 
 	/**

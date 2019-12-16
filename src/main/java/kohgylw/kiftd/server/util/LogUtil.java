@@ -69,7 +69,16 @@ public class LogUtil {
 	 */
 	public void writeException(Exception e) {
 		if (ConfigureReader.instance().inspectLogLevel(LogLevel.Runtime_Exception)) {
-			writeToLog("Exception", "[" + e + "]:" + e.getMessage());
+			StringBuffer exceptionInfo = new StringBuffer(e+":"+e.getMessage());
+			StackTraceElement[] stes = e.getStackTrace();
+			for (int i = 0; i < stes.length && i < 10; i++) {
+				StackTraceElement ste = stes[i];
+				exceptionInfo.append("\r\n	at "+ste.getClassName()+"."+ste.getMethodName()+"("+ste.getFileName()+":"+ste.getLineNumber()+")");
+			}
+			if(stes.length > 10) {
+				exceptionInfo.append("\r\n......");
+			}
+			writeToLog("Exception", exceptionInfo.toString());
 		}
 	}
 

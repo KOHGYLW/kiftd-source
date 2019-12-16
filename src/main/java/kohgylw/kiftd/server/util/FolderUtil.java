@@ -4,13 +4,16 @@ import org.springframework.stereotype.*;
 import javax.annotation.*;
 
 import kohgylw.kiftd.server.enumeration.AccountAuth;
+import kohgylw.kiftd.server.exception.FoldersTotalOutOfLimitException;
 import kohgylw.kiftd.server.mapper.*;
 import kohgylw.kiftd.server.model.*;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Component
 public class FolderUtil {
+
 	@Resource
 	private FolderMapper fm;
 	@Resource
@@ -18,11 +21,24 @@ public class FolderUtil {
 	@Resource
 	private FileBlockUtil fbu;
 
+	/**
+	 * 
+	 * <h2>获得指定文件夹的所有上级文件夹</h2>
+	 * <p>
+	 * 该方法将返回目标文件夹的所有父级文件夹，并以列表的形式返回。如果上级层数超过了Integer.MAX_VALUE，那么只获取最后Integer.MAX_VALUE级。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @param fid
+	 *            java.lang.String 要获取的目标文件夹ID
+	 * @return java.util.List
+	 *         指定文件夹的所有父级文件夹列表，以kohgylw.kiftd.server.model.Folder形式封装。
+	 */
 	public List<Folder> getParentList(final String fid) {
 		Folder f = this.fm.queryById(fid);
 		final List<Folder> folderList = new ArrayList<Folder>();
 		if (f != null) {
-			while (!f.getFolderParent().equals("null")) {
+			while (!f.getFolderParent().equals("null") && folderList.size() < Integer.MAX_VALUE) {
 				f = this.fm.queryById(f.getFolderParent());
 				folderList.add(f);
 			}
@@ -61,7 +77,8 @@ public class FolderUtil {
 		this.fm.deleteById(folderId);
 	}
 
-	public Folder createNewFolder(final String parentId, String account, String folderName, String folderConstraint) {
+	public Folder createNewFolder(final String parentId, String account, String folderName, String folderConstraint)
+			throws FoldersTotalOutOfLimitException {
 		if (!ConfigureReader.instance().authorized(account, AccountAuth.CREATE_NEW_FOLDER, getAllFoldersId(parentId))) {
 			return null;
 		}
@@ -80,6 +97,9 @@ public class FolderUtil {
 		}
 		if (fm.queryByParentId(parentId).parallelStream().anyMatch((e) -> e.getFolderName().equals(folderName))) {
 			return null;
+		}
+		if (fm.countByParentId(parentId) >= FileNodeUtil.MAXIMUM_NUM_OF_SINGLE_FOLDER) {
+			throw new FoldersTotalOutOfLimitException();
 		}
 		Folder f = new Folder();
 		// 设置子文件夹约束等级，不允许子文件夹的约束等级比父文件夹低

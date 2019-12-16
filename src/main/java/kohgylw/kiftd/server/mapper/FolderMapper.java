@@ -27,6 +27,14 @@ public interface FolderMapper
      */
     long countByParentId(final String pid);
     
+    /**
+     * 
+     * <h2>根据目标文件夹ID查询其中的所有文件夹</h2>
+     * <p>该方法用于将某个文件夹下的所有文件夹全部查询出，并以列表的形式返回。如果结果数量超出了最大限额，则只查询限额内的结果。</p>
+     * @author 青阳龙野(kohgylw)
+     * @param pid java.lang.String 目标文件夹ID
+     * @return java.util.List 文件夹数组
+     */
     List<Folder> queryByParentId(final String pid);
     
     Folder queryByParentIdAndFolderName(final Map<String, String> map);

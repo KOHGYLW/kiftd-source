@@ -5,6 +5,14 @@ import java.util.*;
 
 public interface NodeMapper
 {
+	/**
+	 * 
+	 * <h2>根据文件夹ID查询其中的所有文件节点</h2>
+	 * <p>该方法用于一次性将目标文件夹下的全部文件节点查询出来，如果超过限值，则只查询限值内的节点数量。</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @param pfid java.lang.String 目标文件夹ID
+	 * @return java.util.List 文件节点列表
+	 */
     List<Node> queryByParentFolderId(final String pfid);
     
     /**
@@ -39,10 +47,16 @@ public interface NodeMapper
     
     int updateFileNameById(final Map<String, String> map);
     
-    List<Node> queryAll();
-    
     Node queryByPath(final String path);
     
+    /**
+	 * 
+	 * <h2>查询与目标文件节点处于同一文件夹下的全部文件节点</h2>
+	 * <p>该方法用于一次性将与目标文件同文件夹的文件节点查询出来，如果超过限值，则只查询限值内的节点数量。</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @param fileId java.lang.String 目标文件ID
+	 * @return java.util.List 文件节点列表
+	 */
     List<Node> queryBySomeFolder(final String fileId);
     
     /**

@@ -32,6 +32,7 @@ var loadingComplete;// 判断文件夹视图是否加载完成
 var totalFoldersOffset;// 记录文件夹原始的查询偏移量，便于计算加载进度
 var totalFilesOffset;// 记录文件原始的查询偏移量，便于计算加载进度
 var remainingLoadingRequest;// 后续数据加载请求的索引，便于中途取消
+var loadingFolderView;// 是否正在加载文件夹视图的判断，避免重复操作
 
 // 界面功能方法定义
 // 页面初始化
@@ -439,10 +440,14 @@ function getServerOS() {
 
 // 获取实时文件夹视图
 function showFolderView(fid,targetId) {
+	//判断是否正在进行另一个相同的请求，如果是则取消本次操作
+	if(loadingFolderView){
+		return;
+	}
+	startLoading();
 	if(remainingLoadingRequest){
 		remainingLoadingRequest.abort();
 	}
-	startLoading();
 	$.ajax({
 		type : 'POST',
 		dataType : 'text',
@@ -515,19 +520,19 @@ function showFolderView(fid,targetId) {
 				break;
 			}
 		},
-		error : function() {
+		error : function(XMLHttpRequest, textStatus, errorThrown) {
 			endLoading();
 			doAlert();
 			$("#tb").html("<span class='graytext'>获取失败，请尝试刷新</span>");
 			$("#publishTime").html("<span class='graytext'>获取失败，请尝试刷新</span>");
-			$("#parentlistbox")
-					.html("<span class='graytext'>获取失败，请尝试刷新</span>");
+			$("#parentlistbox").html("<span class='graytext'>获取失败，请尝试刷新</span>");
 		}
 	});
 }
 
 // 开始文件视图加载动画
 function startLoading(){
+	loadingFolderView = true;
 	$('#loadingModal').modal({backdrop:'static', keyboard: false}); 
 	$('#loadingModal').modal('show');
 	$('#loadingModal').addClass("shown");
@@ -535,6 +540,7 @@ function startLoading(){
 
 // 结束文件视图加载动画
 function endLoading(){
+	loadingFolderView = false;
 	$('#loadingModal').modal('hide');
 	$('#loadingModal').removeClass("shown");
 }
@@ -848,7 +854,7 @@ function showFolderTable(folderView) {
 	if (parentpath != null && parentpath != "null") {
 		$("#foldertable")
 				.append(
-						"<tr onclick='returnPF()'><td><button onclick='returnPF()' class='btn btn-link btn-xs'>../</button></td><td class='hiddenColumn'>--</td><td>--</td><td class='hiddenColumn'>--</td><td>--</td></tr>");
+						"<tr onclick='returnPF()'><td><button onclick='' class='btn btn-link btn-xs'>../</button></td><td class='hiddenColumn'>--</td><td>--</td><td class='hiddenColumn'>--</td><td>--</td></tr>");
 	}
 	var authList = folderView.authList;
 	var aD = false;
@@ -1113,20 +1119,30 @@ function createfolder() {
 				if (result == "mustLogin") {
 					window.location.href = "prv/login.html";
 				} else {
-					if (result == "noAuthorized") {
+					switch (result) {
+					case "noAuthorized":
 						showFolderAlert("提示：您的操作未被授权，创建文件夹失败。");
-					} else if (result == "errorParameter") {
+						break;
+					case "errorParameter":
 						showFolderAlert("提示：参数不正确，创建文件夹失败。");
-					} else if (result == "cannotCreateFolder") {
+						break;
+					case "cannotCreateFolder":
 						showFolderAlert("提示：出现意外错误，可能未能创建文件夹。");
-					} else if (result == "nameOccupied") {
+						break;
+					case "nameOccupied":
 						showFolderAlert("提示：该名称已被占用，请选取其他名称。");
-					} else if (result == "createFolderSuccess") {
+						break;
+					case "foldersTotalOutOfLimit":
+						showFolderAlert("提示：该文件夹内存储的文件夹数量已达上限，无法在其中创建更多文件夹。");
+						break;
+					case "createFolderSuccess":
 						$('#newFolderModal').modal('hide');
 						showFolderView(locationpath);
-					} else {
+						break;
+					default:
 						$('#newFolderModal').modal('hide');
 						showFolderView(locationpath);
+						break;
 					}
 				}
 			},
@@ -1362,11 +1378,17 @@ function checkUploadFile() {
 					if (result == "mustLogin") {
 						window.location.href = "prv/login.html";
 					} else {
-						if (result == "errorParameter") {
+						switch (result) {
+						case "errorParameter":
 							showUploadFileAlert("提示：参数不正确，无法开始上传");
-						} else if (result == "noAuthorized") {
+							break;
+						case "noAuthorized":
 							showUploadFileAlert("提示：您的操作未被授权，无法开始上传");
-						} else {
+							break;
+						case "filesTotalOutOfLimit":
+							showUploadFileAlert("提示：该文件夹内存储的文件数量已达上限，无法在其中上传更多文件。您可以尝试将其上传至其他文件夹内。");
+							break;
+						default:
 							var resp=eval("("+result+")");
 							if(resp.checkResult == "fileTooLarge"){
 								showUploadFileAlert("提示：文件["+resp.overSizeFile+"]的体积超过最大限制（"+resp.maxUploadFileSize+"），无法开始上传");
@@ -1379,6 +1401,7 @@ function checkUploadFile() {
 							}else {
 								showUploadFileAlert("提示：出现意外错误，无法开始上传");
 							}
+							break;
 						}
 					}
 				},
@@ -1520,6 +1543,10 @@ function doupload(count) {
 				} else if (result == "uploaderror") {
 					showUploadFileAlert("提示：出现意外错误，文件：[" + fname
 							+ "]上传失败，上传被中断。");
+					$("#uls_" + count).text("[失败]");
+				} else if(result == 'filesTotalOutOfLimit'){
+					showUploadFileAlert("提示：该文件夹内存储的文件数量已达上限，文件：[" + fname
+							+ "]上传失败。您可以尝试将其上传至其他文件夹内。");
 					$("#uls_" + count).text("[失败]");
 				} else {
 					showUploadFileAlert("提示：出现意外错误，文件：[" + fname
@@ -2376,40 +2403,56 @@ function doMoveFiles(){
 			if (result == "mustLogin") {
 				window.location.href = "prv/login.html";
 			} else {
-				if (result == "noAuthorized") {
+				switch (result) {
+				case "noAuthorized":
 					$('#moveFilesMessage').text("提示：您的操作未被授权，移动失败");
 					$("#dmvfbutton").attr('disabled', false);
-				} else if (result == "errorParameter") {
+					break;
+				case "errorParameter":
 					$('#moveFilesMessage').text("提示：参数不正确，未能全部移动文件，请刷新后重试");
 					$("#dmvfbutton").attr('disabled', false);
-				} else if (result == "cannotMoveFiles") {
+					break;
+				case "cannotMoveFiles":
 					$('#moveFilesMessage').text("提示：出现意外错误，可能未能移动全部文件，请刷新后重试");
 					$("#dmvfbutton").attr('disabled', false);
-				} else if (result == "confirmMoveFiles") {
+					break;
+				case "filesTotalOutOfLimit":
+					$('#moveFilesMessage').text("提示：该文件夹内存储的文件数量已达上限，无法移入更多文件");
+					$("#dmvfbutton").attr('disabled', false);
+					break;
+				case "foldersTotalOutOfLimit":
+					$('#moveFilesMessage').text("提示：该文件夹内存储的文件夹数量已达上限，无法移入更多文件夹");
+					$("#dmvfbutton").attr('disabled', false);
+					break;
+				case "confirmMoveFiles":
 					strMoveOptMap={};
 					sendMoveFilesReq();
-				} else if(result.startsWith("duplicationFileName:")){
-					repeMap=eval("("+result.substring(20)+")");
-					repeIndex=0;
-					strMoveOptMap={};
-					mRepeSize=repeMap.repeFolders.length+repeMap.repeNodes.length;
-					if(repeMap.repeFolders.length>0){
-						$("#mrepeFileName").text(repeMap.repeFolders[repeIndex].folderName);
-					}else{
-						$("#mrepeFileName").text(repeMap.repeNodes[repeIndex].fileName);
+					break;
+				default:
+					if(result.startsWith("duplicationFileName:")){
+						repeMap=eval("("+result.substring(20)+")");
+						repeIndex=0;
+						strMoveOptMap={};
+						mRepeSize=repeMap.repeFolders.length+repeMap.repeNodes.length;
+						if(repeMap.repeFolders.length>0){
+							$("#mrepeFileName").text(repeMap.repeFolders[repeIndex].folderName);
+						}else{
+							$("#mrepeFileName").text(repeMap.repeNodes[repeIndex].fileName);
+						}
+						var authList = originFolderView.authList;
+						if(checkAuth(authList, "D")){
+							$("#movecoverbtn").show();
+						}else{
+							$("#movecoverbtn").hide();
+						}
+						$("#selectFileMoveModelAlert").show();
+					} else if(result.startsWith("CANT_MOVE_TO_INSIDE:")){
+						$('#moveFilesMessage').text("错误：不能将一个文件夹移动到其自身内部："+result.substring(20));
+					} else {
+						$('#moveFilesMessage').text("提示：出现意外错误，可能未能移动全部文件，请刷新后重试");
+						$("#dmvfbutton").attr('disabled', false);
 					}
-					var authList = originFolderView.authList;
-					if(checkAuth(authList, "D")){
-						$("#movecoverbtn").show();
-					}else{
-						$("#movecoverbtn").hide();
-					}
-					$("#selectFileMoveModelAlert").show();
-				} else if(result.startsWith("CANT_MOVE_TO_INSIDE:")){
-					$('#moveFilesMessage').text("错误：不能将一个文件夹移动到其自身内部："+result.substring(20));
-				} else {
-					$('#moveFilesMessage').text("提示：出现意外错误，可能未能移动全部文件，请刷新后重试");
-					$("#dmvfbutton").attr('disabled', false);
+					break;
 				}
 			}
 		},
@@ -2470,21 +2513,35 @@ function sendMoveFilesReq(){
 			if (result == "mustLogin") {
 				window.location.href = "prv/login.html";
 			} else {
-				if (result == "noAuthorized") {
+				switch (result) {
+				case "noAuthorized":
 					$('#moveFilesMessage').text("提示：您的操作未被授权，移动失败");
 					$("#dmvfbutton").attr('disabled', false);
-				} else if (result == "errorParameter") {
+					break;
+				case "errorParameter":
 					$('#moveFilesMessage').text("提示：参数不正确，未能全部移动文件，请刷新后重试");
 					$("#dmvfbutton").attr('disabled', false);
-				} else if (result == "cannotMoveFiles") {
+					break;
+				case "filesTotalOutOfLimit":
+					$('#moveFilesMessage').text("提示：该文件夹内存储的文件数量已达上限，无法移入更多文件。");
+					$("#dmvfbutton").attr('disabled', false);
+					break;
+				case "foldersTotalOutOfLimit":
+					$('#moveFilesMessage').text("提示：该文件夹内存储的文件夹数量已达上限，无法移入更多文件夹。");
+					$("#dmvfbutton").attr('disabled', false);
+					break;
+				case "cannotMoveFiles":
 					$('#moveFilesMessage').text("提示：出现意外错误，可能未能移动全部文件，请刷新后重试");
 					$("#dmvfbutton").attr('disabled', false);
-				} else if (result == "moveFilesSuccess") {
+					break;
+				case "moveFilesSuccess":
 					$('#moveFilesModal').modal('hide');
 					showFolderView(locationpath);
-				} else {
+					break;
+				default:
 					$('#moveFilesMessage').text("提示：出现意外错误，可能未能移动全部文件，请刷新后重试");
 					$("#dmvfbutton").attr('disabled', false);
+					break;
 				}
 			}
 		},
@@ -2719,7 +2776,7 @@ function checkImportFolder(){
 			isImporting = true;
 			var maxSize = 0;
 			var maxFileIndex = 0;
-			// 找出最大体积的文件避免服务器进行效验
+			// 找出最大体积的文件以便服务器进行效验
 			for (var i = 0; i < ifs.length; i++) {
 				if(ifs[i].size > maxSize){
 					maxSize = ifs[i].size;
@@ -2750,6 +2807,9 @@ function checkImportFolder(){
 						break;
 					case 'fileOverSize':
 						showImportFolderAlert("提示：文件["+ifs[maxFileIndex].webkitRelativePath+"]的体积超过最大限制（"+resJson.maxSize+"），无法开始上传");
+						break;
+					case 'foldersTotalOutOfLimit':
+						showImportFolderAlert("提示：该文件夹内存储的文件夹数量已达上限，无法在其中上传更多文件夹。您可以尝试将其上传至其他文件夹内。");
 						break;
 					case 'repeatFolder_Both':
 						$("#repeFolderName").text(importFolderName);
@@ -2843,7 +2903,9 @@ function importAndBoth() {
 			var resJson = eval("(" + result + ")");
 			if(resJson.result == 'success'){
 				iteratorImport(0,resJson.newName);// 若新建成功，则使用新文件夹名称开始上传
-			}else{
+			} else if(resJson.result == 'foldersTotalOutOfLimit') {
+				showImportFolderAlert("提示：该文件夹内存储的文件夹数量已达上限，无法上传同名文件夹并保留两者。您可以尝试将其上传至其他文件夹内。");
+			} else {
 				showImportFolderAlert("提示：生成新文件夹名称失败，无法开始上传");
 			}
 		},
@@ -2921,6 +2983,14 @@ function iteratorImport(i,newFolderName){
 					}
 				} else if (result == "uploaderror") {
 					showImportFolderAlert("提示：出现意外错误，文件：[" + fname
+							+ "]上传失败，上传被中断。");
+					$("#ils_" + i).text("[失败]");
+				} else if (result == "foldersTotalOutOfLimit"){
+					showImportFolderAlert("提示：该文件夹内存储的文件夹数量已达上限，文件：[" + fname
+							+ "]上传失败，上传被中断。");
+					$("#ils_" + i).text("[失败]");
+				} else if (result == "filesTotalOutOfLimit"){
+					showImportFolderAlert("提示：该文件夹内存储的文件数量已达上限，文件：[" + fname
 							+ "]上传失败，上传被中断。");
 					$("#ils_" + i).text("[失败]");
 				} else {
@@ -3198,6 +3268,10 @@ function showNotice() {
 
 // 该方法用于请求并继续加载文件夹视图的后续数据（可能会被迭代调用）
 function loadingRemainingFolderView(targetId){
+	// 判断是否正在执行另一个相同的请求，避免重复操作
+	if(remainingLoadingRequest){
+		return;
+	}
 	// 计算新的查询偏移量
 	var newfoldersOffset=0;
 	var newfilesOffset=0;
@@ -3233,6 +3307,7 @@ function loadingRemainingFolderView(targetId){
 		type:'POST',
 		dataType:'text',
 		success:function(result){
+			remainingLoadingRequest = null;
 			switch (result) {
 			case "ERROR":
 				alert("错误：无法加载剩余文件列表，文件数据可能未显示完全，请刷新重试！");
@@ -3262,6 +3337,7 @@ function loadingRemainingFolderView(targetId){
 			}
 		},
 		error:function(jqXHR, textStatus, errorThrown){
+			remainingLoadingRequest = null;
 			hiddenLoadingRemaininngBox();
 			if('abort' != textStatus){
 				alert("错误：无法连接服务器，文件列表加载被中断。请刷新重试！");

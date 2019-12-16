@@ -20,9 +20,9 @@
 	<select id="queryByParentId" parameterType="java.lang.String"
 		resultMap="BaseResultMap">
 		SELECT * FROM FOLDER WHERE folder_parent =
-		#{pid,jdbcType=VARCHAR}
+		#{pid,jdbcType=VARCHAR} LIMIT 0,2147483647
 	</select>
-	
+
 	<select id="countByParentId" parameterType="java.lang.String"
 		resultType="java.lang.Long">
 		SELECT COUNT(folder_id) FROM FOLDER WHERE folder_parent =

@@ -30,6 +30,8 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
 import kohgylw.kiftd.printer.Printer;
+import kohgylw.kiftd.server.exception.FilesTotalOutOfLimitException;
+import kohgylw.kiftd.server.exception.FoldersTotalOutOfLimitException;
 import kohgylw.kiftd.server.util.FileNodeUtil;
 import kohgylw.kiftd.ui.util.FilesTable;
 import kohgylw.kiftd.util.file_system_manager.FileSystemManager;
@@ -266,7 +268,7 @@ public class FSViewer extends KiftdDynamicWindow {
 		});
 		// 生成文件列表
 		filesTable = new FilesTable();
-		filesTable.setRowHeight((int)(16 * proportion));
+		filesTable.setRowHeight((int) (16 * proportion));
 		JScrollPane mianPane = new JScrollPane(filesTable);
 		filesTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
 
@@ -422,6 +424,11 @@ public class FSViewer extends KiftdDynamicWindow {
 	private void getFolderView(String folderId) throws Exception {
 		try {
 			currentView = FileSystemManager.getInstance().getFolderView(folderId);
+			long maxTotalNum = currentView.getFiles().size() + currentView.getFolders().size();
+			if (maxTotalNum > FilesTable.MAX_LIST_LIMIT) {
+				JOptionPane.showMessageDialog(window, "文件夹列表的长度已超过最大限值（"+FilesTable.MAX_LIST_LIMIT+"），只能显示前" + FilesTable.MAX_LIST_LIMIT + "行。", "警告",
+						JOptionPane.WARNING_MESSAGE);
+			}
 			if (currentView != null && currentView.getCurrent() != null) {
 				filesTable.updateValues(currentView.getFolders(), currentView.getFiles());
 				window.setTitle("kiftd-" + currentView.getCurrent().getFolderName());
@@ -482,15 +489,18 @@ public class FSViewer extends KiftdDynamicWindow {
 		}
 		// 打开进度提示会话框
 		FSProgressDialog fsd = FSProgressDialog.getNewInstance();
-		Thread fspt=new Thread(()->{
+		Thread fspt = new Thread(() -> {
 			fsd.show();
 		});
 		fspt.start();
 		try {
 			FileSystemManager.getInstance().importFrom(files, folderId, type);
-		} catch (Exception e1) {
-			// TODO 自动生成的 catch 块
-			JOptionPane.showMessageDialog(window, "导入文件时失败，该操作已被中断，未能全部导入。", "错误", JOptionPane.ERROR_MESSAGE);
+		} catch (FoldersTotalOutOfLimitException e1) {
+			JOptionPane.showMessageDialog(window, "导入失败，该文件夹内的文件夹数目已达上限，无法导入更多文件夹。", "错误", JOptionPane.ERROR_MESSAGE);
+		} catch (FilesTotalOutOfLimitException e2) {
+			JOptionPane.showMessageDialog(window, "导入失败，该文件夹内的文件数目已达上限，无法导入更多文件。", "错误", JOptionPane.ERROR_MESSAGE);
+		} catch (Exception e3) {
+			JOptionPane.showMessageDialog(window, "导入失败，无法完成导入，该操作已被中断。", "错误", JOptionPane.ERROR_MESSAGE);
 		}
 		fsd.close();
 		refresh();
@@ -522,7 +532,7 @@ public class FSViewer extends KiftdDynamicWindow {
 			homeBtn.setEnabled(true);
 		}
 	}
-	
+
 	@Override
 	protected void finalize() throws Throwable {
 		super.finalize();

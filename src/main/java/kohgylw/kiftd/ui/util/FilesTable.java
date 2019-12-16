@@ -27,6 +27,7 @@ public class FilesTable extends JTable {
 
 	private static final String[] columns = new String[] { "名称", "创建日期", "大小（MB）", "创建者" };
 	private static List<Folder> folders;// 当前显示的文件夹列表
+	public static final int MAX_LIST_LIMIT = Integer.MAX_VALUE;
 
 	/**  */
 	private static final long serialVersionUID = -3436472714356711024L;
@@ -88,8 +89,8 @@ public class FilesTable extends JTable {
 
 						@Override
 						public int getRowCount() {
-							// TODO 自动生成的方法存根
-							return folders.size() + files.size();
+							long totalSize = folders.size() + files.size();
+							return totalSize > MAX_LIST_LIMIT ? MAX_LIST_LIMIT : (int) totalSize;
 						}
 
 						@Override
@@ -123,8 +124,8 @@ public class FilesTable extends JTable {
 				}
 			}
 		};
-		//避免操作过快导致的异常
-		Thread t = new Thread(()->{
+		// 避免操作过快导致的异常
+		Thread t = new Thread(() -> {
 			SwingUtilities.invokeLater(doUpdate);
 		});
 		t.start();

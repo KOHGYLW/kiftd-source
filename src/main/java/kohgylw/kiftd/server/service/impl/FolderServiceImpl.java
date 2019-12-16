@@ -19,6 +19,7 @@ import java.util.*;
 
 @Service
 public class FolderServiceImpl implements FolderService {
+
 	@Resource
 	private FolderMapper fm;
 	@Resource
@@ -51,6 +52,9 @@ public class FolderServiceImpl implements FolderService {
 		}
 		if (fm.queryByParentId(parentId).parallelStream().anyMatch((e) -> e.getFolderName().equals(folderName))) {
 			return "nameOccupied";
+		}
+		if (fm.countByParentId(parentId) >= FileNodeUtil.MAXIMUM_NUM_OF_SINGLE_FOLDER) {
+			return "foldersTotalOutOfLimit";
 		}
 		Folder f = new Folder();
 		// 设置子文件夹约束等级，不允许子文件夹的约束等级比父文件夹低
@@ -130,7 +134,7 @@ public class FolderServiceImpl implements FolderService {
 		final List<Folder> l = this.fu.getParentList(folderId);
 		if (this.fu.deleteAllChildFolder(folderId) > 0) {
 			this.lu.writeDeleteFolderEvent(request, folder, l);
-			CleanInvalidAddedAuthListener.needCheck=true;
+			CleanInvalidAddedAuthListener.needCheck = true;
 			return "deleteFolderSuccess";
 		}
 		return "cannotDeleteFolder";
@@ -257,7 +261,7 @@ public class FolderServiceImpl implements FolderService {
 				return "deleteError";
 			}
 		}
-		CleanInvalidAddedAuthListener.needCheck=true;
+		CleanInvalidAddedAuthListener.needCheck = true;
 		return "deleteSuccess";
 	}
 
@@ -284,6 +288,10 @@ public class FolderServiceImpl implements FolderService {
 		if (!ConfigureReader.instance().authorized(account, AccountAuth.CREATE_NEW_FOLDER,
 				fu.getAllFoldersId(parentId))) {
 			cnfbnr.setResult("error");
+			return gson.toJson(cnfbnr);
+		}
+		if (fm.countByParentId(parentId) >= FileNodeUtil.MAXIMUM_NUM_OF_SINGLE_FOLDER) {
+			cnfbnr.setResult("foldersTotalOutOfLimit");
 			return gson.toJson(cnfbnr);
 		}
 		Folder f = new Folder();
