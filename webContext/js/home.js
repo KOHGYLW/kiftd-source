@@ -2679,7 +2679,10 @@ function getDownloadURL(){
 			fId:getDownloadFileId
 		},
 		success:function(result){
-			$("#downloadHrefBox").html("<a href='"+window.location.protocol+"//"+window.location.host+"/externalLinksController/downloadFileByKey/"+getDownloadFileName+"?dkey="+result+"'>"+window.location.protocol+"//"+window.location.host+"/externalLinksController/downloadFileByKey/"+getDownloadFileName+"?dkey="+result+"</a>");
+			// 获取链接
+			var dlurl=encodeURI(window.location.protocol+"//"+window.location.host+"/externalLinksController/downloadFileByKey/"+getDownloadFileName+"?dkey="+result);
+			// 显示链接内容
+			$("#downloadHrefBox").html("<a href='"+dlurl+"'>"+dlurl+"</a>");
 		},
 		error:function(){
 			$("#downloadHrefBox").html("<span class='text-muted'>获取失败，请检查网络状态或<a href='javascript:void(0);' onclick='getDownloadURL()'>点此</a>重新获取。</span>");
