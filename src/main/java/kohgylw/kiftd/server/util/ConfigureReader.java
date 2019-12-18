@@ -82,6 +82,7 @@ public class ConfigureReader {
 	public static final int INVALID_CHANGE_PASSWORD_SETTING = 11;
 	public static final int INVALID_FILE_CHAIN_SETTING = 12;
 	public static final int INVALID_IP_XFF_SETTING = 13;
+	public static final int INVALID_FFMPEG_SETTING = 14;
 	public static final int LEGAL_PROPERTIES = 0;
 	private static Thread accountPropertiesUpdateDaemonThread;
 	private String timeZone;
@@ -94,6 +95,7 @@ public class ConfigureReader {
 	private boolean ipAllowOrBanned;// IP规则为允许还是禁止，若为允许则是false，否则应为true
 	private boolean enableIPRule;// 是否启用IP规则检查
 	private boolean ipXFFAnalysis = true;// 是否启用XFF解析
+	private boolean enableFFMPEG = true;// 是否启用视频播放的在线解码功能
 
 	private static final int MAX_EXTENDSTORES_NUM = 255;// 扩展存储区最大数目
 
@@ -791,6 +793,23 @@ public class ConfigureReader {
 		}else {
 			ipXFFAnalysis = true;
 		}
+		// 是否启用视频播放的在线解码功能
+		String ffmpegConf =  serverp.getProperty("video.ffmpeg");
+		if(ffmpegConf != null) {
+			switch (ffmpegConf) {
+			case "disable":
+				enableFFMPEG = false;
+				break;
+			case "enable":
+				enableFFMPEG =  true;
+				break;
+			default:
+				Printer.instance.print("错误：视频播放功能的在线解码配置不正确（只能设置为“disable”或“enable”），请重新检查。");
+				return INVALID_FFMPEG_SETTING;
+			}
+		}else {
+			enableFFMPEG = true;
+		}
 		Printer.instance.print("检查完毕。");
 		return 0;
 	}
@@ -1367,5 +1386,16 @@ public class ConfigureReader {
 	 */
 	public boolean isIpXFFAnalysis() {
 		return ipXFFAnalysis;
+	}
+	
+	/**
+	 * 
+	 * <h2>判断用户是否启用了在线解码功能</h2>
+	 * <p>该方法用于判断用户是否启用视频播放的在线解码功能。</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @return boolean 启用则返回true，否则返回false
+	 */
+	public boolean isEnableFFMPEG() {
+		return enableFFMPEG;
 	}
 }

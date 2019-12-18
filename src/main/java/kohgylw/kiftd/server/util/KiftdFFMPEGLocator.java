@@ -7,8 +7,12 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
+import org.springframework.stereotype.Component;
+
+import kohgylw.kiftd.printer.Printer;
 import ws.schild.jave.FFMPEGLocator;
 
+@Component
 public class KiftdFFMPEGLocator extends FFMPEGLocator {
 
 	/**
@@ -20,26 +24,32 @@ public class KiftdFFMPEGLocator extends FFMPEGLocator {
 	 * ffmpeg引擎的路径
 	 */
 	private String path;
-	
+
 	/**
 	 * 
 	 * <h2>实例化ffmpeg引擎构造器</h2>
-	 * <p>在实例化过程中，将根据操作系统来判断使用哪一种ffmpeg引擎可执行文件来进行引用，并将其拷贝到临时目录中以便转码使用。</p>
+	 * <p>
+	 * 在实例化过程中，将根据操作系统来判断使用哪一种ffmpeg引擎可执行文件来进行引用，并将其拷贝到临时目录中以便转码使用。
+	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
 	 */
 	public KiftdFFMPEGLocator() {
+		// 首先检查是否启用了在线解码功能，如果没有启用则无需初始化ffmpeg引擎
+		if (!ConfigureReader.instance().isEnableFFMPEG()) {
+			return;
+		}
 		// 下面的变量用于判断操作系统，主要判断是Windows还是Mac，都不是的话就一律视作是各种Linux的发行版
 		String os = System.getProperty("os.name").toLowerCase();
 		boolean isWindows = os.contains("windows");
 		boolean isMac = os.contains("mac");
 
-		// 为了保证运行过程中ffmpeg可执行文件“不被打扰”，首先构造一个临时目录，用于存放运行中引用的ffmpeg可执行文件
+		// 为了保证运行过程中ffmpeg可执行文件能被单独使用，首先要构造一个临时目录，用于存放运行中引用的ffmpeg可执行文件
 		File dirFolder = new File(System.getProperty("java.io.tmpdir"), "jave/");
 		if (!dirFolder.exists()) {
 			dirFolder.mkdirs();
 		}
 
-		
 		// 判断正确的后缀名，如果是windows，那么则使用“.exe”作为后缀，然后再判断是不是Mac，如果是则查找“-osx”后缀的ffmpeg，
 		// 其余的不需要特定后缀。
 		String suffix = isWindows ? ".exe" : (isMac ? "-osx" : "");
@@ -53,16 +63,19 @@ public class KiftdFFMPEGLocator extends FFMPEGLocator {
 			try {
 				copyFile("ffmpeg-" + arch + suffix, ffmpegFile);
 			} catch (NullPointerException e) {
+				e.printStackTrace();
+				Printer.instance.print("警告：未能找到适合此操作系统的ffmpeg引擎可执行文件，视频播放的在线解码功能将不可用。");
 			}
+			// 已经有了？那么它应该准备好了
 		}
 
-		// 对于类Unix系统而言，还要额外为临时目录授予可运行权限，以便jave运行时调用ffmpeg
+		// 对于类Unix系统而言，还要确保临时目录授予可运行权限，以便jave运行时调用ffmpeg
 		if (!isWindows) {
-			if(!ffmpegFile.canExecute()) {
+			if (!ffmpegFile.canExecute()) {
 				try {
 					Runtime.getRuntime().exec(new String[] { "/bin/chmod", "755", ffmpegFile.getAbsolutePath() });
 				} catch (IOException e) {
-					//授予权限失败的话……好像也没啥好办法，直接结束构造就行了
+					// 授予权限失败的话……好像也没啥好办法，直接结束构造就行了
 					return;
 				}
 			}
@@ -77,19 +90,19 @@ public class KiftdFFMPEGLocator extends FFMPEGLocator {
 	protected String getFFMPEGExecutablePath() {
 		return path;
 	}
-	
+
 	// 把文件从自带的jar包中拷贝出来，移入指定文件夹
 	private void copyFile(String path, File dest) {
-		String resourceName = "native/" + path;
+		String resourceName = "/ws/schild/jave/native/" + path;
 		try {
-			if(!copy(getClass().getResourceAsStream(resourceName), dest.getAbsolutePath())) {
+			if (!copy(getClass().getResourceAsStream(resourceName), dest.getAbsolutePath())) {
 				throw new NullPointerException();
 			}
 		} catch (NullPointerException ex) {
 			throw ex;
 		}
 	}
-	
+
 	// 以文件的形式把流存入指定文件夹内
 	private boolean copy(InputStream source, String destination) {
 		boolean success = true;

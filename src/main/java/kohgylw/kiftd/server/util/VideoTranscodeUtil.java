@@ -35,6 +35,8 @@ public class VideoTranscodeUtil {
 	private FileBlockUtil fbu;
 	@Resource
 	private NodeMapper nm;
+	@Resource
+	private KiftdFFMPEGLocator kfl;
 
 	public static Map<String, VideoTranscodeThread> videoTranscodeThreads = new HashMap<>();
 
@@ -74,9 +76,11 @@ public class VideoTranscodeUtil {
 			if (vtt != null) {
 				if ("FIN".equals(vtt.getProgress())) {
 					String md5 = DigestUtils.md5Hex(new FileInputStream(f));
-					if (md5.equals(vtt.getMd5()) && new File(ConfigureReader.instance().getTemporaryfilePath(), vtt.getOutputFileName()).isFile()) {
+					if (md5.equals(vtt.getMd5())
+							&& new File(ConfigureReader.instance().getTemporaryfilePath(), vtt.getOutputFileName())
+									.isFile()) {
 						return vtt.getProgress();
-					}else{
+					} else {
 						videoTranscodeThreads.remove(fId);
 					}
 				} else {
@@ -96,7 +100,7 @@ public class VideoTranscodeUtil {
 			default:
 				throw new IllegalArgumentException();
 			}
-			videoTranscodeThreads.put(fId, new VideoTranscodeThread(f, ea));
+			videoTranscodeThreads.put(fId, new VideoTranscodeThread(f, ea, kfl));
 			return "0.0";
 		}
 	}

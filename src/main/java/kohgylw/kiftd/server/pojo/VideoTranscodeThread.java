@@ -6,10 +6,12 @@ import java.util.UUID;
 
 import org.apache.commons.codec.digest.DigestUtils;
 
+import kohgylw.kiftd.printer.Printer;
 import kohgylw.kiftd.server.util.ConfigureReader;
 import ws.schild.jave.Encoder;
 import ws.schild.jave.EncoderProgressListener;
 import ws.schild.jave.EncodingAttributes;
+import ws.schild.jave.FFMPEGLocator;
 import ws.schild.jave.MultimediaInfo;
 import ws.schild.jave.MultimediaObject;
 
@@ -30,12 +32,12 @@ public class VideoTranscodeThread {
 	private Encoder encoder;
 	private String outputFileName;
 
-	public VideoTranscodeThread(File f, EncodingAttributes ea) throws Exception {
+	public VideoTranscodeThread(File f, EncodingAttributes ea,FFMPEGLocator fl) throws Exception {
 		// 首先计算MD5值
 		md5 = DigestUtils.md5Hex(new FileInputStream(f));
 		progress = "0.0";
 		MultimediaObject mo = new MultimediaObject(f);
-		encoder = new Encoder();
+		encoder = new Encoder(fl);
 		Thread t = new Thread(() -> {
 			try {
 				outputFileName="video_"+UUID.randomUUID().toString()+".mp4";
@@ -53,7 +55,7 @@ public class VideoTranscodeThread {
 						});
 				progress = "FIN";
 			} catch (Exception e) {
-
+				Printer.instance.print("警告：在线转码功能出现意外错误。详细信息："+e.getMessage());
 			}
 		});
 		t.start();
