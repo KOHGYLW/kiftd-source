@@ -772,10 +772,11 @@ public class FileSystemManager {
 				file = new File(ConfigureReader.instance().getExtendStores().parallelStream()
 						.filter((e) -> e.getIndex() == index).findAny().get().getPath(), f.getFilePath());
 			}
-			if (file.exists() && file.isFile()) {
+			if (file.isFile()) {
 				return file;
 			}
 		} catch (Exception e) {
+			Printer.instance.print("错误：文件数据读取失败。详细信息：" + e.getMessage());
 		}
 		return null;
 	}
