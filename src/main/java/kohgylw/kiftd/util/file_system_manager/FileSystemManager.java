@@ -518,7 +518,11 @@ public class FileSystemManager {
 				folder.setFolderName(newName);
 				folder.setFolderConstraint(parent.getFolderConstraint());
 				folder.setFolderParent(folderId);
-				folder.setFolderCreator(parent.getFolderCreator());
+				if ("root".equals(parent.getFolderId())) {
+					folder.setFolderCreator("SYS_IN");
+				} else {
+					folder.setFolderCreator(parent.getFolderCreator());
+				}
 				folder.setFolderCreationDate(ServerTimeUtil.accurateToDay());
 				int i = 0;
 				while (true) {
