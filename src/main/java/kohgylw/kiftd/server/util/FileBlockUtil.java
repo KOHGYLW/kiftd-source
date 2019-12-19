@@ -55,14 +55,15 @@ public class FileBlockUtil {
 	 * @return String 随机生成的保存路径，如果保存失败则返回“ERROR”
 	 */
 	public String saveToFileBlocks(final MultipartFile f) {
-		// 如果存在扩展存储区，则优先在最大的扩展存储区中存放文件（避免占用主文件系统）
+		// 如果存在扩展存储区，则优先在已有文件块数目最少的扩展存储区中存放文件（避免占用主文件系统）
 		List<ExtendStores> ess = ConfigureReader.instance().getExtendStores();// 得到全部扩展存储区
-		if (ess.size() > 0) {// 如果存在
-			// 将所有扩展存储区按照已存储文件的数目从小到大进行排序
+		if (ess.size() > 0) {
+			// 将所有扩展存储区按照已存储文件块的数目从小到大进行排序
 			Collections.sort(ess, new Comparator<ExtendStores>() {
 				@Override
 				public int compare(ExtendStores o1, ExtendStores o2) {
 					try {
+						// 通常情况下，直接比较子文件列表长度即可
 						return o1.getPath().list().length - o2.getPath().list().length;
 					} catch (Exception e) {
 						try {
@@ -76,16 +77,18 @@ public class FileBlockUtil {
 					}
 				}
 			});
-			// 遍历这些扩展存储区，并尝试将新文件存入一个已有文件数目最少、同时容量又足够的扩展存储区中
+			// 排序完毕后，从文件块最少的开始遍历这些扩展存储区，并尝试将新文件存入一个容量足够的扩展存储区中
 			for (ExtendStores es : ess) {
 				// 如果该存储区的空余容量大于要存放的文件
 				if (es.getPath().getFreeSpace() > f.getSize()) {
-					final String id = UUID.randomUUID().toString().replace("-", "");
-					final String path = es.getIndex() + "_" + id + ".block";
-					final File file = new File(es.getPath(), path);
 					try {
-						f.transferTo(file);// 则执行存放，并将文件命名为“{存储区编号}_{UUID}.block”的形式
-						return path;
+						File file = createNewBlock(es.getIndex() + "_", es.getPath());
+						if (file != null) {
+							f.transferTo(file);// 则执行存放，并将文件命名为“{存储区编号}_{UUID}.block”的形式
+							return file.getName();
+						} else {
+							continue;// 如果本处无法生成新的文件块，那么在其他路径下继续尝试
+						}
 					} catch (IOException e) {
 						// 如果无法存入（由于体积过大或其他问题），那么继续尝试其他扩展存储区
 						continue;
@@ -98,18 +101,40 @@ public class FileBlockUtil {
 			}
 		}
 		// 如果不存在扩展存储区或者最大的扩展存储区无法存放目标文件，则尝试将其存放至主文件系统路径下
-		final String fileBlocks = ConfigureReader.instance().getFileBlockPath();
-		final String id = UUID.randomUUID().toString().replace("-", "");
-		final String path = "file_" + id + ".block";
-		final File file = new File(fileBlocks, path);
 		try {
-			f.transferTo(file);// 执行存放，并肩文件命名为“file_{UUID}.block”的形式
-			return path;
+			final File file = createNewBlock("file_", new File(ConfigureReader.instance().getFileBlockPath()));
+			if (file != null) {
+				f.transferTo(file);// 执行存放，并肩文件命名为“file_{UUID}.block”的形式
+				return file.getName();
+			}
 		} catch (Exception e) {
 			lu.writeException(e);
-			Printer.instance.print(e.getMessage());
-			return "ERROR";
+			Printer.instance.print("错误：文件块生成失败，无法存入新的文件数据。详细信息：" + e.getMessage());
 		}
+		return "ERROR";
+	}
+
+	// 生成创建一个在指定路径下名称（编号）绝对不重复的新文件块
+	private File createNewBlock(String prefix, File parent) throws IOException {
+		int appendIndex = 0;
+		int retryNum = 0;
+		String newName = prefix + UUID.randomUUID().toString().replace("-", "");
+		File newBlock = new File(parent, newName + ".block");
+		while (!newBlock.createNewFile()) {
+			if (appendIndex >= 0 && appendIndex < Integer.MAX_VALUE) {
+				newBlock = new File(parent, newName + "_" + appendIndex + ".block");
+				appendIndex++;
+			} else {
+				if (retryNum >= 5) {
+					return null;
+				} else {
+					newName = prefix + UUID.randomUUID().toString().replace("-", "");
+					newBlock = new File(parent, newName + ".block");
+					retryNum++;
+				}
+			}
+		}
+		return newBlock;
 	}
 
 	/**

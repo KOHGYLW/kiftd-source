@@ -806,12 +806,14 @@ public class FileSystemManager {
 			for (ExtendStores es : ess) {
 				// 如果该存储区的空余容量大于要存放的文件
 				if (es.getPath().getFreeSpace() > f.length()) {
-					final String id = UUID.randomUUID().toString().replace("-", "");
-					final String path = es.getIndex() + "_" + id + ".block";
-					final File file = new File(es.getPath(), path);
 					try {
-						transferFile(f, file);// 则执行存放，并将文件命名为“{存储区编号}_{UUID}.block”的形式
-						return path;
+						File file = createNewBlock(es.getIndex() + "_", es.getPath());
+						if (file != null) {
+							transferFile(f, file);// 则执行存放，并将文件命名为“{存储区编号}_{UUID}.block”的形式
+							return file.getName();
+						} else {
+							continue;
+						}
 					} catch (IOException e) {
 						// 如果无法存入（由于体积过大或其他问题），那么继续尝试其他扩展存储区
 						continue;
@@ -823,16 +825,39 @@ public class FileSystemManager {
 			}
 		}
 		// 如果不存在扩展存储区或者最大的扩展存储区无法存放目标文件，则尝试将其存放至主文件系统路径下
-		final String fileBlocks = ConfigureReader.instance().getFileBlockPath();
-		final String id = UUID.randomUUID().toString().replace("-", "");
-		final String path = "file_" + id + ".block";
-		final File target = new File(fileBlocks, path);
 		try {
-			transferFile(f, target);// 执行存放，并肩文件命名为“file_{UUID}.block”的形式
-			return path;
+			final File target = createNewBlock("file_", new File(ConfigureReader.instance().getFileBlockPath()));
+			if (target != null) {
+				transferFile(f, target);// 执行存放，并肩文件命名为“file_{UUID}.block”的形式
+				return target.getName();
+			}
 		} catch (Exception e) {
-			return "ERROR";
+			Printer.instance.print("错误：文件块生成失败，无法存入新的文件数据。详细信息：" + e.getMessage());
 		}
+		return "ERROR";
+	}
+
+	// 生成创建一个在指定路径下名称（编号）绝对不重复的新文件块
+	private File createNewBlock(String prefix, File parent) throws IOException {
+		int appendIndex = 0;
+		int retryNum = 0;
+		String newName = prefix + UUID.randomUUID().toString().replace("-", "");
+		File newBlock = new File(parent, newName + ".block");
+		while (!newBlock.createNewFile()) {
+			if (appendIndex >= 0 && appendIndex < Integer.MAX_VALUE) {
+				newBlock = new File(parent, newName + "_" + appendIndex + ".block");
+				appendIndex++;
+			} else {
+				if (retryNum >= 5) {
+					return null;
+				} else {
+					newName = prefix + UUID.randomUUID().toString().replace("-", "");
+					newBlock = new File(parent, newName + ".block");
+					retryNum++;
+				}
+			}
+		}
+		return newBlock;
 	}
 
 	private void transferFile(File f, File target) throws Exception {
