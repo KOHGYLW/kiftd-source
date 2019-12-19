@@ -31,7 +31,6 @@ import org.zeroturnaround.zip.*;
  */
 @Component
 public class FileBlockUtil {
-	private static final String EXTEND_PATH_NAME = "extend";
 	@Resource
 	private NodeMapper fm;// 节点映射，用于遍历
 	@Resource
@@ -40,13 +39,6 @@ public class FileBlockUtil {
 	private LogUtil lu;// 日志工具
 	@Resource
 	private FolderUtil fu;// 文件夹操作工具
-
-	/**
-	 * 每一层级文件夹内允许存放的最大文件块阈值。如果当前路径内存放的文件块数目超过该值，
-	 * 则应创建一个新的路径层级继续存储更多文件块，从而避免因在一个文件夹内存储过多的文件
-	 * 而导致的性能下降问题。
-	 */
-	private static final int MAX_BLOCKS_TOTAL_POR_PATH = 8191;
 
 	/**
 	 * 
@@ -76,12 +68,12 @@ public class FileBlockUtil {
 			for (ExtendStores es : ess) {
 				// 如果该存储区的空余容量大于要存放的文件
 				if (es.getPath().getFreeSpace() > f.getSize()) {
-					final String newName = createNewBlockName(es.getIndex() + "_", es.getPath());
-					final File extendPath = getExtendStoragePath(es.getPath());
-					final File file = new File(extendPath, newName);
+					final String id = UUID.randomUUID().toString().replace("-", "");
+					final String path = es.getIndex() + "_" + id + ".block";
+					final File file = new File(es.getPath(), path);
 					try {
 						f.transferTo(file);// 则执行存放，并将文件命名为“{存储区编号}_{UUID}.block”的形式
-						return newName;
+						return path;
 					} catch (IOException e) {
 						// 如果无法存入（由于体积过大或其他问题），那么继续尝试其他扩展存储区
 						continue;
@@ -94,62 +86,18 @@ public class FileBlockUtil {
 			}
 		}
 		// 如果不存在扩展存储区或者最大的扩展存储区无法存放目标文件，则尝试将其存放至主文件系统路径下
+		final String fileBlocks = ConfigureReader.instance().getFileBlockPath();
+		final String id = UUID.randomUUID().toString().replace("-", "");
+		final String path = "file_" + id + ".block";
+		final File file = new File(fileBlocks, path);
 		try {
-			final File fileBlocks = new File(ConfigureReader.instance().getFileBlockPath());
-			File extendPath = getExtendStoragePath(fileBlocks);
-			final String newName = createNewBlockName("file_", fileBlocks);
-			if (newName == null) {
-				return "ERROR";
-			}
-			final File file = new File(extendPath, newName);
 			f.transferTo(file);// 执行存放，并肩文件命名为“file_{UUID}.block”的形式
-			return newName;
+			return path;
 		} catch (Exception e) {
 			lu.writeException(e);
 			Printer.instance.print(e.getMessage());
 			return "ERROR";
 		}
-	}
-
-	// 获取（生成）目标存储路径，这一方法主要是为了避免在单一文件夹内存储过多的文件块设计的。
-	// 从存储路径本级开始，如果该级内存储的文件块数量已达上限（MAX_BLOCKS_TOTAL_POR_PATH），
-	// 则在其中创建一个名为“extend”的文件夹，然后再在这一文件夹内存储新的文件节点，当这一级也存满后，
-	// 则继续在其中创建“extend”文件夹，以此类推。
-	private File getExtendStoragePath(File rootPath) {
-		File targetPath = rootPath;
-		while (targetPath.list().length >= MAX_BLOCKS_TOTAL_POR_PATH) {
-			targetPath = new File(targetPath, EXTEND_PATH_NAME);
-			if (!targetPath.isDirectory()) {
-				targetPath.mkdir();
-			}
-		}
-		return targetPath;
-	}
-
-	// 生成一个在指定路径下绝对不重复的文件块名称，便于作为新文件块的名称
-	private String createNewBlockName(String prefix, File rootPath) {
-		int appendIndex = 0;
-		int tryThreshold = 0;
-		String newName = prefix + UUID.randomUUID().toString().replace("-", "");
-		File testPath = rootPath;
-		while (testPath.isDirectory()) {
-			if (new File(testPath, newName + ".block").isFile()) {
-				if (appendIndex >= 0 && appendIndex < Integer.MAX_VALUE) {
-					newName = newName + "_" + appendIndex;
-					testPath = rootPath;
-					appendIndex++;
-				} else {
-					if (tryThreshold < 10) {
-						newName = prefix + UUID.randomUUID().toString().replace("-", "");
-					} else {
-						return null;
-					}
-				}
-			} else {
-				testPath = new File(testPath, EXTEND_PATH_NAME);
-			}
-		}
-		return newName + ".block";
 	}
 
 	/**
@@ -183,26 +131,10 @@ public class FileBlockUtil {
 	 * @return boolean 删除结果，true为成功
 	 */
 	public boolean deleteFromFileBlocks(Node f) {
-		// 先判断一下文件块所在的存储区
-		File rootPath = new File(ConfigureReader.instance().getFileBlockPath());
-		if (!f.getFilePath().startsWith("file_")) {// 存放于主文件系统中
-			short index = Short.parseShort(f.getFilePath().substring(0, f.getFilePath().indexOf('_')));
-			rootPath = ConfigureReader.instance().getExtendStores().parallelStream()
-					.filter((e) -> e.getIndex() == index).findAny().get().getPath();
-		}
 		// 获取对应的文件块对象
 		File file = getFileFromBlocks(f);
 		if (file != null) {
-			if (file.delete()) {
-				File parentPath = file.getParentFile();
-				while (parentPath != null && parentPath.isDirectory() && (!parentPath.equals(rootPath))
-						&& parentPath.list().length == 0) {
-					File thisPath = parentPath;
-					parentPath = thisPath.getParentFile();
-					thisPath.delete();
-				}
-				return true;
-			}
+			return file.delete();// 执行删除操作
 		}
 		return false;
 	}
@@ -225,11 +157,11 @@ public class FileBlockUtil {
 			File file = null;
 			if (f.getFilePath().startsWith("file_")) {// 存放于主文件系统中
 				// 直接从主文件系统的文件块存放区获得对应的文件块
-				file = getBlockFromExtendPath(new File(ConfigureReader.instance().getFileBlockPath()), f.getFilePath());
+				file = new File(ConfigureReader.instance().getFileBlockPath(), f.getFilePath());
 			} else {// 存放于扩展存储区
 				short index = Short.parseShort(f.getFilePath().substring(0, f.getFilePath().indexOf('_')));
 				// 根据编号查到对应的扩展存储区路径，进而获取对应的文件块
-				file = getBlockFromExtendPath(ConfigureReader.instance().getExtendStores().parallelStream()
+				file = new File(ConfigureReader.instance().getExtendStores().parallelStream()
 						.filter((e) -> e.getIndex() == index).findAny().get().getPath(), f.getFilePath());
 			}
 			if (file.isFile()) {
@@ -238,20 +170,6 @@ public class FileBlockUtil {
 		} catch (Exception e) {
 			lu.writeException(e);
 			Printer.instance.print("错误：文件数据读取失败。详细信息：" + e.getMessage());
-		}
-		return null;
-	}
-
-	// 从扩展文件夹（如果有）里获取指定的文件节点名称
-	private File getBlockFromExtendPath(File rootPath, String blockName) {
-		File targetPath = rootPath;
-		while (targetPath.isDirectory()) {
-			File block = new File(targetPath, blockName);
-			if (block.isFile()) {
-				return block;
-			} else {
-				targetPath = new File(targetPath, EXTEND_PATH_NAME);
-			}
 		}
 		return null;
 	}
@@ -276,36 +194,32 @@ public class FileBlockUtil {
 				paths.add(es.getPath());
 			}
 			for (File path : paths) {
-				File extendPath = path;
-				while (extendPath.isDirectory()) {
-					try {
-						Iterator<Path> blocks = Files.newDirectoryStream(path.toPath()).iterator();
-						while (blocks.hasNext()) {
-							File testBlock = blocks.next().toFile();
-							Node node = fm.queryByPath(testBlock.getName());
+				try {
+					Iterator<Path> blocks = Files.newDirectoryStream(path.toPath()).iterator();
+					while (blocks.hasNext()) {
+						File testBlock = blocks.next().toFile();
+						Node node = fm.queryByPath(testBlock.getName());
+						if (testBlock.isFile()) {
 							if (node == null) {
-								if (testBlock.isFile()) {
-									testBlock.delete();
-								}
+								testBlock.delete();
 							}
 						}
-					} catch (IOException e) {
-						Printer.instance.print("警告：文件节点效验时发生意外错误，可能未能正确完成文件节点效验。错误信息：" + e.getMessage());
-						lu.writeException(e);
 					}
-					extendPath = new File(extendPath, EXTEND_PATH_NAME);
+				} catch (IOException e) {
+					Printer.instance.print("警告：文件节点效验时发生意外错误，可能未能正确完成文件节点效验。错误信息：" + e.getMessage());
+					lu.writeException(e);
 				}
 			}
 		});
 		checkThread.start();
 	}
 
-	// 逐文件夹校对文件节点——要求某一节点必须有对应的文件块，否则将其移除（避免出现死节点）
+	// 校对文件节点，要求某一节点必须有对应的文件块，否则将其移除（避免出现死节点）
 	private void checkNodes(String fid) {
 		List<Node> nodes = fm.queryByParentFolderId(fid);
 		for (Node node : nodes) {
 			File block = getFileFromBlocks(node);
-			if (block == null || !block.exists()) {
+			if (block == null) {
 				fm.deleteById(node.getFileId());
 			}
 		}
