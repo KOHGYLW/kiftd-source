@@ -502,9 +502,9 @@ function showFolderView(fid,targetId) {
 				$("#sortByOR").removeClass();
 				showFolderTable(folderView);
 				// 更新文件夹信息至信息模态框
-				$("#fim_name").text(folderView.folderName);
-				$("#fim_creator").text(folderView.folderCreator);
-				$("#fim_folderCreationDate").text(folderView.folderCreationDate);
+				$("#fim_name").text(folderView.folder.folderName);
+				$("#fim_creator").text(folderView.folder.folderCreator);
+				$("#fim_folderCreationDate").text(folderView.folder.folderCreationDate);
 				$("#fim_folderId").text(folderView.folder.folderId);
 				updateTheFolderInfo();
 				// 判断是否还需要加载后续数据

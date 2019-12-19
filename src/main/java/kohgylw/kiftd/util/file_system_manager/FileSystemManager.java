@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -51,7 +52,7 @@ public class FileSystemManager {
 	/**
 	 * 单文件夹内最大允许的文件夹或文件数量上限
 	 */
-	public static final int MAX_FOLDERS_OR_FILES_LIMIT=Integer.MAX_VALUE;
+	public static final int MAX_FOLDERS_OR_FILES_LIMIT = Integer.MAX_VALUE;
 
 	/**
 	 * 正在进行的操作进度，请只读勿改
@@ -85,10 +86,10 @@ public class FileSystemManager {
 		try {
 			selectFolderById = c.prepareStatement("SELECT * FROM FOLDER WHERE folder_id = ?");
 			selectNodeById = c.prepareStatement("SELECT * FROM FILE WHERE file_id = ?");
-			selectNodesByFolderId = c
-					.prepareStatement("SELECT * FROM FILE WHERE file_parent_folder = ? LIMIT 0," + MAX_FOLDERS_OR_FILES_LIMIT);
-			selectFoldersByParentFolderId = c
-					.prepareStatement("SELECT * FROM FOLDER WHERE folder_parent = ? LIMIT 0," + MAX_FOLDERS_OR_FILES_LIMIT);
+			selectNodesByFolderId = c.prepareStatement(
+					"SELECT * FROM FILE WHERE file_parent_folder = ? LIMIT 0," + MAX_FOLDERS_OR_FILES_LIMIT);
+			selectFoldersByParentFolderId = c.prepareStatement(
+					"SELECT * FROM FOLDER WHERE folder_parent = ? LIMIT 0," + MAX_FOLDERS_OR_FILES_LIMIT);
 			insertNode = c.prepareStatement("INSERT INTO FILE VALUES(?,?,?,?,?,?,?)");
 			insertFolder = c.prepareStatement("INSERT INTO FOLDER VALUES(?,?,?,?,?,?)");
 			deleteNodeById = c.prepareStatement("DELETE FROM FILE WHERE file_id = ?");
@@ -445,7 +446,7 @@ public class FileSystemManager {
 			}
 			// 处理文件节点，有则用，没有则创建一个
 			if (node == null) {
-				if(getFilesTotalNumByFoldersId(folderId) >= MAX_FOLDERS_OR_FILES_LIMIT) {
+				if (getFilesTotalNumByFoldersId(folderId) >= MAX_FOLDERS_OR_FILES_LIMIT) {
 					throw new FilesTotalOutOfLimitException();
 				}
 				node = new Node();
@@ -508,8 +509,8 @@ public class FileSystemManager {
 			}
 			per = 50;
 			if (folder == null) {
-				if(getFoldersTotalNumByFoldersId(folderId) >= MAX_FOLDERS_OR_FILES_LIMIT) {
-					throw new FoldersTotalOutOfLimitException();//如果已经超过了最大限值，那么不能继续导入文件夹。
+				if (getFoldersTotalNumByFoldersId(folderId) >= MAX_FOLDERS_OR_FILES_LIMIT) {
+					throw new FoldersTotalOutOfLimitException();// 如果已经超过了最大限值，那么不能继续导入文件夹。
 				}
 				folder = new Folder();
 				String nFolderId = UUID.randomUUID().toString();
@@ -786,7 +787,18 @@ public class FileSystemManager {
 			Collections.sort(ess, new Comparator<ExtendStores>() {
 				@Override
 				public int compare(ExtendStores o1, ExtendStores o2) {
-					return o1.getPath().list().length - o2.getPath().list().length;
+					try {
+						return o1.getPath().list().length - o2.getPath().list().length;
+					} catch (Exception e) {
+						try {
+							// 如果文件太多以至于超出数组上限，则换用如下统计方法
+							long dValue = Files.list(o1.getPath().toPath()).count()
+									- Files.list(o2.getPath().toPath()).count();
+							return dValue > 0L ? 1 : dValue == 0 ? 0 : -1;
+						} catch (IOException e1) {
+							return 0;
+						}
+					}
 				}
 			});
 			// 遍历这些扩展存储区，并尝试将新文件存入一个已有文件数目最少、同时容量又足够的扩展存储区中
@@ -844,41 +856,51 @@ public class FileSystemManager {
 		fileOutputStream.close();
 		return;
 	}
-	
+
 	/**
 	 * 
 	 * <h2>根据父文件夹的ID获取其下已有文件数目</h2>
-	 * <p>该方法用于统计指定文件夹下的已有文件数量。应在各种存入新文件操作前先调用该方法来判断是否超过规定值。</p>
+	 * <p>
+	 * 该方法用于统计指定文件夹下的已有文件数量。应在各种存入新文件操作前先调用该方法来判断是否超过规定值。
+	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param pfId java.lang.String 需要统计的文件夹ID
+	 * @param pfId
+	 *            java.lang.String 需要统计的文件夹ID
 	 * @return long 统计数目
-	 * @throws SQLException 各种统计失败的原因
+	 * @throws SQLException
+	 *             各种统计失败的原因
 	 */
 	public long getFilesTotalNumByFoldersId(String pfId) throws SQLException {
-		if(pfId != null) {
+		if (pfId != null) {
 			countNodesByFolderId.setString(1, pfId);
 			ResultSet rs = countNodesByFolderId.executeQuery();
-			if(rs.first()) {
+			if (rs.first()) {
 				return rs.getLong(1);
 			}
 		}
 		return 0L;
 	}
-	
+
 	/**
 	 * 
 	 * <h2>根据父文件夹的ID获取其下已有文件夹数目</h2>
-	 * <p>该方法用于统计指定文件夹下的已有文件夹数量。应在各种创建新文件夹操作前先调用该方法来判断是否超过规定值。</p>
+	 * <p>
+	 * 该方法用于统计指定文件夹下的已有文件夹数量。应在各种创建新文件夹操作前先调用该方法来判断是否超过规定值。
+	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param pfId java.lang.String 需要统计的文件夹ID
+	 * @param pfId
+	 *            java.lang.String 需要统计的文件夹ID
 	 * @return long 统计数目
-	 * @throws SQLException 各种统计失败的原因
+	 * @throws SQLException
+	 *             各种统计失败的原因
 	 */
 	public long getFoldersTotalNumByFoldersId(String pfId) throws SQLException {
-		if(pfId != null) {
+		if (pfId != null) {
 			countFoldersByParentFolderId.setString(1, pfId);
 			ResultSet rs = countFoldersByParentFolderId.executeQuery();
-			if(rs.first()) {
+			if (rs.first()) {
 				return rs.getLong(1);
 			}
 		}

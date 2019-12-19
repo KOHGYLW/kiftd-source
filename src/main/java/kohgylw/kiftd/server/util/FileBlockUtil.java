@@ -8,6 +8,7 @@ import kohgylw.kiftd.server.mapper.*;
 import javax.annotation.*;
 import org.springframework.web.multipart.*;
 import java.io.*;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -61,7 +62,18 @@ public class FileBlockUtil {
 			Collections.sort(ess, new Comparator<ExtendStores>() {
 				@Override
 				public int compare(ExtendStores o1, ExtendStores o2) {
-					return o1.getPath().list().length - o2.getPath().list().length;
+					try {
+						return o1.getPath().list().length - o2.getPath().list().length;
+					} catch (Exception e) {
+						try {
+							// 如果文件太多以至于超出数组上限，则换用如下统计方法
+							long dValue = Files.list(o1.getPath().toPath()).count()
+									- Files.list(o2.getPath().toPath()).count();
+							return dValue > 0L ? 1 : dValue == 0 ? 0 : -1;
+						} catch (IOException e1) {
+							return 0;
+						}
+					}
 				}
 			});
 			// 遍历这些扩展存储区，并尝试将新文件存入一个已有文件数目最少、同时容量又足够的扩展存储区中
@@ -194,12 +206,12 @@ public class FileBlockUtil {
 				paths.add(es.getPath());
 			}
 			for (File path : paths) {
-				try {
-					Iterator<Path> blocks = Files.newDirectoryStream(path.toPath()).iterator();
+				try (DirectoryStream<Path> ds = Files.newDirectoryStream(path.toPath())) {
+					Iterator<Path> blocks = ds.iterator();
 					while (blocks.hasNext()) {
 						File testBlock = blocks.next().toFile();
-						Node node = fm.queryByPath(testBlock.getName());
 						if (testBlock.isFile()) {
+							Node node = fm.queryByPath(testBlock.getName());
 							if (node == null) {
 								testBlock.delete();
 							}
