@@ -86,6 +86,7 @@ public class NoticeUtil {
 					writer.newLine();
 				}
 				reader.close();
+				writer.flush();
 				writer.close();
 				// 计算md5并保存
 				md5 = DigestUtils.md5Hex(new FileInputStream(noticeMD));
