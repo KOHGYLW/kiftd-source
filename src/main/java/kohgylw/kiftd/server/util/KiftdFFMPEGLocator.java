@@ -87,7 +87,7 @@ public class KiftdFFMPEGLocator extends FFMPEGLocator {
 	}
 
 	@Override
-	protected String getFFMPEGExecutablePath() {
+	public String getFFMPEGExecutablePath() {
 		return path;
 	}
 

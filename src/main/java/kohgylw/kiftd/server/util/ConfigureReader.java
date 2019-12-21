@@ -28,6 +28,7 @@ import java.sql.DriverManager;
  */
 public class ConfigureReader {
 
+	public static final int INVALID_DOWNLOAD_ZIP_SETTING = 15;
 	private static ConfigureReader cr;// 自体实体
 	private KiftdProperties serverp;// 配置设置
 	private KiftdProperties accountp;// 账户设置
@@ -96,6 +97,7 @@ public class ConfigureReader {
 	private boolean enableIPRule;// 是否启用IP规则检查
 	private boolean ipXFFAnalysis = true;// 是否启用XFF解析
 	private boolean enableFFMPEG = true;// 是否启用视频播放的在线解码功能
+	private boolean enableDownloadByZip = true;// 是否启用“打包下载”功能
 
 	private static final int MAX_EXTENDSTORES_NUM = 255;// 扩展存储区最大数目
 
@@ -777,38 +779,55 @@ public class ConfigureReader {
 			openHttps = true;
 		}
 		// 是否启用XFF解析
-		String xffConf =  serverp.getProperty("IP.xff");
-		if(xffConf != null) {
+		String xffConf = serverp.getProperty("IP.xff");
+		if (xffConf != null) {
 			switch (xffConf) {
 			case "disable":
 				ipXFFAnalysis = false;
 				break;
 			case "enable":
-				ipXFFAnalysis =  true;
+				ipXFFAnalysis = true;
 				break;
 			default:
 				Printer.instance.print("错误：IP地址xff解析配置不正确（只能设置为“disable”或“enable”），请重新检查。");
 				return INVALID_IP_XFF_SETTING;
 			}
-		}else {
+		} else {
 			ipXFFAnalysis = true;
 		}
 		// 是否启用视频播放的在线解码功能
-		String ffmpegConf =  serverp.getProperty("video.ffmpeg");
-		if(ffmpegConf != null) {
+		String ffmpegConf = serverp.getProperty("video.ffmpeg");
+		if (ffmpegConf != null) {
 			switch (ffmpegConf) {
 			case "disable":
 				enableFFMPEG = false;
 				break;
 			case "enable":
-				enableFFMPEG =  true;
+				enableFFMPEG = true;
 				break;
 			default:
 				Printer.instance.print("错误：视频播放功能的在线解码配置不正确（只能设置为“disable”或“enable”），请重新检查。");
 				return INVALID_FFMPEG_SETTING;
 			}
-		}else {
+		} else {
 			enableFFMPEG = true;
+		}
+		// 是否启用“打包下载”功能
+		String downloadZipConf = serverp.getProperty("download.zip");
+		if (downloadZipConf != null) {
+			switch (downloadZipConf) {
+			case "disable":
+				enableDownloadByZip = false;
+				break;
+			case "enable":
+				enableDownloadByZip = true;
+				break;
+			default:
+				Printer.instance.print("错误：“打包下载”功能的配置不正确（只能设置为“disable”或“enable”），请重新检查。");
+				return INVALID_DOWNLOAD_ZIP_SETTING;
+			}
+		} else {
+			enableDownloadByZip = true;
 		}
 		Printer.instance.print("检查完毕。");
 		return 0;
@@ -1341,10 +1360,10 @@ public class ConfigureReader {
 			if (accountp.getProperty(newAccount + ".pwd") == null) {
 				synchronized (accountp) {
 					accountp.setProperty(newAccount + ".pwd", newPassword);
-					if(signUpAuth != null) {
+					if (signUpAuth != null) {
 						accountp.setProperty(newAccount + ".auth", signUpAuth);
 					}
-					if(signUpGroup != null) {
+					if (signUpGroup != null) {
 						accountp.setProperty(newAccount + ".group", signUpGroup);
 					}
 					try (FileOutputStream accountSettingOut = new FileOutputStream(
@@ -1387,15 +1406,32 @@ public class ConfigureReader {
 	public boolean isIpXFFAnalysis() {
 		return ipXFFAnalysis;
 	}
-	
+
 	/**
 	 * 
 	 * <h2>判断用户是否启用了在线解码功能</h2>
-	 * <p>该方法用于判断用户是否启用视频播放的在线解码功能。</p>
+	 * <p>
+	 * 该方法用于判断用户是否启用视频播放的在线解码功能。
+	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
 	 * @return boolean 启用则返回true，否则返回false
 	 */
 	public boolean isEnableFFMPEG() {
 		return enableFFMPEG;
+	}
+
+	/**
+	 * 
+	 * <h2>判断用户是否启用了“打包下载”功能</h2>
+	 * <p>
+	 * 该方法用于判断用户是否启用“打包下载”功能。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @return boolean 启用则返回true，否则返回false
+	 */
+	public boolean isEnableDownloadByZip() {
+		return enableDownloadByZip;
 	}
 }

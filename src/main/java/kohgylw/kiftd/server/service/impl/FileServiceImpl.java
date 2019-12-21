@@ -459,23 +459,26 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 
 	// 打包下载功能：前置——压缩要打包下载的文件
 	public String downloadCheckedFiles(final HttpServletRequest request) {
-		final String account = (String) request.getSession().getAttribute("ACCOUNT");
-		final String strIdList = request.getParameter("strIdList");
-		final String strFidList = request.getParameter("strFidList");
-		try {
-			// 获得要打包下载的文件ID
-			final List<String> idList = gson.fromJson(strIdList, new TypeToken<List<String>>() {
-			}.getType());
-			final List<String> fidList = gson.fromJson(strFidList, new TypeToken<List<String>>() {
-			}.getType());
-			// 创建ZIP压缩包并将全部文件压缩
-			if (idList.size() > 0 || fidList.size() > 0) {
-				final String zipname = this.fbu.createZip(idList, fidList, account);
-				this.lu.writeDownloadCheckedFileEvent(request, idList);
-				// 返回生成的压缩包路径
-				return zipname;
+		if (ConfigureReader.instance().isEnableDownloadByZip()) {
+			final String account = (String) request.getSession().getAttribute("ACCOUNT");
+			final String strIdList = request.getParameter("strIdList");
+			final String strFidList = request.getParameter("strFidList");
+			try {
+				// 获得要打包下载的文件ID
+				final List<String> idList = gson.fromJson(strIdList, new TypeToken<List<String>>() {
+				}.getType());
+				final List<String> fidList = gson.fromJson(strFidList, new TypeToken<List<String>>() {
+				}.getType());
+				// 创建ZIP压缩包并将全部文件压缩
+				if (idList.size() > 0 || fidList.size() > 0) {
+					final String zipname = this.fbu.createZip(idList, fidList, account);
+					this.lu.writeDownloadCheckedFileEvent(request, idList);
+					// 返回生成的压缩包路径
+					return zipname;
+				}
+			} catch (Exception ex) {
+				lu.writeException(ex);
 			}
-		} catch (Exception ex) {
 		}
 		return "ERROR";
 	}
@@ -496,46 +499,49 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 	}
 
 	public String getPackTime(final HttpServletRequest request) {
-		final String account = (String) request.getSession().getAttribute("ACCOUNT");
-		final String strIdList = request.getParameter("strIdList");
-		final String strFidList = request.getParameter("strFidList");
-		try {
-			final List<String> idList = gson.fromJson(strIdList, new TypeToken<List<String>>() {
-			}.getType());
-			final List<String> fidList = gson.fromJson(strFidList, new TypeToken<List<String>>() {
-			}.getType());
-			for (String fid : fidList) {
-				countFolderFilesId(account, fid, fidList);
-			}
-			long packTime = 0L;
-			for (final String fid : idList) {
-				final Node n = this.fm.queryById(fid);
-				if (ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES,
-						fu.getAllFoldersId(n.getFileParentFolder()))
-						&& ConfigureReader.instance().accessFolder(flm.queryById(n.getFileParentFolder()), account)) {
-					final File f = fbu.getFileFromBlocks(n);
-					if (f != null && f.exists()) {
-						packTime += f.length() / 25000000L;
+		if(ConfigureReader.instance().isEnableDownloadByZip()) {
+			final String account = (String) request.getSession().getAttribute("ACCOUNT");
+			final String strIdList = request.getParameter("strIdList");
+			final String strFidList = request.getParameter("strFidList");
+			try {
+				final List<String> idList = gson.fromJson(strIdList, new TypeToken<List<String>>() {
+				}.getType());
+				final List<String> fidList = gson.fromJson(strFidList, new TypeToken<List<String>>() {
+				}.getType());
+				for (String fid : fidList) {
+					countFolderFilesId(account, fid, fidList);
+				}
+				long packTime = 0L;
+				for (final String fid : idList) {
+					final Node n = this.fm.queryById(fid);
+					if (ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES,
+							fu.getAllFoldersId(n.getFileParentFolder()))
+							&& ConfigureReader.instance().accessFolder(flm.queryById(n.getFileParentFolder()), account)) {
+						final File f = fbu.getFileFromBlocks(n);
+						if (f != null && f.exists()) {
+							packTime += f.length() / 25000000L;
+						}
 					}
 				}
+				if (packTime < 4L) {
+					return "\u9a6c\u4e0a\u5b8c\u6210";
+				}
+				if (packTime >= 4L && packTime < 10L) {
+					return "\u5927\u7ea610\u79d2";
+				}
+				if (packTime >= 10L && packTime < 35L) {
+					return "\u4e0d\u5230\u534a\u5206\u949f";
+				}
+				if (packTime >= 35L && packTime < 65L) {
+					return "\u5927\u7ea61\u5206\u949f";
+				}
+				if (packTime >= 65L) {
+					return "\u8d85\u8fc7" + packTime / 60L
+							+ "\u5206\u949f\uff0c\u8017\u65f6\u8f83\u957f\uff0c\u5efa\u8bae\u76f4\u63a5\u4e0b\u8f7d";
+				}
+			} catch (Exception ex) {
+				lu.writeException(ex);
 			}
-			if (packTime < 4L) {
-				return "\u9a6c\u4e0a\u5b8c\u6210";
-			}
-			if (packTime >= 4L && packTime < 10L) {
-				return "\u5927\u7ea610\u79d2";
-			}
-			if (packTime >= 10L && packTime < 35L) {
-				return "\u4e0d\u5230\u534a\u5206\u949f";
-			}
-			if (packTime >= 35L && packTime < 65L) {
-				return "\u5927\u7ea61\u5206\u949f";
-			}
-			if (packTime >= 65L) {
-				return "\u8d85\u8fc7" + packTime / 60L
-						+ "\u5206\u949f\uff0c\u8017\u65f6\u8f83\u957f\uff0c\u5efa\u8bae\u76f4\u63a5\u4e0b\u8f7d";
-			}
-		} catch (Exception ex) {
 		}
 		return "0";
 	}
@@ -907,10 +913,10 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 			}
 			return gson.toJson(cifr);
 		} catch (NoSuchElementException e) {
-			if(flm.countByParentId(folderId) >= FileNodeUtil.MAXIMUM_NUM_OF_SINGLE_FOLDER) {
+			if (flm.countByParentId(folderId) >= FileNodeUtil.MAXIMUM_NUM_OF_SINGLE_FOLDER) {
 				// 检查目标文件夹内的文件夹数目是否超限
 				cifr.setResult(FOLDERS_TOTAL_OUT_OF_LIMIT);
-			}else {
+			} else {
 				// 通过所有检查，允许上传
 				cifr.setResult("permitUpload");
 			}

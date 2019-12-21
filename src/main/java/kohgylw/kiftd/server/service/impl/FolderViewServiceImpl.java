@@ -28,7 +28,7 @@ public class FolderViewServiceImpl implements FolderViewService {
 	@Resource
 	private Gson gson;
 	@Resource
-	private NoticeUtil nu;
+	private KiftdFFMPEGLocator kfl;
 
 	@Override
 	public String getFolderViewToJson(final String fid, final HttpSession session, final HttpServletRequest request) {
@@ -111,7 +111,8 @@ public class FolderViewServiceImpl implements FolderViewService {
 		}
 		fv.setAuthList(authList);
 		fv.setPublishTime(ServerTimeUtil.accurateToMinute());
-		fv.setNoticeMd5(nu.getMd5());
+		fv.setEnableFFMPEG(kfl.getFFMPEGExecutablePath() == null ? false : true);
+		fv.setEnableDownloadZip(ConfigureReader.instance().isEnableDownloadByZip());
 		return gson.toJson(fv);
 	}
 
@@ -184,6 +185,9 @@ public class FolderViewServiceImpl implements FolderViewService {
 		sv.setPublishTime(ServerTimeUtil.accurateToMinute());
 		// 设置查询字段
 		sv.setKeyWorld(keyWorld);
+		// 返回公告MD5
+		sv.setEnableFFMPEG(kfl.getFFMPEGExecutablePath() == null ? false : true);
+		sv.setEnableDownloadZip(ConfigureReader.instance().isEnableDownloadByZip());
 		return gson.toJson(sv);
 	}
 

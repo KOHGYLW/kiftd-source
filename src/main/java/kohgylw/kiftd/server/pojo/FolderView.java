@@ -25,7 +25,8 @@ public class FolderView {
 	private String allowChangePassword;
 	private String showFileChain;
 	private String allowSignUp;
-	private String noticeMd5;
+	private boolean enableDownloadZip;
+	private boolean enableFFMPEG;
 	
 	private long foldersOffset;// 文件夹列表查询偏移量
 	private long filesOffset;// 文件列表查询偏移量
@@ -111,14 +112,6 @@ public class FolderView {
 		this.allowSignUp = allowSignUp;
 	}
 
-	public String getNoticeMd5() {
-		return noticeMd5;
-	}
-
-	public void setNoticeMd5(String noticeMd5) {
-		this.noticeMd5 = noticeMd5;
-	}
-
 	public long getFoldersOffset() {
 		return foldersOffset;
 	}
@@ -143,5 +136,20 @@ public class FolderView {
 		this.selectStep = selectStep;
 	}
 
+	public boolean isEnableDownloadZip() {
+		return enableDownloadZip;
+	}
+
+	public void setEnableDownloadZip(boolean enableDownloadZip) {
+		this.enableDownloadZip = enableDownloadZip;
+	}
+
+	public boolean isEnableFFMPEG() {
+		return enableFFMPEG;
+	}
+
+	public void setEnableFFMPEG(boolean enableFFMPEG) {
+		this.enableFFMPEG = enableFFMPEG;
+	}
 
 }

@@ -43,7 +43,7 @@ $(function() {
     }
 	changeFilesTableStyle();
 	getServerOS();// 得到服务器操作系统信息
-	subscribeNotice();// 获取服务器的公告信息，如果有则显示
+	subscribeNotice();// 加载公告MD5，以判断是否需要显示最新公告
 	// 查询是否存在记忆路径，若有，则直接显示记忆路径的内容，否则显示ROOT根路径
 	var arr = document.cookie.match(new RegExp("(^| )folder_id=([^;]*)(;|$)"));
     if (arr != null){
@@ -774,7 +774,7 @@ function showAccountView(folderView) {
 				$("#uploadFolderButtonLi a").attr("onclick","showUploadFolderModel()");
 			}
 		}
-		if (checkAuth(authList, "L")) {
+		if (folderView.enableDownloadZip && checkAuth(authList, "L")) {
 			$("#packageDownloadBox")
 					.html(
 							"<button class='btn btn-link navbar-btn' onclick='showDownloadAllCheckedModel()'><span class='glyphicon glyphicon-briefcase'></span> 打包下载</button>");
@@ -826,7 +826,7 @@ function refreshFolderView() {
 	} else {
 		showFolderView('root');
 	}
-	subscribeNotice();
+	subscribeNotice();// 刷新时也判断是否有新公告需要显示
 }
 
 // 返回上一级文件夹
@@ -901,18 +901,27 @@ function createFileRow(fi,aL,aD,aR,aO){
 		var suffix=getSuffix(fi.fileName);
 		switch (suffix) {
 		case "mp4":
-		case "webm":
-		case "mov":
-		case "avi":
-		case "wmv":
-		case "mkv":
-		case "flv":
 			fileRow = fileRow
 			+ "<button onclick='playVideo("
 			+ '"'
 			+ fi.fileId
 			+ '"'
 			+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-play'></span> 播放</button>";
+			break;
+		case "webm":
+		case "mov":
+		case "avi":
+		case "wmv":
+		case "mkv":
+		case "flv":
+			if(folderView.enableFFMPEG){
+				fileRow = fileRow
+				+ "<button onclick='playVideo("
+				+ '"'
+				+ fi.fileId
+				+ '"'
+				+ ")' class='btn btn-link btn-xs'><span class='glyphicon glyphicon-play'></span> 播放</button>";
+			}
 			break;
 		case "pdf":
 			fileRow = fileRow
@@ -1956,6 +1965,9 @@ function checkallfile() {
 
 // 显示打包下载模态框
 function showDownloadAllCheckedModel() {
+	if(!folderView.enableDownloadZip){
+		return;
+	}
 	$("#downloadAllCheckedBox").html("");
 	$("#downloadAllCheckedLoad").text("");
 	var faf=getCheckedFilesAndFolders();
@@ -2637,6 +2649,7 @@ function selectInCompletePath(keyworld){
 				$("#sortByCD").removeClass();
 				$("#sortByFS").removeClass();
 				$("#sortByCN").removeClass();
+				$("#sortByOR").removeClass();
 				showFolderTable(folderView);
 			}
 		},
@@ -3239,7 +3252,7 @@ function subscribeNotice(){
 			}
 		},
 		error:function(){
-			console.log("错误：无法从服务器获取公告信息，请尝试刷新页面。");
+			alert("错误：无法从服务器获取公告信息，请尝试刷新页面。");
 		}
 	});
 }

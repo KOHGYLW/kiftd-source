@@ -48,31 +48,39 @@ public class PlayVideoServiceImpl implements PlayVideoService {
 					final String suffix = fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase();
 					switch (suffix) {
 					case "mp4":
-					case "mov":
-						// 对于mp4后缀的视频，进一步检查其编码是否为h264，如果是，则设定无需转码直接播放
-						File target = fbu.getFileFromBlocks(f);
-						if (target == null || !target.isFile()) {
-							return null;
-						}
-						MultimediaObject mo = new MultimediaObject(target);
-						try {
-							if (mo.getInfo().getVideo().getDecoder().indexOf("h264") >= 0) {
-								vi.setNeedEncode("N");
-								return vi;
+						if(ConfigureReader.instance().isEnableFFMPEG()) {
+							// 对于mp4后缀的视频，进一步检查其编码是否为h264，如果是，则设定无需转码直接播放
+							File target = fbu.getFileFromBlocks(f);
+							if (target == null || !target.isFile()) {
+								return null;
 							}
-						} catch (Exception e) {
-							Printer.instance.print(e.getMessage());
-							lu.writeException(e);
+							MultimediaObject mo = new MultimediaObject(target);
+							try {
+								if (mo.getInfo().getVideo().getDecoder().indexOf("h264") >= 0) {
+									vi.setNeedEncode("N");
+									return vi;
+								}
+							} catch (Exception e) {
+								Printer.instance.print("错误：视频文件“" + f.getFileName() + "”在解析时出现意外错误。详细信息：" + e.getMessage());
+								lu.writeException(e);
+							}
+							// 对于其他编码格式，则设定需要转码
+							vi.setNeedEncode("Y");
+						}else {
+							vi.setNeedEncode("N");// 如果禁用了ffmpeg，那么怎么都不需要转码
 						}
-						// 对于其他编码格式，则设定需要转码
-						vi.setNeedEncode("Y");
 						return vi;
+					case "mov":
 					case "webm":
 					case "avi":
 					case "wmv":
 					case "mkv":
 					case "flv":
-						vi.setNeedEncode("Y");
+						if(ConfigureReader.instance().isEnableFFMPEG()) {
+							vi.setNeedEncode("Y");
+						}else {
+							vi.setNeedEncode("N");
+						}
 						return vi;
 					default:
 						break;
