@@ -41,6 +41,7 @@ $(function() {
 		changeFilesTableStyle();
 		updateWinHeight();
     }
+	changeFilesTableStyle();
 	getServerOS();// 得到服务器操作系统信息
 	subscribeNotice();// 获取服务器的公告信息，如果有则显示
 	// 查询是否存在记忆路径，若有，则直接显示记忆路径的内容，否则显示ROOT根路径
@@ -389,24 +390,13 @@ function updateWinHeight(){
 // 根据屏幕大小增删表格显示内容
 function changeFilesTableStyle(){
 	var win = $(window).width();
-    if(win < 800){
-    		$('#filetableheadera').addClass('filetableheaderstyle');
-        $('.hiddenColumn').hide();
-        	$('.rightbtn').hide();
-        	$('#vicetbbox').show();
-        	$('#filetableoptmenusreach').hide();
-    }else{
-    		$('#filetableheadera').removeClass('filetableheaderstyle');
-		$('.hiddenColumn').show();
-		$('.rightbtn').show();
-		$('#vicetbbox').hide();
-		$('#filetableoptmenusreach').show();
-    }
     	if(win < 768){
+    		$('#filetableheadera').addClass('filetableheaderstyle');
     		$('#filetableheadera').attr('data-toggle','collapse');
     		$('#filetableheadera').attr('data-target','#filetableoptmenu');
     		$('#mdropdownicon').html('（点击展开/折叠菜单）');
     	}else{
+    		$('#filetableheadera').removeClass('filetableheaderstyle');
 		$('#filetableheadera').attr('data-toggle','modal');
 	    $('#filetableheadera').attr('data-target','#folderInfoModal');
 	    $('#mdropdownicon').html('');
@@ -440,7 +430,7 @@ function getServerOS() {
 
 // 获取实时文件夹视图
 function showFolderView(fid,targetId) {
-	//判断是否正在进行另一个相同的请求，如果是则取消本次操作
+	// 判断是否正在进行另一个相同的请求，如果是则取消本次操作
 	if(loadingFolderView){
 		return;
 	}
@@ -733,7 +723,7 @@ function showAccountView(folderView) {
 		// 说明已经登录，显示注销按钮
 		$("#tb")
 				.append(
-						"<button class='btn btn-link rightbtn' data-toggle='modal' data-target='#logoutModal'>注销 ["
+						"<button class='btn btn-link rightbtn hidden-xs' data-toggle='modal' data-target='#logoutModal'>注销 ["
 								+ folderView.account
 								+ "] <span class='glyphicon glyphicon-off' aria-hidden='true'></span></button>");
 		$("#tb2")
@@ -744,7 +734,7 @@ function showAccountView(folderView) {
 		if(folderView.allowChangePassword == 'true'){
 			$("#tb")
 			.append(
-					" <button class='btn btn-link rightbtn' data-toggle='modal' data-target='#changePasswordModal'>修改密码 <span class='glyphicon glyphicon-edit' aria-hidden='true'></span></button>");
+					" <button class='btn btn-link rightbtn hidden-xs' data-toggle='modal' data-target='#changePasswordModal'>修改密码 <span class='glyphicon glyphicon-edit' aria-hidden='true'></span></button>");
 			$("#tb2")
 			.append(
 					" <button class='btn btn-link' data-toggle='modal' data-target='#changePasswordModal'>修改密码 <span class='glyphicon glyphicon-edit' aria-hidden='true'></span></button>");
@@ -753,14 +743,14 @@ function showAccountView(folderView) {
 		// 说明用户未登录，显示登录按钮
 		$("#tb")
 				.append(
-						"<button class='btn btn-link rightbtn' data-toggle='modal' data-target='#loginModal'>登入 <span class='glyphicon glyphicon-user' aria-hidden='true'></span></button>");
+						"<button class='btn btn-link rightbtn hidden-xs' data-toggle='modal' data-target='#loginModal'>登入 <span class='glyphicon glyphicon-user' aria-hidden='true'></span></button>");
 		$("#tb2")
 				.append(
 						"<button class='btn btn-link' data-toggle='modal' data-target='#loginModal'>登入 <span class='glyphicon glyphicon-user' aria-hidden='true'></span></button>");
 		if(folderView.allowSignUp == 'true'){
 			$("#tb")
 			.append(
-					" <button class='btn btn-link rightbtn' onclick='window.location.href = \"/prv/signup.html\"'>立即注册 <span class='glyphicon glyphicon-log-in' aria-hidden='true'></span></button>");
+					" <button class='btn btn-link rightbtn hidden-xs' onclick='window.location.href = \"/prv/signup.html\"'>立即注册 <span class='glyphicon glyphicon-log-in' aria-hidden='true'></span></button>");
 			$("#tb2")
 			.append(
 					" <button class='btn btn-link' onclick='window.location.href = \"prv/signup.html\"'>立即注册 <span class='glyphicon glyphicon-log-in' aria-hidden='true'></span></button>");
@@ -854,7 +844,7 @@ function showFolderTable(folderView) {
 	if (parentpath != null && parentpath != "null") {
 		$("#foldertable")
 				.append(
-						"<tr onclick='returnPF()'><td><button onclick='' class='btn btn-link btn-xs'>../</button></td><td class='hiddenColumn'>--</td><td>--</td><td class='hiddenColumn'>--</td><td>--</td></tr>");
+						"<tr onclick='returnPF()'><td><button onclick='' class='btn btn-link btn-xs'>../</button></td><td class='hidden-xs'>--</td><td>--</td><td class='hidden-xs'>--</td><td>--</td></tr>");
 	}
 	var authList = folderView.authList;
 	var aD = false;
@@ -891,13 +881,13 @@ function createFileRow(fi,aL,aD,aR,aO){
 	var fileRow = "<tr id=" + fi.fileId + " onclick='checkfile(event," + '"'
 			+ fi.fileId + '"' + ")' ondblclick='checkConsFile(event,"+'"'+fi.fileId+'"'+")' id='" + fi.fileId
 			+ "' class='filerow'><td>" + fi.fileName
-			+ "</td><td class='hiddenColumn'>" + fi.fileCreationDate + "</td>";
+			+ "</td><td class='hidden-xs'>" + fi.fileCreationDate + "</td>";
 	if(fi.fileSize=="0"){
 		fileRow=fileRow+"<td>&lt;1MB</td>";
 	}else{
 		fileRow=fileRow+"<td>" + fi.fileSize + "MB</td>";
 	}
-	fileRow=fileRow +"<td class='hiddenColumn'>" + fi.fileCreator + "</td><td>";
+	fileRow=fileRow +"<td class='hidden-xs'>" + fi.fileCreator + "</td><td>";
 	if (aL) {
 		fileRow = fileRow
 				+ "<button onclick='showDownloadModel("
@@ -1038,8 +1028,8 @@ function createNewFolderRow(f,aD,aR,aO){
 	var folderRow = "<tr id='"+f.folderId+"' onclick='checkfile(event,"+'"'+f.folderId+'"'+")' ondblclick='checkConsFile(event,"+'"'+f.folderId+'"'+")' class='filerow' iskfolder='true' ><td><button onclick='entryFolder("
 			+ '"' + f.folderId + '"'
 			+ ")' class='btn btn-link btn-xs'>/"
-			+ f.folderName + "</button></td><td class='hiddenColumn'>"
-			+ f.folderCreationDate + "</td><td>--</td><td class='hiddenColumn'>"
+			+ f.folderName + "</button></td><td class='hidden-xs'>"
+			+ f.folderCreationDate + "</td><td>--</td><td class='hidden-xs'>"
 			+ f.folderCreator + "</td><td>";
 	if (aD) {
 		folderRow = folderRow
@@ -1600,7 +1590,7 @@ function showDownloadModel(fileId, fileName) {
 	$("#downloadFileName").text("提示：您确认要下载文件：[" + fileName + "]么？");
 	$("#downloadHrefBox").html("<span class='text-muted'>正在生成...</span>");
 	getDownloadFileId=fileId;
-	getDownloadFileName=fileName.replace("#","%23").replace("%","%25").replace("?","%3F");
+	getDownloadFileName=fileName;
 	$("#downloadFileBox")
 			.html(
 					"<button id='dlmbutton' type='button' class='btn btn-primary' onclick='dodownload("

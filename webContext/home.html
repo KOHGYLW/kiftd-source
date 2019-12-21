@@ -40,8 +40,8 @@
 								class="graytext">KIFT</span>
 						</small>
 					</em>
-					</span> <span id="tb" class="rightbtn"></span>
-					<button class="btn btn-link rightbtn" onclick="refreshFolderView()">
+					</span> <span id="tb" class="rightbtn hidden-xs"></span>
+					<button class="btn btn-link rightbtn hidden-xs" onclick="refreshFolderView()">
 						刷新 <span class="glyphicon glyphicon-repeat" aria-hidden="true"></span>
 					</button>
 				</div>
@@ -51,7 +51,7 @@
 		<!-- 信息栏、操作栏与文件列表 -->
 		<div class="row">
 			<div class="col-md-12">
-				<p id="vicetbbox" class="subtitle" style="display: none;">
+				<p class="subtitle visible-xs-block">
 					<span id="tb2"></span>
 					<button class="btn btn-link" onclick="refreshFolderView()">
 						刷新 <span class="glyphicon glyphicon-repeat" aria-hidden="true"></span>
@@ -83,8 +83,7 @@
 											class="caret"></span></a>
 										<ul class="dropdown-menu" id="parentFolderList"></ul></li>
 								</ul>
-								<form id="filetableoptmenusreach"
-									class="navbar-form navbar-left">
+								<form class="navbar-form navbar-left hidden-xs">
 									<div class="form-group">
 										<input id="sreachKeyWordIn" type="text" class="form-control"
 											placeholder="请输入文件名...">
@@ -129,11 +128,11 @@
 							<tr>
 								<th onclick="sortbyfn()">文件名<span id="sortByFN"
 									aria-hidden="true" style="float: right"></span></th>
-								<th class="hiddenColumn" onclick="sortbycd()">创建日期<span
+								<th class="hidden-xs" onclick="sortbycd()">创建日期<span
 									id="sortByCD" aria-hidden="true" style="float: right"></span></th>
 								<th onclick="sortbyfs()">大小<span id="sortByFS"
 									aria-hidden="true" style="float: right"></span></th>
-								<th class="hiddenColumn" onclick="sortbycn()">创建者<span
+								<th class="hidden-xs" onclick="sortbycn()">创建者<span
 									id="sortByCN" aria-hidden="true" style="float: right"></span></th>
 								<th onclick="showOriginFolderView()">操作<span id="sortByOR"
 									aria-hidden="true" style="float: right"></span></th>
