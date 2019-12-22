@@ -32,6 +32,8 @@ public class PlayVideoServiceImpl implements PlayVideoService {
 	private FolderMapper flm;
 	@Resource
 	private FolderUtil fu;
+	@Resource
+	private KiftdFFMPEGLocator kfl;
 
 	private VideoInfo foundVideo(final HttpServletRequest request) {
 		final String fileId = request.getParameter("fileId");
@@ -48,7 +50,7 @@ public class PlayVideoServiceImpl implements PlayVideoService {
 					final String suffix = fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase();
 					switch (suffix) {
 					case "mp4":
-						if(ConfigureReader.instance().isEnableFFMPEG()) {
+						if(kfl.getFFMPEGExecutablePath() != null) {
 							// 对于mp4后缀的视频，进一步检查其编码是否为h264，如果是，则设定无需转码直接播放
 							File target = fbu.getFileFromBlocks(f);
 							if (target == null || !target.isFile()) {
@@ -76,7 +78,7 @@ public class PlayVideoServiceImpl implements PlayVideoService {
 					case "wmv":
 					case "mkv":
 					case "flv":
-						if(ConfigureReader.instance().isEnableFFMPEG()) {
+						if(kfl.getFFMPEGExecutablePath() != null) {
 							vi.setNeedEncode("Y");
 						}else {
 							vi.setNeedEncode("N");
