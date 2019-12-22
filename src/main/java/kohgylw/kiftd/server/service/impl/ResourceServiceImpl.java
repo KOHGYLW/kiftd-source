@@ -31,6 +31,7 @@ import kohgylw.kiftd.server.util.ContentTypeMap;
 import kohgylw.kiftd.server.util.Docx2PDFUtil;
 import kohgylw.kiftd.server.util.FileBlockUtil;
 import kohgylw.kiftd.server.util.FolderUtil;
+import kohgylw.kiftd.server.util.KiftdFFMPEGLocator;
 import kohgylw.kiftd.server.util.LogUtil;
 import kohgylw.kiftd.server.util.NoticeUtil;
 import kohgylw.kiftd.server.util.PowerPoint2PDFUtil;
@@ -66,6 +67,8 @@ public class ResourceServiceImpl implements ResourceService {
 	private NoticeUtil nu;
 	@Resource
 	private ContentTypeMap ctm;
+	@Resource
+	private KiftdFFMPEGLocator kfl;
 
 	// 提供资源的输出流，原理与下载相同，但是个别细节有区别
 	@Override
@@ -94,7 +97,7 @@ public class ResourceServiceImpl implements ResourceService {
 						case ".wmv":
 						case ".mkv":
 						case ".flv":
-							if (ConfigureReader.instance().isEnableFFMPEG()) {
+							if (kfl.getFFMPEGExecutablePath() != null) {
 								contentType = "video/mp4";
 								synchronized (VideoTranscodeUtil.videoTranscodeThreads) {
 									VideoTranscodeThread vtt = VideoTranscodeUtil.videoTranscodeThreads.get(fid);
@@ -293,7 +296,7 @@ public class ResourceServiceImpl implements ResourceService {
 
 	@Override
 	public String getVideoTranscodeStatus(HttpServletRequest request) {
-		if (ConfigureReader.instance().isEnableFFMPEG()) {
+		if (kfl.getFFMPEGExecutablePath() != null) {
 			String fId = request.getParameter("fileId");
 			if (fId != null) {
 				try {

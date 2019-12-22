@@ -36,7 +36,7 @@ public class VideoTranscodeThread {
 		// 首先计算MD5值
 		md5 = DigestUtils.md5Hex(new FileInputStream(f));
 		progress = "0.0";
-		MultimediaObject mo = new MultimediaObject(f);
+		MultimediaObject mo = new MultimediaObject(f,fl);
 		encoder = new Encoder(fl);
 		Thread t = new Thread(() -> {
 			try {

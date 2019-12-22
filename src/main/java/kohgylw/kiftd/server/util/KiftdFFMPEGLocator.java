@@ -14,7 +14,7 @@ import ws.schild.jave.FFMPEGLocator;
 
 @Component
 public class KiftdFFMPEGLocator extends FFMPEGLocator {
-
+	
 	/**
 	 * 内置的ffmpeg引擎的版本号，应该与jave整合资源本身自带的ffmpeg引擎版本对应
 	 */
@@ -55,18 +55,38 @@ public class KiftdFFMPEGLocator extends FFMPEGLocator {
 		String suffix = isWindows ? ".exe" : (isMac ? "-osx" : "");
 		String arch = System.getProperty("os.arch");
 
-		// 临时文件中是否已经拷贝好了ffmpeg可执行文件了？
-		File ffmpegFile = new File(dirFolder, "ffmpeg-" + arch + "-" + MY_EXE_VERSION + suffix);
-		if (!ffmpegFile.exists()) {
-			// 没有？那将自带的、对应操作系统的ffmpeg文件拷贝到临时目录中，如果没有对应自带的ffmpeg，那么会抛出异常
-			// 如果抛出异常，那么直接结束构造
-			try {
-				copyFile("ffmpeg-" + arch + suffix, ffmpegFile);
-			} catch (NullPointerException e) {
-				e.printStackTrace();
-				Printer.instance.print("警告：未能找到适合此操作系统的ffmpeg引擎可执行文件，视频播放的在线解码功能将不可用。");
+		// 是否在程序主目录下放置了自定义的ffmpeg可执行文件“ffmpeg.exe”/“ffmpeg”？
+		File ffmpegFile;
+		File customFFMPEGexef = new File(ConfigureReader.instance().getPath(), isWindows ? "ffmpeg.exe" : "ffmpeg");
+		// 如果有，那么优先使用自定义的ffmpeg可执行文件。
+		if (customFFMPEGexef.isFile() && customFFMPEGexef.canRead()) {
+			ffmpegFile = new File(dirFolder, customFFMPEGexef.getName());
+			// 临时文件中是否已经拷贝好了ffmpeg可执行文件了？
+			if (!ffmpegFile.exists()) {
+				// 没有？那将自定义的ffmpeg文件拷贝到临时目录中。
+				try {
+					Files.copy(customFFMPEGexef.toPath(), ffmpegFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+				} catch (IOException e) {
+					Printer.instance.print("警告：自定义的ffmpeg引擎可执行文件无法读取，视频播放的在线解码功能将不可用。");
+					return;
+				}
+				// 已经有了？那么它应该准备好了
 			}
-			// 已经有了？那么它应该准备好了
+		} else {
+			// 否则，使用内置的ffmpeg文件。
+			// 临时文件中是否已经拷贝好了ffmpeg可执行文件了？
+			ffmpegFile = new File(dirFolder, "ffmpeg-" + arch + "-" + MY_EXE_VERSION + suffix);
+			if (!ffmpegFile.exists()) {
+				// 没有？那将自带的、对应操作系统的ffmpeg文件拷贝到临时目录中，如果没有对应自带的ffmpeg，那么会抛出异常
+				// 如果抛出异常，那么直接结束构造
+				try {
+					copyFile("ffmpeg-" + arch + suffix, ffmpegFile);
+				} catch (NullPointerException e) {
+					Printer.instance.print("警告：未能找到适合此操作系统的ffmpeg引擎可执行文件，视频播放的在线解码功能将不可用。");
+					return;
+				}
+				// 已经有了？那么它应该准备好了
+			}
 		}
 
 		// 对于类Unix系统而言，还要确保临时目录授予可运行权限，以便jave运行时调用ffmpeg
@@ -113,4 +133,5 @@ public class KiftdFFMPEGLocator extends FFMPEGLocator {
 		}
 		return success;
 	}
+	
 }
