@@ -8,7 +8,7 @@ import kohgylw.kiftd.server.mapper.*;
 import javax.annotation.*;
 import kohgylw.kiftd.server.enumeration.*;
 import kohgylw.kiftd.server.exception.FoldersTotalOutOfLimitException;
-import kohgylw.kiftd.server.listener.CleanInvalidAddedAuthListener;
+import kohgylw.kiftd.server.listener.ServerInitListener;
 import kohgylw.kiftd.server.model.*;
 import kohgylw.kiftd.server.pojo.CheckImportFolderRespons;
 import kohgylw.kiftd.server.pojo.CheckUploadFilesRespons;
@@ -449,7 +449,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 				}
 			}
 			if (fidList.size() > 0) {
-				CleanInvalidAddedAuthListener.needCheck = true;
+				ServerInitListener.needCheck = true;
 			}
 			return "deleteFileSuccess";
 		} catch (Exception e) {
@@ -747,7 +747,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 				}
 			}
 			if (fidList.size() > 0) {
-				CleanInvalidAddedAuthListener.needCheck = true;
+				ServerInitListener.needCheck = true;
 			}
 			return "moveFilesSuccess";
 		} catch (Exception e) {

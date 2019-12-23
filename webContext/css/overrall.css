@@ -97,8 +97,8 @@ body {
 }
 
 .shownoticebox {
-	width: 55px;
-	height: 55px;
+	width: 40px;
+	height: 75px;
 	position: fixed;
 	top: 50px;
 	right: 0px;

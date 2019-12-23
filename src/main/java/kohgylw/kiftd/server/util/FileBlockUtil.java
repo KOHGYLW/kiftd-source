@@ -40,6 +40,32 @@ public class FileBlockUtil {
 	private LogUtil lu;// 日志工具
 	@Resource
 	private FolderUtil fu;// 文件夹操作工具
+	
+	/**
+	 * 
+	 * <h2>清理临时文件夹</h2>
+	 * <p>该方法用于清理临时文件夹（如果临时文件夹不存在，则创建它），避免运行时产生的临时文件堆积。该方法应在服务器启动时和关闭过程中调用。</p>
+	 * @author 青阳龙野(kohgylw)
+	 */
+	public void initTempDir() {
+		final String tfPath = ConfigureReader.instance().getTemporaryfilePath();
+		final File f = new File(tfPath);
+		if (f.isDirectory()) {
+			try {
+				Iterator<Path> listFiles = Files.newDirectoryStream(f.toPath()).iterator();
+				while(listFiles.hasNext()) {
+					listFiles.next().toFile().delete();
+				}
+			} catch (IOException e) {
+				lu.writeException(e);
+				Printer.instance.print("错误：临时文件清理失败，请手动清理"+f.getAbsolutePath()+"文件夹内的临时文件。");
+			}
+		} else {
+			if(!f.mkdir()) {
+				Printer.instance.print("错误：无法创建临时文件夹"+f.getAbsolutePath()+"，请检查主文件系统存储路径是否可用。");
+			}
+		}
+	}
 
 	/**
 	 * 
