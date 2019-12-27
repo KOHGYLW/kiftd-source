@@ -75,7 +75,7 @@ public class VariableSpeedBufferedOutputStream extends BufferedOutputStream {
 				int n = len - off;// 计算本次写出的数据长度（byte数）
 				if (n > 0) {// 确实写出了数据？
 					long consumeNano = endNano - startNano;// 记录写出的耗时（纳秒）
-					long shouldNano = (long) (976562 * ((double) n / maxRate));// 计算最大应耗时（纳秒）
+					long shouldNano = 976562L * (long)((double) n / maxRate);// 计算最大应耗时（纳秒）
 					if (consumeNano < shouldNano) {// 如果实际耗时小于应耗时，则代表写出过快，应进行延迟
 						// 计算还需要再延迟的毫秒数
 						long shouldSleep = (shouldNano - consumeNano) / 1000000;
