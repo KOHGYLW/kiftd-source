@@ -328,7 +328,8 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 						// 执行写出
 						final File fo = this.fbu.getFileFromBlocks(f);
 						if (fo != null) {
-							writeRangeFileStream(request, response, fo, f.getFileName(), CONTENT_TYPE);
+							writeRangeFileStream(request, response, fo, f.getFileName(), CONTENT_TYPE,
+									ConfigureReader.instance().getDownloadMaxRate(account));
 							// 日志记录（仅针对一次下载）
 							if (request.getHeader("Range") == null) {
 								this.lu.writeDownloadFileEvent(request, f);
@@ -487,19 +488,21 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 	public void downloadCheckedFilesZip(final HttpServletRequest request, final HttpServletResponse response)
 			throws Exception {
 		final String zipname = request.getParameter("zipId");
+		final String account = (String) request.getSession().getAttribute("ACCOUNT");
 		if (zipname != null && !zipname.equals("ERROR")) {
 			final String tfPath = ConfigureReader.instance().getTemporaryfilePath();
 			final File zip = new File(tfPath, zipname);
 			String fname = "kiftd_" + ServerTimeUtil.accurateToDay() + "_\u6253\u5305\u4e0b\u8f7d.zip";
 			if (zip.exists()) {
-				writeRangeFileStream(request, response, zip, fname, CONTENT_TYPE);
+				writeRangeFileStream(request, response, zip, fname, CONTENT_TYPE,
+						ConfigureReader.instance().getDownloadMaxRate(account));
 				zip.delete();
 			}
 		}
 	}
 
 	public String getPackTime(final HttpServletRequest request) {
-		if(ConfigureReader.instance().isEnableDownloadByZip()) {
+		if (ConfigureReader.instance().isEnableDownloadByZip()) {
 			final String account = (String) request.getSession().getAttribute("ACCOUNT");
 			final String strIdList = request.getParameter("strIdList");
 			final String strFidList = request.getParameter("strFidList");
@@ -516,7 +519,8 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 					final Node n = this.fm.queryById(fid);
 					if (ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES,
 							fu.getAllFoldersId(n.getFileParentFolder()))
-							&& ConfigureReader.instance().accessFolder(flm.queryById(n.getFileParentFolder()), account)) {
+							&& ConfigureReader.instance().accessFolder(flm.queryById(n.getFileParentFolder()),
+									account)) {
 						final File f = fbu.getFileFromBlocks(n);
 						if (f != null && f.exists()) {
 							packTime += f.length() / 25000000L;

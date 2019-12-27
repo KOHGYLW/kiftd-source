@@ -89,7 +89,8 @@ public class ExternalDownloadServiceImpl extends RangeFileStreamWriter implement
 				if (f != null) {
 					File target = this.fbu.getFileFromBlocks(f);
 					if (target != null && target.isFile()) {
-						writeRangeFileStream(request, response, target, f.getFileName(), CONTENT_TYPE);
+						writeRangeFileStream(request, response, target, f.getFileName(), CONTENT_TYPE,
+								ConfigureReader.instance().getDownloadMaxRate(null));
 						if (request.getHeader("Range") == null) {
 							this.lu.writeDownloadFileByKeyEvent(request, f);
 						}

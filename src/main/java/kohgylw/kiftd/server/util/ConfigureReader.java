@@ -1103,7 +1103,8 @@ public class ConfigureReader {
 	 * 
 	 * <h2>上传文件大小设置值转化方法</h2>
 	 * <p>
-	 * 该方法用于将配置文件中的设置值转化为long类型的数值，例如当输入字符串“1 KB”时，输出1024，输入“5GB”时，输出5368709120。
+	 * 该方法用于将配置文件中的最大上传文件体积设置值转化为long类型的数值，例如当输入字符串“1
+	 * KB”时，输出1024，输入“5GB”时，输出5368709120。
 	 * </p>
 	 * <p>
 	 * 输入字符串格式规则：{数值}{存储单位（可选）}。其中，存储单位可使用下列字符串之一指代（不区分大小写）：
@@ -1148,6 +1149,86 @@ public class ConfigureReader {
 					break;
 				case "g":
 					r = Integer.parseInt(value) * 1073741824L;
+					break;
+				default:
+					r = Integer.parseInt(in.trim());
+					break;
+				}
+			} else {
+				r = Integer.parseInt(in.trim());
+			}
+		} catch (Exception e) {
+		}
+		return r;
+	}
+
+	/**
+	 * 
+	 * <h2>获得某一账户的最大下载速率限制</h2>
+	 * <p>
+	 * 该方法用于限制用户的最大下载速度。使用时需传入用户账户名字符串，返回该用户的最大下载速度限制。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @param account
+	 *            java.lang.String 需要获取限制的账户名
+	 * @return long 最大下载速度限制，以KB/s为单位
+	 */
+	public long getDownloadMaxRate(String account) {
+		String defaultMaxRateP = accountp.getProperty("defaultMaxRate");
+		if (account == null) {
+			return getMaxRateByString(defaultMaxRateP);
+		} else {
+			String accountMaxRateP = accountp.getProperty(account + ".maxRate");
+			return accountMaxRateP == null ? getMaxRateByString(defaultMaxRateP) : getMaxRateByString(accountMaxRateP);
+		}
+	}
+
+	/**
+	 * 
+	 * <h2>下载限速设置值转化方法</h2>
+	 * <p>
+	 * 该方法用于将配置文件中的下载速度限制设置值转化为long类型的数值，例如当输入字符串“1”时，输出1，输入“2MB”时，输出2048。
+	 * </p>
+	 * <p>
+	 * 输入字符串格式规则：{数值}{速率单位（可选）}。其中，速率单位可使用下列字符串之一指代（不区分大小写）：
+	 * </p>
+	 * <ul>
+	 * <li>MB 或 M（代表MB/s）</li>
+	 * <li>GB 或 G（代表GB/s）</li>
+	 * </ul>
+	 * <p>
+	 * 当不写速率单位时，则以“KB/s”为单位进行转换。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @param in
+	 *            java.lang.String 要转换的字符串内容，格式应为“{数值}{速率单位（可选）}”，例如“1024”或“10 mb”。
+	 * @return long 以KB/s为单位计算的下载速度，若为0则代表设置错误，若为负数则代表无限制
+	 */
+	private long getMaxRateByString(String in) {
+		long r = 0L;
+		// 首先，判断是否为null，若是，则直接返回-1。
+		if (in == null || in.length() <= 0) {
+			return -1L;
+		}
+		// 接下来判断是否有单位，若字符串总长小于1，则必无单位，否则可能有单位。
+		try {
+			if (in.length() > 1) {
+				String value = in.substring(0, in.length() - 1).trim();
+				String unit = in.substring(in.length() - 1).toLowerCase();
+				if (in.length() > 2) {
+					if (in.toLowerCase().charAt(in.length() - 1) == 'b') {
+						unit = in.substring(in.length() - 2, in.length() - 1).toLowerCase();
+						value = in.substring(0, in.length() - 2).trim();
+					}
+				}
+				switch (unit) {
+				case "m":
+					r = Integer.parseInt(value) * 1024L;
+					break;
+				case "g":
+					r = Integer.parseInt(value) * 1048576L;
 					break;
 				default:
 					r = Integer.parseInt(in.trim());

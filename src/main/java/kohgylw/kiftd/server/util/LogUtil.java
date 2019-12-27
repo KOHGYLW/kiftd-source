@@ -69,7 +69,7 @@ public class LogUtil {
 	 */
 	public void writeException(Exception e) {
 		if (ConfigureReader.instance().inspectLogLevel(LogLevel.Runtime_Exception)) {
-			StringBuffer exceptionInfo = new StringBuffer(e+":"+e.getMessage());
+			StringBuffer exceptionInfo = new StringBuffer(e.toString());
 			StackTraceElement[] stes = e.getStackTrace();
 			for (int i = 0; i < stes.length && i < 10; i++) {
 				StackTraceElement ste = stes[i];

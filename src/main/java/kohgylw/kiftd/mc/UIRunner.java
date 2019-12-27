@@ -28,7 +28,8 @@ import kohgylw.kiftd.ui.callback.*;
 public class UIRunner {
 
 	private static UIRunner ui;
-
+	
+	// 实例化图形界面并显示它，同时将图形界面的各个操作与服务器控制器对应起来。
 	private UIRunner() {
 		Printer.init(true);
 		final ServerUIModule ui = ServerUIModule.getInsatnce();
@@ -163,7 +164,8 @@ public class UIRunner {
 	 * 
 	 * <h2>以UI模式运行kiftd</h2>
 	 * <p>
-	 * 启动UI模式操作并初始化服务器引擎，该方法将返回本启动器的唯一实例。
+	 * 执行该方法后，kiftd将立即显示服务器主界面（需要操作系统支持图形界面）并初始化服务器引擎，等待用户点击按钮并触发相应的操作。
+	 * 该方法将返回本启动器的唯一实例。
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
