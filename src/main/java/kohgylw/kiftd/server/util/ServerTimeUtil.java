@@ -2,34 +2,35 @@ package kohgylw.kiftd.server.util;
 
 import java.util.*;
 import java.text.*;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
-public class ServerTimeUtil
-{
-    public static String accurateToSecond() {
-        final Date d = new Date();
-        final DateFormat df = new SimpleDateFormat("YYYY\u5e74MM\u6708dd\u65e5 HH:mm:ss");
-        return df.format(d);
-    }
-    
-    public static String accurateToMinute() {
-        final Date d = new Date();
-        final DateFormat df = new SimpleDateFormat("YYYY\u5e74MM\u6708dd\u65e5 HH:mm");
-        return df.format(d);
-    }
-    
-    public static String accurateToDay() {
-        final Date d = new Date();
-        final DateFormat df = new SimpleDateFormat("YYYY\u5e74MM\u6708dd\u65e5");
-        return df.format(d);
-    }
-    
-    public static String accurateToLogName() {
-        final Date d = new Date();
-        final DateFormat df = new SimpleDateFormat("YYYY_MM_dd");
-        return df.format(d);
-    }
-    
-    public static Date getServerTime() {
-        return new Date();
-    }
+public class ServerTimeUtil {
+	public static String accurateToSecond() {
+		LocalDateTime ldt = LocalDateTime.now();
+		DateTimeFormatter dtfDateTimeFormatter = DateTimeFormatter.ofPattern("yyyy年MM月dd日 HH:mm:ss");
+		return dtfDateTimeFormatter.format(ldt);
+	}
+
+	public static String accurateToMinute() {
+		LocalDateTime ldt = LocalDateTime.now();
+		DateTimeFormatter dtfDateTimeFormatter = DateTimeFormatter.ofPattern("yyyy年MM月dd日 HH:mm");
+		return dtfDateTimeFormatter.format(ldt);
+	}
+
+	public static String accurateToDay() {
+		LocalDateTime ldt = LocalDateTime.now();
+		DateTimeFormatter dtfDateTimeFormatter = DateTimeFormatter.ofPattern("yyyy年MM月dd日");
+		return dtfDateTimeFormatter.format(ldt);
+	}
+
+	public static String accurateToLogName() {
+		LocalDateTime ldt = LocalDateTime.now();
+		DateTimeFormatter dtfDateTimeFormatter = DateTimeFormatter.ofPattern("yyyy_MM_dd");
+		return dtfDateTimeFormatter.format(ldt);
+	}
+
+	public static Date getServerTime() {
+		return new Date();
+	}
 }

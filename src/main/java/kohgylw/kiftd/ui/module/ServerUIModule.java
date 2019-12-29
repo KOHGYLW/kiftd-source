@@ -500,9 +500,9 @@ public class ServerUIModule extends KiftdDynamicWindow {
 	private String getFormateDate() {
 		if (ServerUIModule.ti != null) {
 			final Date d = ServerUIModule.ti.get();
-			return new SimpleDateFormat("YYYY-MM-dd hh:mm:ss").format(d);
+			return new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(d);
 		}
-		return new SimpleDateFormat("YYYY-MM-dd hh:mm:ss").format(new Date());
+		return new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date());
 	}
 
 	public static void setGetServerTime(final GetServerTime ti) {
