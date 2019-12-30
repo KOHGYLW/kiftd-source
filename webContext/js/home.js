@@ -2213,6 +2213,9 @@ function sortbyfn(){
 	if(!loadingComplete){
 		return;
 	}
+	if($("#sortByCD,#sortByFS,#sortByCN,#sortByOR").hasClass("glyphicon glyphicon-hourglass")){
+		return;
+	}
 	$("#sortByCD").removeClass();
 	$("#sortByFS").removeClass();
 	$("#sortByCN").removeClass();
@@ -2244,6 +2247,9 @@ function sortbyfn(){
 // 按创建日期排序
 function sortbycd(){
 	if(!loadingComplete){
+		return;
+	}
+	if($("#sortByFN,#sortByFS,#sortByCN,#sortByOR").hasClass("glyphicon glyphicon-hourglass")){
 		return;
 	}
 	$("#sortByFN").removeClass();
@@ -2284,6 +2290,9 @@ function sortbyfs(){
 	if(!loadingComplete){
 		return;
 	}
+	if($("#sortByFN,#sortByCD,#sortByCN,#sortByOR").hasClass("glyphicon glyphicon-hourglass")){
+		return;
+	}
 	$("#sortByFN").removeClass();
 	$("#sortByCD").removeClass();
 	$("#sortByCN").removeClass();
@@ -2311,6 +2320,9 @@ function sortbyfs(){
 // 按创建者排序
 function sortbycn(){
 	if(!loadingComplete){
+		return;
+	}
+	if($("#sortByFN,#sortByCD,#sortByFS,#sortByOR").hasClass("glyphicon glyphicon-hourglass")){
 		return;
 	}
 	$("#sortByFN").removeClass();
@@ -2343,6 +2355,9 @@ function sortbycn(){
 // 显示原始的顺序
 function showOriginFolderView(){
 	if(!loadingComplete){
+		return;
+	}
+	if($("#sortByFN,#sortByCD,#sortByFS,#sortByCN").hasClass("glyphicon glyphicon-hourglass")){
 		return;
 	}
 	$("#sortByFN").removeClass();
