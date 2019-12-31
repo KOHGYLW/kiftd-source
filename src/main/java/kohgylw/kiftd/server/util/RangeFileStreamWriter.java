@@ -68,9 +68,10 @@ public class RangeFileStreamWriter {
 		// 设置支持断点续传功能
 		response.setHeader("Accept-Ranges", "bytes");
 		// 针对具备断点续传性质的请求进行解析
-		if (request.getHeader("Range") != null && request.getHeader("Range").startsWith("bytes=")) {
+		String rangeTag = request.getHeader("Range");
+		if (rangeTag != null && rangeTag.startsWith("bytes=")) {
 			response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
-			rangeBytes = request.getHeader("Range").replaceAll("bytes=", "");
+			rangeBytes = rangeTag.replaceAll("bytes=", "");
 			if (rangeBytes.endsWith("-")) {
 				// 解析请求参数范围为仅有起始偏移量而无结束偏移量的情况
 				startOffset = Long.parseLong(rangeBytes.substring(0, rangeBytes.indexOf('-')).trim());
