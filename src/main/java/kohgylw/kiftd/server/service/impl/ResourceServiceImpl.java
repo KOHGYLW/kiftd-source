@@ -9,7 +9,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.RandomAccessFile;
-import java.util.Date;
 
 import javax.annotation.Resource;
 import javax.servlet.ServletOutputStream;
@@ -160,8 +159,9 @@ public class ResourceServiceImpl implements ResourceService {
 			byte[] buffer = new byte[ConfigureReader.instance().getBuffSize()];
 			response.setContentType(contentType);
 			response.setHeader("Accept-Ranges", "bytes");
-			response.setHeader("ETag", fname);
-			response.setHeader("Last-Modified", new Date().toString());
+			String lastModified = resource.lastModified() + "";
+			response.setHeader("ETag", lastModified);
+			response.setHeader("Last-Modified", lastModified);
 			// 第一次请求只返回content length来让客户端请求多次实际数据
 			if (range == null) {
 				response.setHeader("Content-length", contentLength + "");
