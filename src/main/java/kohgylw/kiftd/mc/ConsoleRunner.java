@@ -189,10 +189,10 @@ public class ConsoleRunner {
 	private void awaiting() {
 		Thread t = new Thread(() -> {
 			reader = new Scanner(System.in);
-			System.out.println("命令帮助：\r\n" + commandTips + "\r\n");
+			Printer.instance.print("命令帮助：\r\n" + commandTips + "\r\n");
 			try {
 				while (true) {
-					System.out.print("kiftd: console$ ");
+					Printer.instance.print("kiftd: console$ ");
 					String command = new String(reader.nextLine().getBytes("UTF-8"), "UTF-8");
 					switch (command) {
 					case "-start":

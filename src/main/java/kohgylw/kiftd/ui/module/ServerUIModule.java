@@ -7,6 +7,7 @@ import java.awt.event.*;
 import javax.swing.border.*;
 import java.awt.*;
 import javax.swing.event.*;
+
 import javax.swing.*;
 import java.text.*;
 import java.util.*;
@@ -45,6 +46,7 @@ public class ServerUIModule extends KiftdDynamicWindow {
 	protected static final String L_ALL = "记录全部(ALL)";
 	protected static final String L_EXCEPTION = "仅异常(EXCEPTION)";
 	protected static final String L_NONE = "不记录(NONE)";
+	private SimpleDateFormat sdf;
 	/**
 	 * 窗口原始宽度
 	 */
@@ -498,11 +500,14 @@ public class ServerUIModule extends KiftdDynamicWindow {
 	}
 
 	private String getFormateDate() {
+		if(null == sdf) {
+			sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+		}
 		if (ServerUIModule.ti != null) {
 			final Date d = ServerUIModule.ti.get();
-			return new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(d);
+			return sdf.format(d);
 		}
-		return new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date());
+		return sdf.format(new Date());
 	}
 
 	public static void setGetServerTime(final GetServerTime ti) {
