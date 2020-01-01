@@ -2574,21 +2574,23 @@ var screenedFoldrView;// 经过排序的文件视图
 // 执行搜索功能
 function doSearchFile(){
 	var keyworld=$("#sreachKeyWordIn").val();
-	var prekeyword;
-
+	var type="exact";
+	if($('#caseinsensitive').is(':checked')) {
+		type = "insensitive";
+	}
 
 	if(keyworld.length!=0){
 		// 如果用户勾选了全局搜索
 		if($('#isall').is(':checked')) {
-			prekeyword=11111;
-			selectInCompletePath(keyworld);
+			selectInCompletePath(keyworld,type);
 		}
+
 		// 如果用户在搜索字段中声明了全局搜索
 		if(keyworld.startsWith("all:") || keyworld.startsWith("all：")){
-			selectInCompletePath(keyworld.substring(4));
+			selectInCompletePath(keyworld.substring(4),type);
 		}else{
 			startLoading();
-			selectInThisPath(keyworld);// 否则，均在本级下搜索
+			selectInThisPath(keyworld,type);// 否则，均在本级下搜索
 			endLoading();
 		}
 	}else{
@@ -2602,20 +2604,34 @@ function doSearchFile(){
 }
 
 // 在本级内搜索
-function selectInThisPath(keyworld){
+function selectInThisPath(keyworld,type){
 	try{
 		var reg=new RegExp(keyworld+"+");
 		screenedFoldrView=$.extend(true, {}, originFolderView);
 		screenedFoldrView.folderList=[];
 		screenedFoldrView.fileList=[];
-		for(var i=0,j=originFolderView.folderList.length;i<j;i++){
-			if(reg.test(originFolderView.folderList[i].folderName)){
-				screenedFoldrView.folderList.push(originFolderView.folderList[i]);
+		if (type=="insensitive"){
+			reg=new RegExp(keyworld.toLowerCase()+"+");
+			for(var i=0,j=originFolderView.folderList.length;i<j;i++){
+				if(reg.test(originFolderView.folderList[i].folderName.toLowerCase())){
+					screenedFoldrView.folderList.push(originFolderView.folderList[i]);
+				}
 			}
-		}
-		for(var i=0,j=originFolderView.fileList.length;i<j;i++){
-			if(reg.test(originFolderView.fileList[i].fileName)){
-				screenedFoldrView.fileList.push(originFolderView.fileList[i]);
+			for(var i=0,j=originFolderView.fileList.length;i<j;i++){
+				if(reg.test(originFolderView.fileList[i].fileName.toLowerCase())){
+					screenedFoldrView.fileList.push(originFolderView.fileList[i]);
+				}
+			}
+		} else {
+			for(var i=0,j=originFolderView.folderList.length;i<j;i++){
+				if(reg.test(originFolderView.folderList[i].folderName)){
+					screenedFoldrView.folderList.push(originFolderView.folderList[i]);
+				}
+			}
+			for(var i=0,j=originFolderView.fileList.length;i<j;i++){
+				if(reg.test(originFolderView.fileList[i].fileName)){
+					screenedFoldrView.fileList.push(originFolderView.fileList[i]);
+				}
 			}
 		}
 		$("#sortByFN").removeClass();
@@ -2631,10 +2647,14 @@ function selectInThisPath(keyworld){
 }
 
 // 全路径查找
-function selectInCompletePath(keyworld){
+function selectInCompletePath(keyworld,type){
+
 	if(keyworld.length == 0){
 		showFolderView(locationpath);
 		return;
+	}
+	if(type.length == 0){
+		type="exact";
 	}
 	startLoading();
 	$.ajax({
@@ -2642,7 +2662,8 @@ function selectInCompletePath(keyworld){
 		dataType : 'text',
 		data : {
 			fid : locationpath,
-			keyworld : keyworld
+			keyworld : keyworld,
+			type: type
 		},
 		url : 'homeController/sreachInCompletePath.ajax',
 		success : function(result) {
@@ -2663,7 +2684,7 @@ function selectInCompletePath(keyworld){
 				parentpath = folderView.folder.folderParent;
 				constraintLevel=folderView.folder.folderConstraint;
 				screenedFoldrView=null;
-				$("#sreachKeyWordIn").val("all:" + folderView.keyWorld);
+				$("#sreachKeyWordIn").val(folderView.keyWorld);
 				showParentList(folderView);
 				showAccountView(folderView);
 				showPublishTime(folderView);

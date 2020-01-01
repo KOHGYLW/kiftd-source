@@ -1,18 +1,25 @@
 package kohgylw.kiftd.server.service.impl;
 
-import kohgylw.kiftd.server.service.*;
-import org.springframework.stereotype.*;
-import javax.annotation.*;
-import kohgylw.kiftd.server.mapper.*;
+import com.google.gson.Gson;
+import kohgylw.kiftd.server.enumeration.AccountAuth;
+import kohgylw.kiftd.server.mapper.FolderMapper;
+import kohgylw.kiftd.server.mapper.NodeMapper;
 import kohgylw.kiftd.server.model.Folder;
 import kohgylw.kiftd.server.model.Node;
+import kohgylw.kiftd.server.pojo.FolderView;
+import kohgylw.kiftd.server.pojo.RemainingFolderView;
+import kohgylw.kiftd.server.pojo.SreachView;
+import kohgylw.kiftd.server.service.FolderViewService;
+import kohgylw.kiftd.server.util.ConfigureReader;
+import kohgylw.kiftd.server.util.FolderUtil;
+import kohgylw.kiftd.server.util.KiftdFFMPEGLocator;
+import kohgylw.kiftd.server.util.ServerTimeUtil;
+import org.springframework.stereotype.Service;
 
-import javax.servlet.http.*;
-import kohgylw.kiftd.server.pojo.*;
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import java.util.*;
-import kohgylw.kiftd.server.enumeration.*;
-import kohgylw.kiftd.server.util.*;
-import com.google.gson.*;
 
 @Service
 public class FolderViewServiceImpl implements FolderViewService {
@@ -121,6 +128,7 @@ public class FolderViewServiceImpl implements FolderViewService {
 		final ConfigureReader cr = ConfigureReader.instance();
 		String fid = request.getParameter("fid");
 		String keyWorld = request.getParameter("keyworld");
+		String type = request.getParameter("type");
 		if (fid == null || fid.length() == 0 || keyWorld == null) {
 			return "ERROR";
 		}
@@ -151,7 +159,12 @@ public class FolderViewServiceImpl implements FolderViewService {
 		// 设置所有搜索到的文件夹和文件，该方法迭查找：
 		List<Node> ns = new LinkedList<>();
 		List<Folder> fs = new LinkedList<>();
-		sreachFilesAndFolders(fid, keyWorld, account, ns, fs);
+		// 默认精确匹配大小写,除非声明忽
+		if(type!=null && type.equals("insensitive")){
+			sreachFilesAndFoldersIns(fid, keyWorld, account, ns, fs);
+		}else{
+			sreachFilesAndFolders(fid, keyWorld, account, ns, fs);
+		}
 		sv.setFileList(ns);
 		sv.setFolderList(fs);
 		// 搜索不支持分段加载，所以统计数据直接写入实际查询到的列表大小
@@ -204,6 +217,25 @@ public class FolderViewServiceImpl implements FolderViewService {
 		}
 		for (Node n : this.flm.queryByParentFolderId(fid)) {
 			if (n.getFileName().indexOf(key) >= 0) {
+				n.setFileName(n.getFileName());
+				ns.add(n);
+			}
+		}
+	}
+	// 不区分大小写迭代查找所有匹配项，参数分别是：从哪找、找啥、谁要找、添加的前缀是啥（便于分辨不同路径下的同名文件）、找到的文件放哪、找到的文件夹放哪
+	private void sreachFilesAndFoldersIns(String fid, String key, String account, List<Node> ns, List<Folder> fs) {
+		String lowerKey=key.toLowerCase();
+		for (Folder f : this.fm.queryByParentId(fid)) {
+			if (ConfigureReader.instance().accessFolder(f, account)) {
+				if (f.getFolderName().toLowerCase().indexOf(lowerKey) >= 0) {
+					f.setFolderName(f.getFolderName());
+					fs.add(f);
+				}
+				sreachFilesAndFoldersIns(f.getFolderId(), lowerKey, account, ns, fs);
+			}
+		}
+		for (Node n : this.flm.queryByParentFolderId(fid)) {
+			if (n.getFileName().toLowerCase().indexOf(lowerKey) >= 0) {
 				n.setFileName(n.getFileName());
 				ns.add(n);
 			}
