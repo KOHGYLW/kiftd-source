@@ -877,7 +877,7 @@ function showFolderTable(folderView) {
 
 // 根据一个文件对象生成对应的文件行的HTML内容
 function createFileRow(fi,aL,aD,aR,aO){
-	fi.fileName = fi.fileName.replace('\'','&#39;').replace('<','&lt;').replace('>','&gt;');
+	fi.fileName = fi.fileName.replace(/\'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 	var fileRow = "<tr id=" + fi.fileId + " onclick='checkfile(event," + '"'
 			+ fi.fileId + '"' + ")' ondblclick='checkConsFile(event,"+'"'+fi.fileId+'"'+")' id='" + fi.fileId
 			+ "' class='filerow'><td>" + fi.fileName
@@ -1033,7 +1033,7 @@ function createFileRow(fi,aL,aD,aR,aO){
 
 // 根据一个文件夹对象生成对应的文件行的HTML内容
 function createNewFolderRow(f,aD,aR,aO){
-	f.folderName = f.folderName.replace('\'','&#39;').replace('<','&lt;').replace('>','&gt;');
+	f.folderName = f.folderName.replace(/\'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 	var folderRow = "<tr id='"+f.folderId+"' onclick='checkfile(event,"+'"'+f.folderId+'"'+")' ondblclick='checkConsFile(event,"+'"'+f.folderId+'"'+")' class='filerow' iskfolder='true' ><td><button onclick='entryFolder("
 			+ '"' + f.folderId + '"'
 			+ ")' class='btn btn-link btn-xs'>/"
@@ -1150,7 +1150,7 @@ function createfolder() {
 			}
 		});
 	} else {
-		showFolderAlert("提示：文件夹名中不应含有：引号 / \ * | < > & $ : ? 且不能以“.”开头。");
+		showFolderAlert("提示：文件夹名中不应含有：引号 / \\ * | < > & $ : ? 且不能以“.”开头。");
 	}
 }
 
@@ -1281,7 +1281,7 @@ function renameFolder(folderId) {
 			}
 		});
 	} else {
-		showRFolderAlert("提示：文件夹名中不应含有：引号 / \ * | < > & $ : ? 且不能以“.”开头。");
+		showRFolderAlert("提示：文件夹名中不应含有：引号 / \\ * | < > & $ : ? 且不能以“.”开头。");
 	}
 }
 
@@ -1720,7 +1720,7 @@ function renameFile(fileId) {
 					}
 				});
 			} else {
-				showRFileAlert("提示：文件名中不应含有：引号 / \ * | < > & $ : ? 且不能以“.”开头。");
+				showRFileAlert("提示：文件名中不应含有：引号 / \\ * | < > & $ : ? 且不能以“.”开头。");
 			}
 		} else {
 			showRFileAlert("提示：文件名称太长。");
@@ -2698,7 +2698,7 @@ function getDownloadURL(){
 		},
 		success:function(result){
 			// 获取链接
-			var dlurl=encodeURI(window.location.protocol+"//"+window.location.host+"/externalLinksController/downloadFileByKey/"+getDownloadFileName+"?dkey="+result);
+			var dlurl=window.location.protocol+"//"+window.location.host+"/externalLinksController/downloadFileByKey/"+encodeURIComponent(getDownloadFileName.replace(/\'/g,''))+"?dkey="+result;
 			// 显示链接内容
 			$("#downloadHrefBox").html("<a href='"+dlurl+"'>"+dlurl+"</a>");
 		},
