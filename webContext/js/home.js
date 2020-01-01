@@ -2574,7 +2574,15 @@ var screenedFoldrView;// 经过排序的文件视图
 // 执行搜索功能
 function doSearchFile(){
 	var keyworld=$("#sreachKeyWordIn").val();
+	var prekeyword;
+
+
 	if(keyworld.length!=0){
+		// 如果用户勾选了全局搜索
+		if($('#isall').is(':checked')) {
+			prekeyword=11111;
+			selectInCompletePath(keyworld);
+		}
 		// 如果用户在搜索字段中声明了全局搜索
 		if(keyworld.startsWith("all:") || keyworld.startsWith("all：")){
 			selectInCompletePath(keyworld.substring(4));
