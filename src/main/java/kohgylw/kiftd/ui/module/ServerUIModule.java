@@ -57,7 +57,7 @@ public class ServerUIModule extends KiftdDynamicWindow {
 	private final int OriginSize_Height = 570;
 	private static MenuItem filesViewer;
 
-	private ServerUIModule() {
+	private ServerUIModule() throws Exception {
 		setUIFont();
 		(ServerUIModule.window = new JFrame("kiftd-服务器控制台")).setSize(OriginSize_Width, OriginSize_Height);
 		ServerUIModule.window.setLocation(100, 100);
@@ -65,7 +65,7 @@ public class ServerUIModule extends KiftdDynamicWindow {
 		try {
 			ServerUIModule.window.setIconImage(
 					ImageIO.read(this.getClass().getResourceAsStream("/kohgylw/kiftd/ui/resource/icon.png")));
-		} catch (FileNotFoundException ex) {
+		} catch (NullPointerException ex) {
 		} catch (IOException ex2) {
 		}
 		if (SystemTray.isSupported()) {
@@ -75,91 +75,87 @@ public class ServerUIModule extends KiftdDynamicWindow {
 			if (System.getProperty("os.name").toLowerCase().indexOf("window") >= 0) {
 				iconType = "/kohgylw/kiftd/ui/resource/icon_tray_w.png";
 			}
-			try {
-				(ServerUIModule.trayIcon = new TrayIcon(ImageIO.read(this.getClass().getResourceAsStream(iconType))))
-						.setToolTip("青阳网络文件系统-kiftd");
-				trayIcon.setImageAutoSize(true);
-				final PopupMenu pMenu = new PopupMenu();
-				final MenuItem exit = new MenuItem("退出(Exit)");
-				filesViewer = new MenuItem("文件...(Files)");
-				final MenuItem show = new MenuItem("显示主窗口(Show)");
-				trayIcon.addMouseListener(new MouseListener() {
+			(ServerUIModule.trayIcon = new TrayIcon(ImageIO.read(this.getClass().getResourceAsStream(iconType))))
+					.setToolTip("青阳网络文件系统-kiftd");
+			trayIcon.setImageAutoSize(true);
+			final PopupMenu pMenu = new PopupMenu();
+			final MenuItem exit = new MenuItem("退出(Exit)");
+			filesViewer = new MenuItem("文件...(Files)");
+			final MenuItem show = new MenuItem("显示主窗口(Show)");
+			trayIcon.addMouseListener(new MouseListener() {
 
-					@Override
-					public void mouseReleased(MouseEvent e) {
-						// TODO 自动生成的方法存根
+				@Override
+				public void mouseReleased(MouseEvent e) {
+					// TODO 自动生成的方法存根
 
-					}
+				}
 
-					@Override
-					public void mousePressed(MouseEvent e) {
-						// TODO 自动生成的方法存根
+				@Override
+				public void mousePressed(MouseEvent e) {
+					// TODO 自动生成的方法存根
 
-					}
+				}
 
-					@Override
-					public void mouseExited(MouseEvent e) {
-						// TODO 自动生成的方法存根
+				@Override
+				public void mouseExited(MouseEvent e) {
+					// TODO 自动生成的方法存根
 
-					}
+				}
 
-					@Override
-					public void mouseEntered(MouseEvent e) {
-						// TODO 自动生成的方法存根
+				@Override
+				public void mouseEntered(MouseEvent e) {
+					// TODO 自动生成的方法存根
 
-					}
+				}
 
-					@Override
-					public void mouseClicked(MouseEvent e) {
-						// TODO 自动生成的方法存根
-						if (e.getClickCount() == 2) {
-							show();
-						}
-					}
-				});
-				exit.addActionListener(new ActionListener() {
-
-					@Override
-					public void actionPerformed(ActionEvent e) {
-						// TODO 自动生成的方法存根
-						exit();
-					}
-				});
-				filesViewer.addActionListener((e) -> {
-					filesViewer.setEnabled(false);
-					fileIOUtil.setEnabled(false);
-					Thread t = new Thread(() -> {
-						try {
-							ServerUIModule.fsv = FSViewer.getInstance();
-							fsv.show();
-						} catch (SQLException e1) {
-							// TODO 自动生成的 catch 块
-							JOptionPane.showMessageDialog(window, "错误：无法打开文件，文件系统可能已损坏，您可以尝试重启应用。", "错误",
-									JOptionPane.ERROR_MESSAGE);
-						}
-						filesViewer.setEnabled(true);
-						fileIOUtil.setEnabled(true);
-					});
-					t.start();
-				});
-				show.addActionListener(new ActionListener() {
-
-					@Override
-					public void actionPerformed(ActionEvent e) {
-						// TODO 自动生成的方法存根
+				@Override
+				public void mouseClicked(MouseEvent e) {
+					// TODO 自动生成的方法存根
+					if (e.getClickCount() == 2) {
 						show();
 					}
+				}
+			});
+			exit.addActionListener(new ActionListener() {
+
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					// TODO 自动生成的方法存根
+					exit();
+				}
+			});
+			filesViewer.addActionListener((e) -> {
+				filesViewer.setEnabled(false);
+				fileIOUtil.setEnabled(false);
+				Thread t = new Thread(() -> {
+					try {
+						ServerUIModule.fsv = FSViewer.getInstance();
+						fsv.show();
+					} catch (SQLException e1) {
+						// TODO 自动生成的 catch 块
+						JOptionPane.showMessageDialog(window, "错误：无法打开文件，文件系统可能已损坏，您可以尝试重启应用。", "错误",
+								JOptionPane.ERROR_MESSAGE);
+					}
+					filesViewer.setEnabled(true);
+					fileIOUtil.setEnabled(true);
 				});
-				pMenu.add(exit);
-				pMenu.addSeparator();
-				pMenu.add(filesViewer);
-				pMenu.add(show);
-				ServerUIModule.trayIcon.setPopupMenu(pMenu);
-				ServerUIModule.tray.add(ServerUIModule.trayIcon);
-			} catch (FileNotFoundException ex3) {
-			} catch (IOException ex4) {
-			} catch (AWTException ex5) {
-			}
+				t.start();
+			});
+			show.addActionListener(new ActionListener() {
+
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					// TODO 自动生成的方法存根
+					show();
+				}
+			});
+			pMenu.add(exit);
+			pMenu.addSeparator();
+			pMenu.add(filesViewer);
+			pMenu.add(show);
+			ServerUIModule.trayIcon.setPopupMenu(pMenu);
+			ServerUIModule.tray.add(ServerUIModule.trayIcon);
+
 		} else {
 			ServerUIModule.window.setDefaultCloseOperation(1);
 		}
@@ -265,7 +261,9 @@ public class ServerUIModule extends KiftdDynamicWindow {
 				start.setEnabled(false);
 				setting.setEnabled(false);
 				fileIOUtil.setEnabled(false);
-				filesViewer.setEnabled(false);
+				if (filesViewer != null) {
+					filesViewer.setEnabled(false);
+				}
 				printMessage("启动服务器...");
 				if (ss != null) {
 					serverStatusLab.setText(S_STARTING);
@@ -278,7 +276,7 @@ public class ServerUIModule extends KiftdDynamicWindow {
 								printMessage("KIFT服务器未能成功启动，请检查设置或查看异常信息。");
 							}
 						} else {
-							if(ConfigureReader.instance().getPropertiesStatus() != 0) {
+							if (ConfigureReader.instance().getPropertiesStatus() != 0) {
 								switch (ConfigureReader.instance().getPropertiesStatus()) {
 								case ConfigureReader.INVALID_PORT:
 									printMessage("KIFT无法启动：端口设置无效。");
@@ -299,7 +297,7 @@ public class ServerUIModule extends KiftdDynamicWindow {
 									printMessage("KIFT无法启动，请检查设置或查看异常信息。");
 									break;
 								}
-							}else {
+							} else {
 								printMessage("KIFT无法启动，请检查设置或查看异常信息。");
 							}
 							serverStatusLab.setText(S_STOP);
@@ -318,7 +316,9 @@ public class ServerUIModule extends KiftdDynamicWindow {
 				stop.setEnabled(false);
 				resatrt.setEnabled(false);
 				fileIOUtil.setEnabled(false);
-				filesViewer.setEnabled(false);
+				if (filesViewer != null) {
+					filesViewer.setEnabled(false);
+				}
 				printMessage("关闭服务器...");
 				Thread t = new Thread(() -> {
 					if (cs != null) {
@@ -345,7 +345,9 @@ public class ServerUIModule extends KiftdDynamicWindow {
 			public void actionPerformed(ActionEvent e) {
 				// TODO 自动生成的方法存根
 				fileIOUtil.setEnabled(false);
-				filesViewer.setEnabled(false);
+				if (filesViewer != null) {
+					filesViewer.setEnabled(false);
+				}
 				exit();
 			}
 		});
@@ -357,7 +359,9 @@ public class ServerUIModule extends KiftdDynamicWindow {
 				stop.setEnabled(false);
 				resatrt.setEnabled(false);
 				fileIOUtil.setEnabled(false);
-				filesViewer.setEnabled(false);
+				if (filesViewer != null) {
+					filesViewer.setEnabled(false);
+				}
 				Thread t = new Thread(() -> {
 					printMessage("正在重启服务器...");
 					if (cs.close()) {
@@ -387,7 +391,9 @@ public class ServerUIModule extends KiftdDynamicWindow {
 		});
 		ServerUIModule.fileIOUtil.addActionListener((e) -> {
 			ServerUIModule.fileIOUtil.setEnabled(false);
-			ServerUIModule.filesViewer.setEnabled(false);
+			if (ServerUIModule.filesViewer != null) {
+				ServerUIModule.filesViewer.setEnabled(false);
+			}
 			Thread t = new Thread(() -> {
 				try {
 					ServerUIModule.fsv = FSViewer.getInstance();
@@ -397,7 +403,9 @@ public class ServerUIModule extends KiftdDynamicWindow {
 					Printer.instance.print("错误：无法读取文件，文件系统可能已经损坏，您可以尝试重启应用。");
 				}
 				ServerUIModule.fileIOUtil.setEnabled(true);
-				ServerUIModule.filesViewer.setEnabled(true);
+				if (ServerUIModule.filesViewer != null) {
+					ServerUIModule.filesViewer.setEnabled(true);
+				}
 			});
 			t.start();
 		});
@@ -413,7 +421,7 @@ public class ServerUIModule extends KiftdDynamicWindow {
 		ServerUIModule.cs = cs;
 	}
 
-	public static ServerUIModule getInsatnce() {
+	public static ServerUIModule getInsatnce() throws Exception {
 		if (ServerUIModule.instance == null) {
 			ServerUIModule.instance = new ServerUIModule();
 		}
@@ -446,7 +454,9 @@ public class ServerUIModule extends KiftdDynamicWindow {
 					ServerUIModule.setting.setEnabled(true);
 				}
 				fileIOUtil.setEnabled(true);
-				filesViewer.setEnabled(true);
+				if(filesViewer != null) {
+					filesViewer.setEnabled(true);
+				}
 				ServerUIModule.portStatusLab.setText(ServerUIModule.st.getPort() + "");
 				if (ServerUIModule.st.getLogLevel() != null) {
 					switch (ServerUIModule.st.getLogLevel()) {
@@ -500,7 +510,7 @@ public class ServerUIModule extends KiftdDynamicWindow {
 	}
 
 	private String getFormateDate() {
-		if(null == sdf) {
+		if (null == sdf) {
 			sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 		}
 		if (ServerUIModule.ti != null) {

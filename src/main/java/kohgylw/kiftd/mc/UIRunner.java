@@ -30,7 +30,7 @@ public class UIRunner {
 	private static UIRunner ui;
 	
 	// 实例化图形界面并显示它，同时将图形界面的各个操作与服务器控制器对应起来。
-	private UIRunner() {
+	private UIRunner() throws Exception {
 		Printer.init(true);
 		final ServerUIModule ui = ServerUIModule.getInsatnce();
 		KiftdCtl ctl = new KiftdCtl();// 服务器控制层，用于连接UI与服务器内核
@@ -170,8 +170,9 @@ public class UIRunner {
 	 * 
 	 * @author 青阳龙野(kohgylw)
 	 * @return kohgylw.kiftd.mc.UIRunner 本启动器唯一实例
+	 * @throws Exception 
 	 */
-	public static UIRunner build() {
+	public static UIRunner build() throws Exception {
 		if (UIRunner.ui == null) {
 			UIRunner.ui = new UIRunner();
 		}
