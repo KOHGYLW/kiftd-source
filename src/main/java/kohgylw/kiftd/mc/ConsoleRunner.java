@@ -805,9 +805,9 @@ public class ConsoleRunner {
 	// 如果一个文件夹不可访问（例如被删除），则提示下列错误信息
 	private void openFolderError() {
 		Printer.instance.print("错误：无法读取指定文件夹，是否返回根目录？[Y/N]");
-		System.out.print("> ");
-		String command = reader.nextLine();
 		while (true) {
+			System.out.print("> ");
+			String command = reader.nextLine();
 			switch (command) {
 			case "Y":
 				try {
