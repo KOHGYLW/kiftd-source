@@ -35,6 +35,12 @@ public class KiftdCtl {
 	private static ApplicationContext context;
 	private static boolean run;
 
+	// 这里负责设置一些系统参数
+	static {
+		// 简化SpringBoot框架本身的日志信息输出，避免控制台信息杂乱影响操作
+		System.setProperty("logging.level.root", "ERROR");
+	}
+
 	/**
 	 * 
 	 * <h2>启动服务器</h2>
@@ -53,7 +59,9 @@ public class KiftdCtl {
 			if (ConfigureReader.instance().getPropertiesStatus() == 0) {
 				try {
 					Printer.instance.print("正在开启服务器引擎...");
-					KiftdCtl.context = (ApplicationContext) SpringApplication.run(KiftdCtl.class, args);
+					SpringApplication springApplication =new SpringApplication(KiftdCtl.class);
+					springApplication.setBannerMode(Banner.Mode.OFF);// 关闭自定义标志输出，简化日志信息
+					KiftdCtl.context = springApplication.run(args);
 					KiftdCtl.run = (KiftdCtl.context != null);
 					Printer.instance.print("服务器引擎已启动。");
 					return KiftdCtl.run;
