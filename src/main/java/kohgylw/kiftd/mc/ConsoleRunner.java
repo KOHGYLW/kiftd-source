@@ -437,7 +437,7 @@ public class ConsoleRunner {
 		return null;
 	}
 
-	// 导出一个文件或文件夹（直接应用的简化版）
+	// 导入一个文件或文件夹（直接应用的简化版）
 	private void doImport(String[] args) {
 		// 针对简化命令（只有1个参数），认为要将整个ROOT导出至某位置
 		try {
@@ -513,6 +513,7 @@ public class ConsoleRunner {
 		String targetFolder = currentFolder.getCurrent().getFolderId();
 		String type = "";
 		File[] importFiles = new File[] { f };
+		ProgressListener pl = null;
 		try {
 			if (FileSystemManager.getInstance().hasExistsFilesOrFolders(importFiles, targetFolder) > 0) {
 				System.out.println("提示：该路径下已经存在同名文件或文件夹（" + f.getName() + "），您希望？[C]取消 [V]覆盖 [B]保留两者");
@@ -535,16 +536,25 @@ public class ConsoleRunner {
 				}
 			}
 			Printer.instance.print("正在导入，请稍候...");
-			ProgressListener pl = new ProgressListener();
+			pl = new ProgressListener();
 			worker.execute(pl);
 			FileSystemManager.getInstance().importFrom(importFiles, targetFolder, type);
 			pl.c = false;
 			Printer.instance.print("导入完成。");
 		} catch (FilesTotalOutOfLimitException e1) {
+			if(pl != null) {
+				pl.c =false;
+			}
 			Printer.instance.print("错误：导入失败，该文件夹内的文件数目已达上限，无法导入更多文件。");
 		} catch (FoldersTotalOutOfLimitException e2) {
+			if(pl != null) {
+				pl.c =false;
+			}
 			Printer.instance.print("错误：导入失败，该文件夹内的文件夹数目已达上限，无法导入更多文件夹。");
 		} catch (Exception e3) {
+			if(pl != null) {
+				pl.c =false;
+			}
 			Printer.instance.print("错误：无法导入该文件（或文件夹），请重试。");
 		}
 	}
@@ -630,6 +640,7 @@ public class ConsoleRunner {
 		String[] args = command.split(" ");
 		String id;
 		String path;
+		ProgressListener pl = null;
 		if (args.length == 1) {
 			path = args[0];
 			id = currentFolder.getCurrent().getFolderId();
@@ -682,12 +693,15 @@ public class ConsoleRunner {
 					}
 				}
 				Printer.instance.print("正在导出，请稍候...");
-				ProgressListener pl = new ProgressListener();
+				pl = new ProgressListener();
 				worker.execute(pl);
 				FileSystemManager.getInstance().exportTo(foldersId, filesId, targetPath, type);
 				pl.c = false;
 				Printer.instance.print("导出完成。");
 			} catch (Exception e1) {
+				if (pl != null) {
+					pl.c = false;
+				}
 				Printer.instance.print("错误：无法导出该文件（或文件夹），请重试。");
 			}
 		} else {
@@ -697,6 +711,7 @@ public class ConsoleRunner {
 
 	// 删除某一文件或文件夹
 	private void doDelete(String fname) {
+		ProgressListener pl = null;
 		try {
 			currentFolder = FileSystemManager.getInstance().getFolderView(currentFolder.getCurrent().getFolderId());
 		} catch (SQLException e2) {
@@ -708,7 +723,7 @@ public class ConsoleRunner {
 			if (currentFolder.getFolders().parallelStream().anyMatch((e) -> e.getFolderId().equals(id))) {
 				if (confirmOpt("确认要删除该文件夹么？")) {
 					Printer.instance.print("正在删除文件夹，请稍候...");
-					ProgressListener pl = new ProgressListener();
+					pl = new ProgressListener();
 					worker.execute(pl);
 					if (FileSystemManager.getInstance().delete(new String[] { id }, new String[] {})) {
 						Printer.instance.print("删除完毕。");
@@ -724,7 +739,7 @@ public class ConsoleRunner {
 			if (currentFolder.getFiles().parallelStream().anyMatch((e) -> e.getFileId().equals(id))) {
 				if (confirmOpt("确认要删除该文件么？")) {
 					Printer.instance.print("正在删除文件，请稍候...");
-					ProgressListener pl = new ProgressListener();
+					pl = new ProgressListener();
 					worker.execute(pl);
 					if (FileSystemManager.getInstance().delete(new String[] {}, new String[] { id })) {
 						Printer.instance.print("删除完毕。");
@@ -738,6 +753,9 @@ public class ConsoleRunner {
 				return;
 			}
 		} catch (Exception e1) {
+			if (pl != null) {
+				pl.c = false;
+			}
 			Printer.instance.print("错误：无法删除文件，请重试。");
 		}
 		Printer.instance.print("错误：该文件或文件夹不存在（" + fname + "）。");
