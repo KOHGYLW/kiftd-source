@@ -139,11 +139,16 @@ public class FileSystemManager {
 	 *             获取失败
 	 */
 	public FolderView getFolderView(String folderId) throws SQLException {
-		FolderView fv = new FolderView();
-		fv.setCurrent(selectFolderById(folderId));
-		fv.setFiles(selectNodesByFolderId(folderId));
-		fv.setFolders(getFoldersByParentId(folderId));
-		return fv;
+		Folder target = selectFolderById(folderId);
+		if(target != null) {
+			FolderView fv = new FolderView();
+			fv.setCurrent(target);
+			fv.setFiles(selectNodesByFolderId(folderId));
+			fv.setFolders(getFoldersByParentId(folderId));
+			return fv;
+		}else {
+			throw new SQLException();
+		}
 	}
 
 	/**
@@ -415,7 +420,7 @@ public class FileSystemManager {
 	// 将一个本地文件导入到文件系统中，注意，导入的必须是文件而不是文件夹
 	private void importFileInto(File f, String folderId, String type) throws Exception {
 		if (f.isFile()) {
-			String name = new String(f.getName().getBytes("UTF-8"), "UTF-8");
+			String name = f.getName();
 			String newName = name;
 			per = 0;
 			message = "正在导入文件：" + name;
@@ -488,7 +493,7 @@ public class FileSystemManager {
 	// 将一个本地文件夹导入至文件系统，必须是文件夹而不是文件。它会自动将其中的文件和文件夹也一并导入。
 	private void importFolderInto(File f, String folderId, String type) throws Exception {
 		if (f.isDirectory()) {
-			String name = new String(f.getName().getBytes("UTF-8"), "UTF-8");
+			String name = f.getName();
 			String newName = name;
 			per = 0;
 			message = "正在导入文件夹：" + name;

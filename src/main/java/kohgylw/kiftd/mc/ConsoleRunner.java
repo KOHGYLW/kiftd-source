@@ -6,8 +6,6 @@ import kohgylw.kiftd.server.exception.FoldersTotalOutOfLimitException;
 import kohgylw.kiftd.server.model.Node;
 
 import java.io.File;
-import java.io.UnsupportedEncodingException;
-import java.nio.charset.Charset;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -91,8 +89,7 @@ public class ConsoleRunner {
 				break;
 			}
 			default: {
-				Printer.instance
-						.print("kiftd:无效的指令，使用控制台模式启动请输入参数 -console，备份文件请输入参数 -backup {本地备份路径}，使用UI模式启动请不传入任何参数。");
+				Printer.instance.print("kiftd:无效的指令，使用控制台模式启动请输入参数 -console，直接启动服务器引擎请输入参数 -start，使用UI模式启动请不要传入任何参数。");
 				break;
 			}
 			}
@@ -193,7 +190,7 @@ public class ConsoleRunner {
 			try {
 				while (true) {
 					Printer.instance.print("kiftd: console$ ");
-					String command = new String(reader.nextLine().getBytes("UTF-8"), "UTF-8");
+					String command = reader.nextLine();
 					switch (command) {
 					case "-start":
 						startServer();
@@ -245,7 +242,8 @@ public class ConsoleRunner {
 		Printer.instance.print("已进入文件管理功能。");
 		try {
 			FileNodeUtil.initNodeTableToDataBase();
-			if (currentFolder == null) {
+			if (currentFolder == null || currentFolder.getCurrent() == null || FileSystemManager.getInstance()
+					.selectFolderById(currentFolder.getCurrent().getFolderId()) == null) {
 				getFolderView("root");
 			}
 		} catch (Exception e) {
@@ -255,8 +253,8 @@ public class ConsoleRunner {
 		System.out.println("命令帮助：\r\n" + fsCommandTips + "\r\n");
 		try {
 			while (true) {
-				System.out.print("kiftd: " + currentFolder.getCurrent().getFolderName() + "$ ");
-				String command = new String(reader.nextLine().getBytes("UTF-8"), "UTF-8");
+				System.out.println("kiftd: " + currentFolder.getCurrent().getFolderName() + "$ ");
+				String command = reader.nextLine();
 				// 针对一些带参数指令的操作
 				if (command.startsWith("cd ")) {
 					gotoFolder(command.substring(3));
@@ -313,6 +311,7 @@ public class ConsoleRunner {
 			currentFolder = FileSystemManager.getInstance().getFolderView(folderId);
 		} catch (SQLException e) {
 			openFolderError();
+			return;
 		}
 		List<Folder> fls = currentFolder.getFolders();
 		int index = 1;
@@ -332,13 +331,10 @@ public class ConsoleRunner {
 	private void gotoFolder(String fname) {
 		try {
 			currentFolder = FileSystemManager.getInstance().getFolderView(currentFolder.getCurrent().getFolderId());
-			try {
-				String fid = getSelectFolderOrFileId(fname);
-				if (fid != null) {
-					getFolderView(fid);
-				}
+			String fid = getSelectFolderId(fname);
+			if (fid != null) {
+				getFolderView(fid);
 				return;
-			} catch (NoSuchElementException e) {
 			}
 			Printer.instance.print("错误：该文件夹不存在或其不是一个文件夹（" + fname + "）。");
 		} catch (SQLException e) {
@@ -371,7 +367,39 @@ public class ConsoleRunner {
 		return null;
 	}
 
-	// 根据用户输入的序号或者名称得到相应的ID
+	// 根据用户输入的序号或者名称得到相应的文件夹ID
+	private String getSelectFolderId(String fname) {
+		if ("../".equals(fname) || "..".equals(fname)) {
+			if (currentFolder.getCurrent().getFolderId().equals("root")) {
+				return "root";
+			} else {
+				return currentFolder.getCurrent().getFolderParent();
+			}
+		}
+		if ("./".equals(fname) || ".".equals(fname)) {
+			return currentFolder.getCurrent().getFolderId();
+		}
+		if (fname.startsWith("--")) {
+			int index = Integer.parseInt(fname.substring(2));
+			try {
+				if (index >= 1 && index <= currentFolder.getFolders().size()) {
+					return currentFolder.getFolders().get(index - 1).getFolderId();
+				}
+			} catch (Exception e) {
+
+			}
+			return null;
+		}
+		try {
+			return currentFolder.getFolders().parallelStream().filter((e) -> e.getFolderName().equals(fname))
+					.findFirst().get().getFolderId();
+		} catch (NoSuchElementException e) {
+
+		}
+		return null;
+	}
+
+	// 根据用户输入的序号或者名称得到相应的文件或文件夹ID（不区分文件夹或文件）
 	private String getSelectFolderOrFileId(String fname) {
 		if ("../".equals(fname) || "..".equals(fname)) {
 			if (currentFolder.getCurrent().getFolderId().equals("root")) {
@@ -489,7 +517,7 @@ public class ConsoleRunner {
 			if (FileSystemManager.getInstance().hasExistsFilesOrFolders(importFiles, targetFolder) > 0) {
 				System.out.println("提示：该路径下已经存在同名文件或文件夹（" + f.getName() + "），您希望？[C]取消 [V]覆盖 [B]保留两者");
 				q: while (true) {
-					String command = new String(reader.nextLine().getBytes("UTF-8"), "UTF-8");
+					String command = reader.nextLine();
 					switch (command) {
 					case "C":
 						Printer.instance.print("导入被取消。");
@@ -636,7 +664,7 @@ public class ConsoleRunner {
 				if (FileSystemManager.getInstance().hasExistsFilesOrFolders(foldersId, filesId, targetPath) > 0) {
 					System.out.println("提示：该路径下已经存在同名文件或文件夹（" + targetPath.getName() + "），您希望？[C]取消 [V]覆盖 [B]保留两者");
 					q: while (true) {
-						String command2 = new String(reader.nextLine().getBytes("UTF-8"), "UTF-8");
+						String command2 = reader.nextLine();
 						switch (command2) {
 						case "C":
 							Printer.instance.print("导出被取消。");
@@ -719,21 +747,16 @@ public class ConsoleRunner {
 	private boolean confirmOpt(String tip) {
 		System.out.println("提示：" + tip + " [Y/N]");
 		while (true) {
-			String command;
-			try {
-				System.out.print("> ");
-				command = new String(reader.nextLine().getBytes("UTF-8"), "UTF-8");
-				switch (command) {
-				case "Y":
-					return true;
-				case "N":
-					return false;
-				default:
-					System.out.println("必须正确输入Y或N：");
-					break;
-				}
-			} catch (UnsupportedEncodingException e) {
-				System.out.println("错误：无法识别输入的内容，重新输入。");
+			System.out.print("> ");
+			String command = reader.nextLine();
+			switch (command) {
+			case "Y":
+				return true;
+			case "N":
+				return false;
+			default:
+				System.out.println("必须正确输入Y或N：");
+				break;
 			}
 		}
 	}
@@ -765,7 +788,7 @@ public class ConsoleRunner {
 	private void openFolderError() {
 		Printer.instance.print("错误：无法读取指定文件夹，是否返回根目录？[Y/N]");
 		System.out.print("> ");
-		String command = new String(reader.nextLine().getBytes(Charset.forName("UTF-8")), Charset.forName("UTF-8"));
+		String command = reader.nextLine();
 		while (true) {
 			switch (command) {
 			case "Y":
@@ -776,7 +799,6 @@ public class ConsoleRunner {
 				}
 				return;
 			case "N":
-				Printer.instance.print("错误：无法读取指定文件夹，请重试。");
 				return;
 			default:
 				System.out.println("请输入Y或N：");
