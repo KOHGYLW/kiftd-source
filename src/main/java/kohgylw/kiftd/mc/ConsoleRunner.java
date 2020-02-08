@@ -542,18 +542,18 @@ public class ConsoleRunner {
 			pl.c = false;
 			Printer.instance.print("导入完成。");
 		} catch (FilesTotalOutOfLimitException e1) {
-			if(pl != null) {
-				pl.c =false;
+			if (pl != null) {
+				pl.c = false;
 			}
 			Printer.instance.print("错误：导入失败，该文件夹内的文件数目已达上限，无法导入更多文件。");
 		} catch (FoldersTotalOutOfLimitException e2) {
-			if(pl != null) {
-				pl.c =false;
+			if (pl != null) {
+				pl.c = false;
 			}
 			Printer.instance.print("错误：导入失败，该文件夹内的文件夹数目已达上限，无法导入更多文件夹。");
 		} catch (Exception e3) {
-			if(pl != null) {
-				pl.c =false;
+			if (pl != null) {
+				pl.c = false;
 			}
 			Printer.instance.print("错误：无法导入该文件（或文件夹），请重试。");
 		}

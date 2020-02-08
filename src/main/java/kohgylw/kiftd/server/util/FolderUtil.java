@@ -149,15 +149,39 @@ public class FolderUtil {
 		return null;
 	}
 
-	// 检查新建的文件夹是否存在同名问题。若有，删除同名文件夹并返回是否进行了该操作（旨在确保上传文件夹操作不被重复上传干扰）
-	public boolean hasRepeatFolder(Folder f) {
+//	// 检查新建的文件夹是否存在同名问题。若有，删除同名文件夹并返回是否进行了该操作（旨在确保上传文件夹操作不被重复上传干扰）
+//	public boolean hasRepeatFolder(Folder f) {
+//		Folder[] repeats = fm.queryByParentId(f.getFolderParent()).parallelStream()
+//				.filter((e) -> e.getFolderName().equals(f.getFolderName())).toArray(Folder[]::new);
+//		if (repeats.length > 1) {
+//			deleteAllChildFolder(f.getFolderId());
+//			return true;
+//		} else {
+//			return false;
+//		}
+//	}
+	
+	/**
+	 * 
+	 * <h2>检查新建的文件夹是否有效</h2>
+	 * <p>该方法主要是用于插入文件夹数据后，再次确认新插入的数据是否有效。这个方法应在插入过程结束后、返回结果前执行。</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @param f kohgylw.kiftd.server.model.Folder 要检查的文件夹对象
+	 * @return boolean 是否有效，若返回false则进行了数据回滚
+	 */
+	public boolean isValidFolder(Folder f) {
 		Folder[] repeats = fm.queryByParentId(f.getFolderParent()).parallelStream()
 				.filter((e) -> e.getFolderName().equals(f.getFolderName())).toArray(Folder[]::new);
-		if (repeats.length > 1) {
+		if (fm.queryById(f.getFolderParent()) == null || repeats.length > 1) {
+			// 如果插入后存在：
+			// 1，该文件夹没有有效的父级文件夹（死节点）；
+			// 2，与同级的其他文件夹重名，
+			// 那么它就是一个无效的文件夹，应将插入操作撤销
+			// 所谓撤销，也就是将该文件夹的数据立即删除（如果有）
 			deleteAllChildFolder(f.getFolderId());
-			return true;
+			return false;// 返回“无效”的判定结果
 		} else {
-			return false;
+			return true;// 否则，该节点有效，返回结果
 		}
 	}
 }

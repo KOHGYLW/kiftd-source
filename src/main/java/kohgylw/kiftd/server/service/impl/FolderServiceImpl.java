@@ -90,11 +90,11 @@ public class FolderServiceImpl implements FolderService {
 			try {
 				final int r = this.fm.insertNewFolder(f);
 				if (r > 0) {
-					if (fu.hasRepeatFolder(f)) {
-						return "cannotCreateFolder";
-					} else {
+					if (fu.isValidFolder(f)) {
 						this.lu.writeCreateFolderEvent(request, f);
 						return "createFolderSuccess";
+					} else {
+						return "cannotCreateFolder";
 					}
 				}
 				break;
@@ -337,13 +337,13 @@ public class FolderServiceImpl implements FolderService {
 			try {
 				final int r = this.fm.insertNewFolder(f);
 				if (r > 0) {
-					if (fu.hasRepeatFolder(f)) {
-						cnfbnr.setResult("error");
-						return gson.toJson(cnfbnr);
-					} else {
+					if (fu.isValidFolder(f)) {
 						this.lu.writeCreateFolderEvent(request, f);
 						cnfbnr.setResult("success");
 						cnfbnr.setNewName(f.getFolderName());
+						return gson.toJson(cnfbnr);
+					} else {
+						cnfbnr.setResult("error");
 						return gson.toJson(cnfbnr);
 					}
 				}

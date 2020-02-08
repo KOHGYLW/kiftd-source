@@ -140,13 +140,13 @@ public class FileSystemManager {
 	 */
 	public FolderView getFolderView(String folderId) throws SQLException {
 		Folder target = selectFolderById(folderId);
-		if(target != null) {
+		if (target != null) {
 			FolderView fv = new FolderView();
 			fv.setCurrent(target);
 			fv.setFiles(selectNodesByFolderId(folderId));
 			fv.setFolders(getFoldersByParentId(folderId));
 			return fv;
-		}else {
+		} else {
 			throw new SQLException();
 		}
 	}
@@ -458,11 +458,11 @@ public class FileSystemManager {
 				node.setFileName(newName);
 				node.setFileId(UUID.randomUUID().toString());
 				node.setFileParentFolder(folderId);
-				String result = saveToFileBlocks(f);
-				if ("ERROR".equals(result)) {
+				File block = saveToFileBlocks(f);
+				if (block == null) {
 					return;
 				}
-				node.setFilePath(result);
+				node.setFilePath(block.getName());
 				node.setFileCreationDate(ServerTimeUtil.accurateToDay());
 				node.setFileCreator("SYS_IN");
 				int mb = (int) (size / 1024L / 1024L);
@@ -470,8 +470,11 @@ public class FileSystemManager {
 				int i = 0;
 				while (true) {
 					try {
-						if (insertNode(node) == 0) {
-							throw new SQLException();
+						if (insertNode(node) > 0) {
+							// 插入后，检查父节点是否存在以确保插入的节点一定有父节点，避免产生“死节点”问题。
+							if (selectFolderById(folderId) != null) {
+								return;
+							}
 						}
 						break;
 					} catch (Exception e2) {
@@ -482,12 +485,23 @@ public class FileSystemManager {
 						break;
 					}
 				}
+				// 如果没能从正常的执行中退出，则说明文件存入失败，此时要将残留文件块和节点清理并向上抛出异常。
+				block.delete();
+				deleteNodeById(node.getFileId());
+				throw new SQLException();
 			} else {
-				transferFile(f, getFileFormBlocks(node));
+				final File block = getFileFormBlocks(node);
+				transferFile(f, block);
+				if (selectFolderById(folderId) != null && selectNodeById(node.getFileId()) != null) {
+					return;
+				}
+				block.delete();
+				deleteNodeById(node.getFileId());
+				throw new SQLException();
 			}
-			return;
 		}
 		throw new IllegalArgumentException();
+
 	}
 
 	// 将一个本地文件夹导入至文件系统，必须是文件夹而不是文件。它会自动将其中的文件和文件夹也一并导入。
@@ -532,7 +546,8 @@ public class FileSystemManager {
 				int i = 0;
 				while (true) {
 					try {
-						if (insertFolder(folder) == 0) {
+						if (insertFolder(folder) == 0 || selectFolderById(folderId) == null) {
+							deleteFolderById(folder.getFolderId());
 							throw new SQLException();
 						}
 						break;
@@ -546,7 +561,8 @@ public class FileSystemManager {
 				}
 			} else {
 				folder.setFolderCreationDate(ServerTimeUtil.accurateToDay());
-				if (updateFolder(folder) == 0) {
+				if (updateFolder(folder) == 0 || selectFolderById(folderId) == null) {
+					deleteFolderById(folder.getFolderId());
 					throw new SQLException();
 				}
 			}
@@ -790,8 +806,8 @@ public class FileSystemManager {
 		return null;
 	}
 
-	public String saveToFileBlocks(final File f) {
-		// 如果存在扩展存储区，则优先在最大的扩展存储区中存放文件（避免占用主文件系统）
+	public File saveToFileBlocks(final File f) {
+		// 如果存在扩展存储区，则优先在文件块最少的扩展存储区中存放文件（避免占用主文件系统）
 		List<ExtendStores> ess = ConfigureReader.instance().getExtendStores();// 得到全部扩展存储区
 		if (ess.size() > 0) {// 如果存在
 			Collections.sort(ess, new Comparator<ExtendStores>() {
@@ -819,7 +835,7 @@ public class FileSystemManager {
 						File file = createNewBlock(es.getIndex() + "_", es.getPath());
 						if (file != null) {
 							transferFile(f, file);// 则执行存放，并将文件命名为“{存储区编号}_{UUID}.block”的形式
-							return file.getName();
+							return file;
 						} else {
 							continue;
 						}
@@ -838,12 +854,12 @@ public class FileSystemManager {
 			final File target = createNewBlock("file_", new File(ConfigureReader.instance().getFileBlockPath()));
 			if (target != null) {
 				transferFile(f, target);// 执行存放，并肩文件命名为“file_{UUID}.block”的形式
-				return target.getName();
+				return target;
 			}
 		} catch (Exception e) {
 			Printer.instance.print("错误：文件块生成失败，无法存入新的文件数据。详细信息：" + e.getMessage());
 		}
-		return "ERROR";
+		return null;
 	}
 
 	// 生成创建一个在指定路径下名称（编号）绝对不重复的新文件块

@@ -40,11 +40,14 @@ public class FileBlockUtil {
 	private LogUtil lu;// 日志工具
 	@Resource
 	private FolderUtil fu;// 文件夹操作工具
-	
+
 	/**
 	 * 
 	 * <h2>清理临时文件夹</h2>
-	 * <p>该方法用于清理临时文件夹（如果临时文件夹不存在，则创建它），避免运行时产生的临时文件堆积。该方法应在服务器启动时和关闭过程中调用。</p>
+	 * <p>
+	 * 该方法用于清理临时文件夹（如果临时文件夹不存在，则创建它），避免运行时产生的临时文件堆积。该方法应在服务器启动时和关闭过程中调用。
+	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
 	 */
 	public void initTempDir() {
@@ -53,16 +56,16 @@ public class FileBlockUtil {
 		if (f.isDirectory()) {
 			try {
 				Iterator<Path> listFiles = Files.newDirectoryStream(f.toPath()).iterator();
-				while(listFiles.hasNext()) {
+				while (listFiles.hasNext()) {
 					listFiles.next().toFile().delete();
 				}
 			} catch (IOException e) {
 				lu.writeException(e);
-				Printer.instance.print("错误：临时文件清理失败，请手动清理"+f.getAbsolutePath()+"文件夹内的临时文件。");
+				Printer.instance.print("错误：临时文件清理失败，请手动清理" + f.getAbsolutePath() + "文件夹内的临时文件。");
 			}
 		} else {
-			if(!f.mkdir()) {
-				Printer.instance.print("错误：无法创建临时文件夹"+f.getAbsolutePath()+"，请检查主文件系统存储路径是否可用。");
+			if (!f.mkdir()) {
+				Printer.instance.print("错误：无法创建临时文件夹" + f.getAbsolutePath() + "，请检查主文件系统存储路径是否可用。");
 			}
 		}
 	}
@@ -78,9 +81,9 @@ public class FileBlockUtil {
 	 * @author 青阳龙野(kohgylw)
 	 * @param f
 	 *            MultipartFile 上传文件对象
-	 * @return String 随机生成的保存路径，如果保存失败则返回“ERROR”
+	 * @return java.io.File 生成的文件块，如果保存失败则返回null
 	 */
-	public String saveToFileBlocks(final MultipartFile f) {
+	public File saveToFileBlocks(final MultipartFile f) {
 		// 如果存在扩展存储区，则优先在已有文件块数目最少的扩展存储区中存放文件（避免占用主文件系统）
 		List<ExtendStores> ess = ConfigureReader.instance().getExtendStores();// 得到全部扩展存储区
 		if (ess.size() > 0) {
@@ -111,7 +114,7 @@ public class FileBlockUtil {
 						File file = createNewBlock(es.getIndex() + "_", es.getPath());
 						if (file != null) {
 							f.transferTo(file);// 则执行存放，并将文件命名为“{存储区编号}_{UUID}.block”的形式
-							return file.getName();
+							return file;
 						} else {
 							continue;// 如果本处无法生成新的文件块，那么在其他路径下继续尝试
 						}
@@ -131,13 +134,13 @@ public class FileBlockUtil {
 			final File file = createNewBlock("file_", new File(ConfigureReader.instance().getFileBlockPath()));
 			if (file != null) {
 				f.transferTo(file);// 执行存放，并肩文件命名为“file_{UUID}.block”的形式
-				return file.getName();
+				return file;
 			}
 		} catch (Exception e) {
 			lu.writeException(e);
 			Printer.instance.print("错误：文件块生成失败，无法存入新的文件数据。详细信息：" + e.getMessage());
 		}
-		return "ERROR";
+		return null;
 	}
 
 	// 生成创建一个在指定路径下名称（编号）绝对不重复的新文件块
@@ -442,4 +445,5 @@ public class FileBlockUtil {
 			}
 		}
 	}
+
 }

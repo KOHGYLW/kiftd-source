@@ -2,7 +2,6 @@ package kohgylw.kiftd.server.service.impl;
 
 import kohgylw.kiftd.server.service.*;
 
-import org.mybatis.spring.MyBatisSystemException;
 import org.springframework.stereotype.*;
 import kohgylw.kiftd.server.mapper.*;
 import javax.annotation.*;
@@ -198,9 +197,9 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 					}
 					for (Node f : files) {
 						if (f.getFileName().equals(originalFileName)) {
-							File file2 = fbu.getFileFromBlocks(f);
+							File block = fbu.getFileFromBlocks(f);
 							try {
-								file.transferTo(file2);
+								file.transferTo(block);
 								f.setFileSize(fbu.getFileSize(file));
 								f.setFileCreationDate(ServerTimeUtil.accurateToDay());
 								if (account != null) {
@@ -209,11 +208,14 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 									f.setFileCreator("\u533f\u540d\u7528\u6237");
 								}
 								if (fm.update(f) > 0) {
-									this.lu.writeUploadFileEvent(request, f, account);
-									return UPLOADSUCCESS;
-								} else {
-									return UPLOADERROR;
+									if (isValidNode(f)) {
+										this.lu.writeUploadFileEvent(request, f, account);
+										return UPLOADSUCCESS;
+									} else {
+										block.delete();
+									}
 								}
+								return UPLOADERROR;
 							} catch (Exception e) {
 								return UPLOADERROR;
 							}
@@ -239,8 +241,8 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 			return FILES_TOTAL_OUT_OF_LIMIT;
 		}
 		// 将文件存入节点并获取其存入生成路径，型如“UUID.block”形式。
-		final String path = this.fbu.saveToFileBlocks(file);
-		if (path.equals("ERROR")) {
+		final File block = this.fbu.saveToFileBlocks(file);
+		if (block == null) {
 			return UPLOADERROR;
 		}
 		final String fsize = this.fbu.getFileSize(file);
@@ -254,18 +256,19 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		f2.setFileCreationDate(ServerTimeUtil.accurateToDay());
 		f2.setFileName(fileName);
 		f2.setFileParentFolder(folderId);
-		f2.setFilePath(path);
+		f2.setFilePath(block.getName());
 		f2.setFileSize(fsize);
 		int i = 0;
 		// 尽可能避免UUID重复的情况发生，重试10次
 		while (true) {
 			try {
 				if (this.fm.insert(f2) > 0) {
-					if (hasRepeatNode(f2)) {
-						return UPLOADERROR;
-					} else {
+					if (isValidNode(f2)) {
 						this.lu.writeUploadFileEvent(request, f2, account);
 						return UPLOADSUCCESS;
+					} else {
+						block.delete();
+						return UPLOADERROR;
 					}
 				}
 				break;
@@ -996,18 +999,14 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 				Map<String, String> key = new HashMap<String, String>();
 				key.put("parentId", folderId);
 				key.put("folderName", pName);
-				try {
-					Folder target = flm.queryByParentIdAndFolderName(key);
-					if (target != null) {
-						folderId = target.getFolderId();// 向下迭代直至将父路径全部迭代完毕并找到最终路径
-					} else {
-						return UPLOADERROR;
-					}
-				} catch (MyBatisSystemException e) {
+				Folder target = flm.queryByParentIdAndFolderName(key);
+				if (target != null) {
+					folderId = target.getFolderId();// 向下迭代直至将父路径全部迭代完毕并找到最终路径
+				} else {
 					return UPLOADERROR;
 				}
 			} else {
-				if (fu.hasRepeatFolder(newFolder)) {
+				if (!fu.isValidFolder(newFolder)) {
 					return UPLOADERROR;
 				}
 				folderId = newFolder.getFolderId();
@@ -1024,8 +1023,8 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 			return FILES_TOTAL_OUT_OF_LIMIT;
 		}
 		// 将文件存入节点并获取其存入生成路径，型如“UUID.block”形式。
-		final String path = this.fbu.saveToFileBlocks(file);
-		if (path.equals("ERROR")) {
+		final File block = this.fbu.saveToFileBlocks(file);
+		if (block == null) {
 			return UPLOADERROR;
 		}
 		final String fsize = this.fbu.getFileSize(file);
@@ -1039,18 +1038,19 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		f2.setFileCreationDate(ServerTimeUtil.accurateToDay());
 		f2.setFileName(fileName);
 		f2.setFileParentFolder(folderId);
-		f2.setFilePath(path);
+		f2.setFilePath(block.getName());
 		f2.setFileSize(fsize);
 		int i = 0;
 		// 尽可能避免UUID重复的情况发生，重试10次
 		while (true) {
 			try {
 				if (this.fm.insert(f2) > 0) {
-					if (hasRepeatNode(f2)) {
-						return UPLOADERROR;
-					} else {
+					if (isValidNode(f2)) {
 						this.lu.writeUploadFileEvent(request, f2, account);
 						return UPLOADSUCCESS;
+					} else {
+						block.delete();
+						return UPLOADERROR;
 					}
 				}
 				break;
@@ -1122,19 +1122,20 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		return null;
 	}
 
-	// 检查新增的文件是否存在同名问题
-	private boolean hasRepeatNode(Node n) {
+	// 再次检查新增的文件是否存在同名问题
+	private boolean isValidNode(Node n) {
 		Node[] repeats = fm.queryByParentFolderId(n.getFileParentFolder()).parallelStream()
 				.filter((e) -> e.getFileName().equals(n.getFileName())).toArray(Node[]::new);
-		if (repeats.length > 1) {
-			File f = fbu.getFileFromBlocks(n);
-			if (f != null) {
-				f.delete();
-			}
+		if (flm.queryById(n.getFileParentFolder()) == null || repeats.length > 1) {
+			// 如果插入后存在：
+			// 1，该节点没有有效的父级文件夹（死节点）；
+			// 2，与同级的其他节点重名，
+			// 那么它就是一个无效的节点，应将插入操作撤销
+			// 所谓撤销，也就是将该节点的数据立即删除（如果有）
 			fm.deleteById(n.getFileId());
-			return true;
+			return false;// 返回“无效”的判定结果
 		} else {
-			return false;
+			return true;// 否则，该节点有效，返回结果
 		}
 	}
 }
