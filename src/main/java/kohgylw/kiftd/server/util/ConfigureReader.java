@@ -521,7 +521,7 @@ public class ConfigureReader {
 			this.serverp.setProperty("FS.path",
 					(ss.getFsPath() + File.separator).equals(this.DEFAULT_FILE_SYSTEM_PATH) ? "DEFAULT"
 							: ss.getFsPath());
-			for (short i = 1; i < 32; i++) {
+			for (short i = 1; i < MAX_EXTENDSTORES_NUM; i++) {
 				this.serverp.removeProperty("FS.extend." + i);// 清空旧的扩展存储区设置
 			}
 			for (ExtendStores es : ss.getExtendStores()) {
