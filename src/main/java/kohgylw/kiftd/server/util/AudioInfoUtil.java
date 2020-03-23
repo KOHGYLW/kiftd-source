@@ -63,6 +63,9 @@ public class AudioInfoUtil {
 				final String artist = this.transformCharsetEncoding(buf, 33, 30);
 				if (artist.length() > 0) {
 					ai.setArtist(artist);
+					if(artist.length() > 0) {
+						return;
+					}
 				}
 			}
 			final byte[] buf2 = new byte[10];
