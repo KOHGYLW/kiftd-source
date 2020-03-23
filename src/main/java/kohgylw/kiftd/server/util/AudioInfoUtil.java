@@ -11,12 +11,14 @@ import java.io.*;
 
 @Component
 public class AudioInfoUtil {
-	
+
 	@Resource
 	private FileBlockUtil fbu;
 	@Resource
 	private LogUtil lu;
-	
+	@Resource
+	private TxtCharsetGetter tcg;
+
 	private static final String ERROR_ARTIST = "\u7fa4\u661f";
 	private static final String DEFAULT_LRC = "css/audio_default.lrc";
 	private static final String DEFAULT_COVER = "css/audio_default.png";
@@ -111,21 +113,8 @@ public class AudioInfoUtil {
 
 	private String transformCharsetEncoding(final byte[] buf, final int offset, final int length) {
 		try {
-			String s = new String(buf, offset, length, "UTF-8");
-			if (s.length() > 0) {
-				if (s.equals(new String(s.getBytes("GBK"), "GBK"))) {
-					return s;
-				}
-				s = new String(buf, offset, length, "GBK");
-				if (s.equals(new String(s.getBytes("UTF-8"), "UTF-8"))) {
-					return s;
-				}
-				s = new String(buf, offset, length, "ISO-8859-1");
-				if (s.equals(new String(s.getBytes("GBK"), "GBK"))) {
-					return s;
-				}
-			}
-		} catch (UnsupportedEncodingException ex) {
+			return new String(buf, offset, length, tcg.getTxtCharset(buf, offset, length)).trim();
+		} catch (Exception ex) {
 			lu.writeException(ex);
 		}
 		return "";
