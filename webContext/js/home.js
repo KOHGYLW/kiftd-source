@@ -12,6 +12,7 @@ var originFolderView;// 保存原始的文件视图对象
 var fs;// 选中的要上传的文件列表
 var ifs;// 选中的要上传的文件夹内的文件列表
 var checkedMovefiles;// 移动文件的存储列表
+var isCopy;// 移动文件是否为复制模式，如果是，则“复制”，否则“剪切”
 var constraintLevel;// 当前文件夹限制等级
 var account;// 用户账户
 var isUpLoading=false;// 是否正在执行上传操作
@@ -196,7 +197,7 @@ $(function() {
 		if (folderView.authList != null) {
 			if (checkAuth(folderView.authList, "U")) {// 如果有上传权限且未进行其他上传
 				if(isUpLoading || isImporting){
-					alert("提示：您正在执行另一项上传任务，请在上传窗口关闭后再试。");
+					alert("提示：您正在执行另一项上传任务，请在上传完成后再试。");
 				}else{
 					if (!(window.ActiveXObject||"ActiveXObject" in window)){// 判断是否为IE
 						var dt;
@@ -255,38 +256,42 @@ $(function() {
 			alert("提示：您不具备上传权限，无法上传文件。");
 		}
 	}
-	// Shift+A全选文件/反选文件，Shift+N新建文件夹，Shift+U上传文件，Shift+F导入文件夹，Shift+C&V剪切粘贴，Shift+D批量删除
+	// 各种快捷键绑定
 	$(document).keypress(function (e) {
 		if($('.modal.shown').length == 0 || ($('.modal.shown').length == 1 && $('.modal.shown').attr('id') == 'loadingModal')){
 			var keyCode = e.keyCode ? e.keyCode : e.which ? e.which : e.charCode;
-			if (isShift(e) && document.activeElement.id != "sreachKeyWordIn") {
+			if (isShift(e) && document.activeElement.id != "sreachKeyWordIn") {// 在按住shift的情况下……
 				switch (keyCode) {
-				case 65:
+				case 65:// shift+a 全选
 					checkallfile();
 					break;
-				case 78:
+				case 78:// shift+n 新建文件夹
 					$('#createFolderButtonLi a').click();
 					break;
-				case 85:
+				case 85:// shift+u 上传文件
 					$('#uploadFileButtonLi a').click();
 					break;
-				case 68:
+				case 68:// shift+d 删除
 					$('#deleteSeelectFileButtonLi a').click();
 					break;
-				case 70:
+				case 70:// shift+f 上传文件夹
 					$('#uploadFolderButtonLi a').click();
 					break;
-				case 67:
-					if((!$("#cutSignTx").hasClass("cuted"))&&checkedMovefiles==undefined){
+				case 67:// shift+c 复制
+					if(checkedMovefiles==undefined||checkedMovefiles.size==0){
+						//$('#copyFileButtonLi a').click();
+					}
+					break;
+				case 88:// shift+x 剪切
+					if(checkedMovefiles==undefined||checkedMovefiles.size==0){
 						$('#cutFileButtonLi a').click();
 					}
 					break;
-				case 86:
-					if($("#cutSignTx").hasClass("cuted")&&checkedMovefiles!==undefined){
-						$('#cutFileButtonLi a').click();
+				case 86:// shift+v 粘贴
+					if(checkedMovefiles!==undefined&&checkedMovefiles.size>0){
+						$('#stickFileButtonLi a').click();
 					}
 					break;
-	
 				default:
 					return true;
 				}
@@ -297,8 +302,13 @@ $(function() {
 	// 关闭移动提示框自动取消移动
 	$('#moveFilesModal').on('hidden.bs.modal', function(e) {
 		checkedMovefiles=undefined;
-		$("#cutSignTx").html("剪切 <span class='pull-right'><span class='glyphicon glyphicon-arrow-up' aria-hidden='true'></span>+C</span>");
-		$("#cutSignTx").removeClass("cuted");
+		$("#copyFileButtonLi").removeClass("hidden");
+		$("#copyFileButtonLi").addClass("show");
+		$("#cutFileButtonLi").removeClass("hidden");
+		$("#cutFileButtonLi").addClass("show");
+		$("#stickFileButtonLi").removeClass("show");
+		$("#stickFileButtonLi").addClass("hidden");
+		$("#stickFilesCount").text("");
 		$('#moveFilesBox').html("");
 	});
 	// IE内核浏览器内的startsWith方法的自实现
@@ -790,10 +800,27 @@ function showAccountView(folderView) {
 		}
 		if (checkAuth(authList, "M")) {
 			$("#cutFileButtonLi").removeClass("disabled");
-			$("#cutFileButtonLi a").attr("onclick","startMoveFile()");
-			if(checkedMovefiles!==undefined&&checkedMovefiles.length>0){
-				$("#cutSignTx").text("粘贴（"+checkedMovefiles.length+"）");
-				$("#cutSignTx").addClass("cuted");
+			$("#stickFileButtonLi").removeClass("disabled");
+			//$("#copyFileButtonLi").removeClass("disabled");
+			$("#cutFileButtonLi a").attr("onclick","cutFile()");
+			$("#copyFileButtonLi a").attr("onclick","copyFile()");
+			$("#stickFileButtonLi a").attr("onclick","stickFile()");
+			if(checkedMovefiles!==undefined&&checkedMovefiles.size>0){
+				$("#stickFilesCount").text("（"+checkedMovefiles.size+"）");
+				$("#copyFileButtonLi").removeClass("show");
+				$("#copyFileButtonLi").addClass("hidden");
+				$("#cutFileButtonLi").removeClass("show");
+				$("#cutFileButtonLi").addClass("hidden");
+				$("#stickFileButtonLi").removeClass("hidden");
+				$("#stickFileButtonLi").addClass("show");
+			}else{
+				$("#copyFileButtonLi").removeClass("hidden");
+				$("#copyFileButtonLi").addClass("show");
+				$("#cutFileButtonLi").removeClass("hidden");
+				$("#cutFileButtonLi").addClass("show");
+				$("#stickFileButtonLi").removeClass("show");
+				$("#stickFileButtonLi").addClass("hidden");
+				$("#stickFilesCount").text("");
 			}
 		}
 	}
@@ -1588,9 +1615,11 @@ function showUploadFileAlert(txt) {
 
 // 取消上传文件
 function abortUpload() {
-	isUpLoading=false;
-	if (xhr != null) {
-		xhr.abort();
+	if(isUpLoading){
+		isUpLoading=false;
+		if (xhr != null) {
+			xhr.abort();
+		}
 	}
 	$('#uploadFileModal').modal('hide');
 	showFolderView(locationpath);
@@ -2378,25 +2407,62 @@ function showOriginFolderView(){
 	}, 0);
 }
 
-// 确认文件移动（剪切-粘贴）操作
-function startMoveFile(){
-	if($("#cutSignTx").hasClass("cuted")&&checkedMovefiles!==undefined){
-		$('#moveFilesMessage').text("提示：确定将这"+checkedMovefiles.size+"项移动到当前位置么？");
+// 执行“剪切”操作
+function cutFile(){
+	checkedMovefiles = getCheckedFilesAndFolders();
+	if (checkedMovefiles==undefined||checkedMovefiles.size == 0) {
+		// 如果未选中任何文件，则提示用户要先选
+		$('#moveFilesMessage').html(checkFilesTip);
+		$("#selectFileMoveModelAsAll").removeAttr("checked");
+		$("#selectFileMoveModelAlert").hide();
+		$('#moveFilesModal').modal('show');
+	} else {
+		// 否则，隐藏“剪切”和“复制”按钮，显示“粘贴”按钮
+		$("#stickFilesCount").text("（"+checkedMovefiles.size+"）");
+		$("#copyFileButtonLi").removeClass("show");
+		$("#copyFileButtonLi").addClass("hidden");
+		$("#cutFileButtonLi").removeClass("show");
+		$("#cutFileButtonLi").addClass("hidden");
+		$("#stickFileButtonLi").removeClass("hidden");
+		$("#stickFileButtonLi").addClass("show");
+		isCopy=false;
+	}
+}
+
+// 执行“复制”操作
+function copyFile(){
+	checkedMovefiles = getCheckedFilesAndFolders();
+	if (checkedMovefiles==undefined||checkedMovefiles.size == 0) {
+		// 如果未选中任何文件，则提示用户要先选
+		$('#moveFilesMessage').html(checkFilesTip);
+		$("#selectFileMoveModelAsAll").removeAttr("checked");
+		$("#selectFileMoveModelAlert").hide();
+		$('#moveFilesModal').modal('show');
+	} else {
+		// 否则，隐藏“剪切”和“复制”按钮，显示“粘贴”按钮
+		$("#stickFilesCount").text("（"+checkedMovefiles.size+"）");
+		$("#copyFileButtonLi").removeClass("show");
+		$("#copyFileButtonLi").addClass("hidden");
+		$("#cutFileButtonLi").removeClass("show");
+		$("#cutFileButtonLi").addClass("hidden");
+		$("#stickFileButtonLi").removeClass("hidden");
+		$("#stickFileButtonLi").addClass("show");
+		isCopy=true;
+	}
+}
+
+// 执行“粘贴”操作
+function stickFile(){
+	if(checkedMovefiles!==undefined && checkedMovefiles.size>0){
+		if(isCopy){
+			$('#moveFilesMessage').text("提示：确定将这"+checkedMovefiles.size+"项移复制当前位置么？");
+		}else{
+			$('#moveFilesMessage').text("提示：确定将这"+checkedMovefiles.size+"项移动到当前位置么？");
+		}
 		$('#moveFilesBox').html("<button id='dmvfbutton' type='button' class='btn btn-danger' onclick='doMoveFiles()'>全部移动</button>");
 		$("#selectFileMoveModelAsAll").removeAttr("checked");
 		$("#selectFileMoveModelAlert").hide();
 		$('#moveFilesModal').modal('show');
-	}else{
-		checkedMovefiles = getCheckedFilesAndFolders();
-		if (checkedMovefiles==undefined||checkedMovefiles.size == 0) {
-			$('#moveFilesMessage').html(checkFilesTip);
-			$("#selectFileMoveModelAsAll").removeAttr("checked");
-			$("#selectFileMoveModelAlert").hide();
-			$('#moveFilesModal').modal('show');
-		} else {
-			$("#cutSignTx").html("粘贴（"+checkedMovefiles.size+"）<span class='pull-right'><span class='glyphicon glyphicon-arrow-up' aria-hidden='true'></span>+V</span>");
-			$("#cutSignTx").addClass("cuted");
-		}
 	}
 }
 
@@ -2668,6 +2734,11 @@ function selectInCompletePath(keyworld){
 				$("#sortByCN").removeClass();
 				$("#sortByOR").removeClass();
 				showFolderTable(folderView);
+				$("#fim_name").text(folderView.folder.folderName);
+				$("#fim_creator").text("--");
+				$("#fim_folderCreationDate").text("--");
+				$("#fim_folderId").text("--");
+				updateTheFolderInfo();
 			}
 		},
 		error : function() {
@@ -2737,6 +2808,7 @@ function ping(){
 // 判断浏览器是否支持webkitdirectory属性且不为ios系统（判断是否能进行文件夹上传）
 function isSupportWebkitdirectory() {
 	var testWebkitdirectory = document.createElement("input");
+	console.log(navigator.userAgent);
 	if("webkitdirectory" in testWebkitdirectory && !(/(iPhone|iPad|iPod|iOS)/i.test(navigator.userAgent))) {
 		return true;
 	} else {
@@ -3035,9 +3107,11 @@ function iteratorImport(i,newFolderName){
 
 // 取消文件夹上传
 function abortImport(){
-	isImporting=false;
-	if (xhr != null) {
-		xhr.abort();
+	if(isImporting){
+		isImporting=false;
+		if (xhr != null) {
+			xhr.abort();
+		}
 	}
 	$('#importFolderModal').modal('hide');
 	showFolderView(locationpath);
