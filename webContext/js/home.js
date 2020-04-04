@@ -279,7 +279,7 @@ $(function() {
 					break;
 				case 67:// shift+c 复制
 					if(checkedMovefiles==undefined||checkedMovefiles.size==0){
-						//$('#copyFileButtonLi a').click();
+						$('#copyFileButtonLi a').click();
 					}
 					break;
 				case 88:// shift+x 剪切
@@ -803,7 +803,7 @@ function showAccountView(folderView) {
 			$("#stickFileButtonLi").removeClass("disabled");
 			//$("#copyFileButtonLi").removeClass("disabled");
 			$("#cutFileButtonLi a").attr("onclick","cutFile()");
-			$("#copyFileButtonLi a").attr("onclick","copyFile()");
+			//$("#copyFileButtonLi a").attr("onclick","copyFile()");
 			$("#stickFileButtonLi a").attr("onclick","stickFile()");
 			if(checkedMovefiles!==undefined&&checkedMovefiles.size>0){
 				$("#stickFilesCount").text("（"+checkedMovefiles.size+"）");
