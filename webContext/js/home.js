@@ -801,9 +801,9 @@ function showAccountView(folderView) {
 		if (checkAuth(authList, "M")) {
 			$("#cutFileButtonLi").removeClass("disabled");
 			$("#stickFileButtonLi").removeClass("disabled");
-			//$("#copyFileButtonLi").removeClass("disabled");
+			// $("#copyFileButtonLi").removeClass("disabled");
 			$("#cutFileButtonLi a").attr("onclick","cutFile()");
-			//$("#copyFileButtonLi a").attr("onclick","copyFile()");
+			// $("#copyFileButtonLi a").attr("onclick","copyFile()");
 			$("#stickFileButtonLi a").attr("onclick","stickFile()");
 			if(checkedMovefiles!==undefined&&checkedMovefiles.size>0){
 				$("#stickFilesCount").text("（"+checkedMovefiles.size+"）");
@@ -2189,8 +2189,27 @@ function playAudio(fileId) {
 				ail.as[i].name=ail.as[i].name.replace('\'','&#39;').replace('<','&lt;').replace('>','&gt;');
 			}
 			ap.list.add(ail.as);
-			ap.list.switch(ail.index);
-			audio_play();
+			if(ail.as.length > 0){
+				// 测试第一首歌的歌词是否加载完毕，加载完毕后再切换到目标歌曲并播放，避免因切歌过快导致第一首歌的歌词加载失败。
+				$.ajax({
+					url:ail.as[0].lrc,
+					data:{
+					},
+					type:'POST',
+					dataType:'text',
+					success:function(result){
+						ap.list.switch(ail.index);
+						audio_play();
+					},
+					error:function(){
+						alert("错误：无法获取音乐列表，请稍后再试");
+						closeAudioPlayer();
+					}
+				});
+			}else{
+				alert("错误：无法获取音乐列表，请稍后再试");
+				closeAudioPlayer();
+			}
 		},
 		error:function(){
 			alert("错误：无法获取音乐列表，请稍后再试");

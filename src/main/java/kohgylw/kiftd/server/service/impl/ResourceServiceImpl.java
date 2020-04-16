@@ -378,6 +378,10 @@ public class ResourceServiceImpl implements ResourceService {
 						if (".lrc".equals(suffix)) {
 							String contentType = "text/plain";
 							response.setContentType(contentType);
+							response.setCharacterEncoding("UTF-8");
+							String lastModified = file.lastModified() + "";
+							response.setHeader("ETag", lastModified);
+							response.setHeader("Last-Modified", lastModified);
 							// 执行转换并写出输出流
 							try {
 								String inputFileEncode = tcg.getTxtCharset(new FileInputStream(file));
