@@ -2185,34 +2185,15 @@ function playAudio(fileId) {
 		success:function(result){
 			var ail=eval("("+result+")");
 			// 避免存在恶意标签注入在文件名中
-			for(var i=0;i<ail.as.length;i++){
+			for(var i=ail.index;i<ail.as.length;i++){
 				ail.as[i].name=ail.as[i].name.replace('\'','&#39;').replace('<','&lt;').replace('>','&gt;');
+				ap.list.add(ail.as[i]);
 			}
-			ap.list.add(ail.as);
-			if(ail.as.length > 0){
-				// 等到第一首歌的歌词加载完毕后，再切换到目标歌曲并开始播放。
-				// 该设计主要是为了避免因aplayer播放器切歌过快而导致第一首歌的歌词永远无法被加载的问题。
-				setTimeout(function() {
-					$.ajax({
-						url:ail.as[0].lrc,
-						data:{
-						},
-						type:'POST',
-						dataType:'text',
-						success:function(result){
-							ap.list.switch(ail.index);
-							audio_play();
-						},
-						error:function(){
-							alert("错误：无法获取音乐列表，请稍后再试");
-							closeAudioPlayer();
-						}
-					});
-				},100);
-			}else{
-				alert("错误：无法获取音乐列表，请稍后再试");
-				closeAudioPlayer();
+			for(var i=0;i<ail.index;i++){
+				ail.as[i].name=ail.as[i].name.replace('\'','&#39;').replace('<','&lt;').replace('>','&gt;');
+				ap.list.add(ail.as[i]);
 			}
+			audio_play();
 		},
 		error:function(){
 			alert("错误：无法获取音乐列表，请稍后再试");
