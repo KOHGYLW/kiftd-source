@@ -2190,22 +2190,25 @@ function playAudio(fileId) {
 			}
 			ap.list.add(ail.as);
 			if(ail.as.length > 0){
-				// 测试第一首歌的歌词是否加载完毕，加载完毕后再切换到目标歌曲并播放，避免因切歌过快导致第一首歌的歌词加载失败。
-				$.ajax({
-					url:ail.as[0].lrc,
-					data:{
-					},
-					type:'POST',
-					dataType:'text',
-					success:function(result){
-						ap.list.switch(ail.index);
-						audio_play();
-					},
-					error:function(){
-						alert("错误：无法获取音乐列表，请稍后再试");
-						closeAudioPlayer();
-					}
-				});
+				// 等到第一首歌的歌词加载完毕后，再切换到目标歌曲并开始播放。
+				// 该设计主要是为了避免因aplayer播放器切歌过快而导致第一首歌的歌词永远无法被加载的问题。
+				setTimeout(function() {
+					$.ajax({
+						url:ail.as[0].lrc,
+						data:{
+						},
+						type:'POST',
+						dataType:'text',
+						success:function(result){
+							ap.list.switch(ail.index);
+							audio_play();
+						},
+						error:function(){
+							alert("错误：无法获取音乐列表，请稍后再试");
+							closeAudioPlayer();
+						}
+					});
+				},100);
 			}else{
 				alert("错误：无法获取音乐列表，请稍后再试");
 				closeAudioPlayer();
