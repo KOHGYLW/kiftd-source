@@ -7,6 +7,8 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
+import javax.annotation.Resource;
+
 import org.springframework.stereotype.Component;
 
 import kohgylw.kiftd.printer.Printer;
@@ -14,16 +16,22 @@ import ws.schild.jave.FFMPEGLocator;
 
 @Component
 public class KiftdFFMPEGLocator extends FFMPEGLocator {
-	
+
+	@Resource
+	private LogUtil lu;
+
 	/**
 	 * 内置的ffmpeg引擎的版本号，应该与jave整合资源本身自带的ffmpeg引擎版本对应
 	 */
 	private static final String MY_EXE_VERSION = "2.5.0";
 
-	/**
-	 * ffmpeg引擎的路径
-	 */
-	private String path;
+	private String suffix;
+
+	private String arch;
+
+	private File dirFolder;
+
+	private boolean isWindows;
 
 	/**
 	 * 
@@ -35,26 +43,36 @@ public class KiftdFFMPEGLocator extends FFMPEGLocator {
 	 * @author 青阳龙野(kohgylw)
 	 */
 	public KiftdFFMPEGLocator() {
-		// 首先检查是否启用了在线解码功能，如果没有启用则无需初始化ffmpeg引擎
-		if (!ConfigureReader.instance().isEnableFFMPEG()) {
-			return;
-		}
+		// 实例化过程，初始化一些系统相关的变量
 		// 下面的变量用于判断操作系统，主要判断是Windows还是Mac，都不是的话就一律视作是各种Linux的发行版
 		String os = System.getProperty("os.name").toLowerCase();
-		boolean isWindows = os.contains("windows");
+		isWindows = os.contains("windows");
 		boolean isMac = os.contains("mac");
 
-		// 为了保证运行过程中ffmpeg可执行文件能被单独使用，首先要构造一个临时目录，用于存放运行中引用的ffmpeg可执行文件
-		File dirFolder = new File(System.getProperty("java.io.tmpdir"), "jave/");
+		dirFolder = new File(System.getProperty("java.io.tmpdir"), "jave/");
 		if (!dirFolder.exists()) {
 			dirFolder.mkdirs();
 		}
 
-		// 判断正确的后缀名，如果是windows，那么则使用“.exe”作为后缀，然后再判断是不是Mac，如果是则查找“-osx”后缀的ffmpeg，
-		// 其余的不需要特定后缀。
-		String suffix = isWindows ? ".exe" : (isMac ? "-osx" : "");
-		String arch = System.getProperty("os.arch");
+		suffix = isWindows ? ".exe" : (isMac ? "-osx" : "");
+		arch = System.getProperty("os.arch");
+		// 服务器启动时第一次初始化ffmpeg执行路径
+		initFFMPEGExecutablePath();// 这里的目的在于启动服务器时预拷贝ffmpeg，避免第一次访问文件夹视图时再拷贝造成延迟
+	}
 
+	@Override
+	public String getFFMPEGExecutablePath() {
+		// 每次获得路径时再次初始化ffmpeg执行路径
+		return initFFMPEGExecutablePath();// 这里的目的在于避免运行中ffmpeg被删掉从而导致程序找不到它
+	}
+
+	// 初始化ffmpeg执行路径并返回，过程包括：
+	// 1，判断正确的程序版本；2，根据版本判断程序是否就位；3，如果未就位则将程序拷贝到临时文件夹中；4，返回正确的程序路径或null。
+	private String initFFMPEGExecutablePath() {
+		// 首先判断是否启用了在线解码功能，若未启用则无需初始化ffmpeg执行路径
+		if (!ConfigureReader.instance().isEnableFFMPEG()) {
+			return null;
+		}
 		// 是否在程序主目录下放置了自定义的ffmpeg可执行文件“ffmpeg.exe”/“ffmpeg”？
 		File ffmpegFile;
 		File customFFMPEGexef = new File(ConfigureReader.instance().getPath(), isWindows ? "ffmpeg.exe" : "ffmpeg");
@@ -68,7 +86,8 @@ public class KiftdFFMPEGLocator extends FFMPEGLocator {
 					Files.copy(customFFMPEGexef.toPath(), ffmpegFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 				} catch (IOException e) {
 					Printer.instance.print("警告：自定义的ffmpeg引擎可执行文件无法读取，视频播放的在线解码功能将不可用。");
-					return;
+					lu.writeException(e);
+					return null;
 				}
 				// 已经有了？那么它应该准备好了
 			}
@@ -83,10 +102,11 @@ public class KiftdFFMPEGLocator extends FFMPEGLocator {
 					copyFile("ffmpeg-" + arch + suffix, ffmpegFile);
 				} catch (NullPointerException e) {
 					Printer.instance.print("警告：未能找到适合此操作系统的ffmpeg引擎可执行文件，视频播放的在线解码功能将不可用。");
-					return;
+					lu.writeException(e);
+					return null;
 				}
-				// 已经有了？那么它应该准备好了
 			}
+			// 已经有了？那么它应该准备好了
 		}
 
 		// 对于类Unix系统而言，还要确保临时目录授予可运行权限，以便jave运行时调用ffmpeg
@@ -95,20 +115,16 @@ public class KiftdFFMPEGLocator extends FFMPEGLocator {
 				try {
 					Runtime.getRuntime().exec(new String[] { "/bin/chmod", "755", ffmpegFile.getAbsolutePath() });
 				} catch (IOException e) {
-					// 授予权限失败的话……好像也没啥好办法，直接结束构造就行了
-					return;
+					// 授予权限失败的话……好像也没啥好办法
+					lu.writeException(e);
+					return null;
 				}
 			}
 		}
 
 		// 上述工作都做好了，就可以将ffmpeg的路径返回给jave调用了。
-		// 如果到不了这里，说明构造失败，path字段会是null，那么应该禁用jave的在线转码功能
-		path = ffmpegFile.getAbsolutePath();
-	}
-
-	@Override
-	public String getFFMPEGExecutablePath() {
-		return path;
+		// 如果到不了这里，说明初始化失败，该方法返回null，那么应该禁用jave的在线转码功能
+		return ffmpegFile.getAbsolutePath();
 	}
 
 	// 把文件从自带的jar包中拷贝出来，移入指定文件夹
@@ -133,5 +149,5 @@ public class KiftdFFMPEGLocator extends FFMPEGLocator {
 		}
 		return success;
 	}
-	
+
 }

@@ -109,7 +109,7 @@ $(function() {
 				doSearchFile();
 			}else{
 				var g=$(".shown .btn-primary");
-				if(g.get(0)!=null){
+				if(g.get(0)!=null && g.prop("disabled") == false){
 					g.click();
 				}
 			}
