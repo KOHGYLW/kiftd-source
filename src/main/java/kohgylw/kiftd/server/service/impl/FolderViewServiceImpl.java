@@ -111,7 +111,7 @@ public class FolderViewServiceImpl implements FolderViewService {
 		}
 		fv.setAuthList(authList);
 		fv.setPublishTime(ServerTimeUtil.accurateToMinute());
-		fv.setEnableFFMPEG(kfl.getFFMPEGExecutablePath() == null ? false : true);
+		fv.setEnableFFMPEG(kfl.isEnableFFmpeg());
 		fv.setEnableDownloadZip(ConfigureReader.instance().isEnableDownloadByZip());
 		return gson.toJson(fv);
 	}
@@ -186,7 +186,7 @@ public class FolderViewServiceImpl implements FolderViewService {
 		// 设置查询字段
 		sv.setKeyWorld(keyWorld);
 		// 返回公告MD5
-		sv.setEnableFFMPEG(kfl.getFFMPEGExecutablePath() == null ? false : true);
+		sv.setEnableFFMPEG(kfl.isEnableFFmpeg());
 		sv.setEnableDownloadZip(ConfigureReader.instance().isEnableDownloadByZip());
 		return gson.toJson(sv);
 	}

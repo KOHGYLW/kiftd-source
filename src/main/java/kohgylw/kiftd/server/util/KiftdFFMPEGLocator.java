@@ -25,6 +25,8 @@ public class KiftdFFMPEGLocator extends FFMPEGLocator {
 	 */
 	private static final String MY_EXE_VERSION = "2.5.0";
 
+	private boolean enableFFmpeg;
+
 	private String suffix;
 
 	private String arch;
@@ -57,13 +59,15 @@ public class KiftdFFMPEGLocator extends FFMPEGLocator {
 		suffix = isWindows ? ".exe" : (isMac ? "-osx" : "");
 		arch = System.getProperty("os.arch");
 		// 服务器启动时第一次初始化ffmpeg执行路径
-		initFFMPEGExecutablePath();// 这里的目的在于启动服务器时预拷贝ffmpeg，避免第一次访问文件夹视图时再拷贝造成延迟
+		initFFMPEGExecutablePath();// 这里的目的在于启动服务器时预拷贝ffmpeg，
+		// 避免第一次访问文件夹视图时再拷贝造成延迟，同时初始化enableFFmpeg属性。
 	}
 
 	@Override
 	public String getFFMPEGExecutablePath() {
 		// 每次获得路径时再次初始化ffmpeg执行路径
-		return initFFMPEGExecutablePath();// 这里的目的在于避免运行中ffmpeg被删掉从而导致程序找不到它
+		return initFFMPEGExecutablePath();// 这里的目的在于避免运行中ffmpeg被删掉从而导致程序找不到它，
+		// 同时更新enableFFmpeg属性。
 	}
 
 	// 初始化ffmpeg执行路径并返回，过程包括：
@@ -71,6 +75,7 @@ public class KiftdFFMPEGLocator extends FFMPEGLocator {
 	private String initFFMPEGExecutablePath() {
 		// 首先判断是否启用了在线解码功能，若未启用则无需初始化ffmpeg执行路径
 		if (!ConfigureReader.instance().isEnableFFMPEG()) {
+			enableFFmpeg = false;
 			return null;
 		}
 		// 是否在程序主目录下放置了自定义的ffmpeg可执行文件“ffmpeg.exe”/“ffmpeg”？
@@ -87,6 +92,7 @@ public class KiftdFFMPEGLocator extends FFMPEGLocator {
 				} catch (IOException e) {
 					Printer.instance.print("警告：自定义的ffmpeg引擎可执行文件无法读取，视频播放的在线解码功能将不可用。");
 					lu.writeException(e);
+					enableFFmpeg = false;
 					return null;
 				}
 				// 已经有了？那么它应该准备好了
@@ -103,6 +109,7 @@ public class KiftdFFMPEGLocator extends FFMPEGLocator {
 				} catch (NullPointerException e) {
 					Printer.instance.print("警告：未能找到适合此操作系统的ffmpeg引擎可执行文件，视频播放的在线解码功能将不可用。");
 					lu.writeException(e);
+					enableFFmpeg = false;
 					return null;
 				}
 			}
@@ -117,6 +124,7 @@ public class KiftdFFMPEGLocator extends FFMPEGLocator {
 				} catch (IOException e) {
 					// 授予权限失败的话……好像也没啥好办法
 					lu.writeException(e);
+					enableFFmpeg = false;
 					return null;
 				}
 			}
@@ -124,6 +132,7 @@ public class KiftdFFMPEGLocator extends FFMPEGLocator {
 
 		// 上述工作都做好了，就可以将ffmpeg的路径返回给jave调用了。
 		// 如果到不了这里，说明初始化失败，该方法返回null，那么应该禁用jave的在线转码功能
+		enableFFmpeg = true;
 		return ffmpegFile.getAbsolutePath();
 	}
 
@@ -148,6 +157,10 @@ public class KiftdFFMPEGLocator extends FFMPEGLocator {
 			success = false;
 		}
 		return success;
+	}
+
+	public boolean isEnableFFmpeg() {
+		return enableFFmpeg;
 	}
 
 }
