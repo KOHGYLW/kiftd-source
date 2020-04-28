@@ -1,18 +1,17 @@
 package kohgylw.kiftd.server.pojo;
 
 import java.util.*;
-import kohgylw.kiftd.server.model.*;
 
 public class PictureViewList
 {
-    private List<Node> pictureViewList;
+    private List<PictureInfo> pictureViewList;
     private int index;
     
-    public List<Node> getPictureViewList() {
+    public List<PictureInfo> getPictureViewList() {
         return this.pictureViewList;
     }
     
-    public void setPictureViewList(final List<Node> pictureViewList) {
+    public void setPictureViewList(final List<PictureInfo> pictureViewList) {
         this.pictureViewList = pictureViewList;
     }
     

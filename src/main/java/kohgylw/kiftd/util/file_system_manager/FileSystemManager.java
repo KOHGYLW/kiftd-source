@@ -79,6 +79,7 @@ public class FileSystemManager {
 	private PreparedStatement updateFolderById;
 	private PreparedStatement countNodesByFolderId;
 	private PreparedStatement countFoldersByParentFolderId;
+	private PreparedStatement selectNodesByPath;
 
 	// 加载资源
 	private FileSystemManager() {
@@ -86,6 +87,8 @@ public class FileSystemManager {
 		try {
 			selectFolderById = c.prepareStatement("SELECT * FROM FOLDER WHERE folder_id = ?");
 			selectNodeById = c.prepareStatement("SELECT * FROM FILE WHERE file_id = ?");
+			selectNodesByPath = c
+					.prepareStatement("SELECT * FROM FILE WHERE file_path = ? LIMIT 0," + MAX_FOLDERS_OR_FILES_LIMIT);
 			selectNodesByFolderId = c.prepareStatement(
 					"SELECT * FROM FILE WHERE file_parent_folder = ? LIMIT 0," + MAX_FOLDERS_OR_FILES_LIMIT);
 			selectFoldersByParentFolderId = c.prepareStatement(
@@ -361,6 +364,17 @@ public class FileSystemManager {
 		List<Node> nodes = new ArrayList<>();
 		selectNodesByFolderId.setString(1, folderId);
 		ResultSet r = selectNodesByFolderId.executeQuery();
+		while (r.next()) {
+			nodes.add(resultSetAccessNode(r));
+		}
+		return nodes;
+	}
+
+	// 查询指定Block ID对应的所有文件节点，如无符合则返回空List
+	public List<Node> selectNodesByPath(String path) throws SQLException {
+		List<Node> nodes = new ArrayList<>();
+		selectNodesByPath.setString(1, path);
+		ResultSet r = selectNodesByPath.executeQuery();
 		while (r.next()) {
 			nodes.add(resultSetAccessNode(r));
 		}
@@ -654,12 +668,18 @@ public class FileSystemManager {
 		per = 50;
 		message = "正在删除文件：" + n.getFileName();
 		if (n != null) {
-			// 删除文件节点对应的数据块
-			File block = getFileFormBlocks(n);
-			if (block == null || block.delete()) {
+			if (deleteNodeById(nodeId) >= 0) {
 				per = 80;
-				// 删除节点信息
-				if (deleteNodeById(nodeId) >= 0) {
+				List<Node> nodes = selectNodesByPath(n.getFilePath());
+				if (nodes == null || nodes.isEmpty()) {
+					// 删除文件节点对应的数据块
+					File block = getFileFormBlocks(n);
+					if (block == null || block.delete()) {
+						// 删除节点信息
+						per = 100;
+						return;
+					}
+				} else {
 					per = 100;
 					return;
 				}

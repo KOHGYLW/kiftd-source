@@ -17,12 +17,13 @@ import kohgylw.kiftd.server.service.ResourceService;
 public class ResourceController {
 
 	@Resource
-	private ResourceService rs;
+	private ResourceService rs;// 资源相关的服务层，详见具体实现
 
 	// 以严格的HTTP响应格式返回在线资源流，适用于多数浏览器
-	@RequestMapping("/getResource.do")
-	public void getResource(HttpServletRequest request, HttpServletResponse response) {
-		rs.getResource(request, response);
+	@RequestMapping("/getResource/{fileId}")
+	public void getResource(@PathVariable("fileId") String fileId, HttpServletRequest request,
+			HttpServletResponse response) {
+		rs.getResource(fileId, request, response);
 	}
 
 	// 以PDF格式获取word预览视图
@@ -45,7 +46,8 @@ public class ResourceController {
 			HttpServletResponse response) {
 		rs.getPPTView(fileId, request, response);
 	}
-
+	
+	// 得到UTF-8编码格式的LRC歌词（文本）流
 	@RequestMapping("/getLRContext/{fileId}")
 	public void getLRContext(@PathVariable("fileId") String fileId, HttpServletRequest request,
 			HttpServletResponse response) {
@@ -57,16 +59,16 @@ public class ResourceController {
 	public @ResponseBody String getVideoTranscodeStatus(HttpServletRequest request) {
 		return rs.getVideoTranscodeStatus(request);
 	}
-	
-	// 获取公告新的的MD5，如果没有公告信息，则返回n
+
+	// 获取公告新的的MD5，如果没有公告信息，则返回null
 	@RequestMapping("/getNoticeMD5.ajax")
 	public @ResponseBody String getNoticeMD5() {
 		return rs.getNoticeMD5();
 	}
-	
-	// 获取公告信息的HTML文本
+
+	// 获取公告信息的HTML文本流
 	@RequestMapping("/getNoticeContext.do")
-	public void getNoticeContext(HttpServletRequest request,HttpServletResponse response) {
+	public void getNoticeContext(HttpServletRequest request, HttpServletResponse response) {
 		rs.getNoticeContext(request, response);
 	}
 

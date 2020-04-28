@@ -32,7 +32,7 @@ public class MC {
 	 * 
 	 * @author 青阳龙野(kohgylw)
 	 * @param args
-	 *            String[] 接收控制台传入参数，例如“-console“
+	 *            java.lang.String[] 接收控制台传入参数，例如“-console“
 	 */
 	public static void main(final String[] args) {
 		if (args == null || args.length == 0) {

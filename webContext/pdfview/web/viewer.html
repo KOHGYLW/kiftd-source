@@ -542,7 +542,7 @@ to {
 	//增加了加载需要耗时转换的文档时的加载提示
 	window.onload = function() {
 		var url = location.search;
-		if (url.indexOf(".block") < 0) {
+		if (url.indexOf("getResource") < 0) {
 			var modal = document.getElementById('pdf-modal');
 			if (url.indexOf("getWordView") >= 0) {
 				document.getElementById('doc-type-box').innerHTML = "Word";

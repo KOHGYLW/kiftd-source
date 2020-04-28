@@ -73,7 +73,7 @@
 	<select id="queryByPath" parameterType="java.lang.String"
 		resultMap="BaseResultMap">
 		SELECT * FROM FILE WHERE file_path =
-		#{path,jdbcType=VARCHAR}
+		#{path,jdbcType=VARCHAR} LIMIT 0,2147483647
 	</select>
 
 	<select id="queryBySomeFolder" parameterType="java.lang.String"

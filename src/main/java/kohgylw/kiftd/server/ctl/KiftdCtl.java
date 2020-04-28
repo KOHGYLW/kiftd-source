@@ -59,7 +59,7 @@ public class KiftdCtl {
 			if (ConfigureReader.instance().getPropertiesStatus() == 0) {
 				try {
 					Printer.instance.print("正在开启服务器引擎...");
-					SpringApplication springApplication =new SpringApplication(KiftdCtl.class);
+					SpringApplication springApplication = new SpringApplication(KiftdCtl.class);
 					springApplication.setBannerMode(Banner.Mode.OFF);// 关闭自定义标志输出，简化日志信息
 					KiftdCtl.context = springApplication.run(args);
 					KiftdCtl.run = (KiftdCtl.context != null);
@@ -160,6 +160,7 @@ public class KiftdCtl {
 		// 设置错误处理页面
 		tomcat.addErrorPages(new ErrorPage[] { new ErrorPage(HttpStatus.NOT_FOUND, "/prv/error.html"),
 				new ErrorPage(HttpStatus.INTERNAL_SERVER_ERROR, "/prv/error.html"),
+				new ErrorPage(HttpStatus.UNAUTHORIZED, "/prv/error.html"),
 				new ErrorPage(HttpStatus.FORBIDDEN, "/prv/forbidden.html") });
 		return tomcat;
 	}

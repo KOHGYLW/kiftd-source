@@ -57,7 +57,7 @@ public class ShowPictureServiceImpl implements ShowPictureService {
 						fu.getAllFoldersId(p.getFileParentFolder()))
 						&& ConfigureReader.instance().accessFolder(flm.queryById(p.getFileParentFolder()), account)) {
 					final List<Node> nodes = this.fm.queryBySomeFolder(fileId);
-					final List<Node> pictureViewList = new ArrayList<Node>();
+					final List<PictureInfo> pictureViewList = new ArrayList<>();
 					int index = 0;
 					for (final Node n : nodes) {
 						final String fileName = n.getFileName();
@@ -67,18 +67,20 @@ public class ShowPictureServiceImpl implements ShowPictureService {
 						case "jpeg":
 						case "bmp":
 						case "png":
-							//对于静态图片格式，如果体积超过2 MB则要进行压缩处理，以加快加载速度
-							int pSize = Integer.parseInt(n.getFileSize());
-							if (pSize > 1) {
-								n.setFilePath("homeController/showCondensedPicture.do?fileId=" + n.getFileId());
-							}
 						case "gif":
-							//对于动态图片，为确保其动态效果，无论多大均不进行压缩
-							pictureViewList.add(n);
-							if (!n.getFileId().equals(fileId)) {
-								continue;
+							// 对于静态图片格式，如果体积超过2 MB则要进行压缩处理，以加快加载速度
+							PictureInfo pi = new PictureInfo();
+							pi.setFileName(fileName);
+							int pSize = Integer.parseInt(n.getFileSize());
+							if (pSize > 1 && !suffix.equals("gif")) {
+								pi.setUrl("homeController/showCondensedPicture.do?fileId=" + n.getFileId());
+							} else {
+								pi.setUrl("resourceController/getResource/" + n.getFileId());
 							}
-							index = pictureViewList.size() - 1;
+							pictureViewList.add(pi);
+							if (n.getFileId().equals(fileId)) {
+								index = pictureViewList.size() - 1;// 如果是正要预览的图片，记录位置
+							}
 							break;
 						default:
 							break;
@@ -118,7 +120,7 @@ public class ShowPictureServiceImpl implements ShowPictureService {
 					if (pBlock != null && pBlock.exists()) {
 						try {
 							int pSize = Integer.parseInt(node.getFileSize());
-							String format = "JPG";//压缩后的格式
+							String format = "JPG";// 压缩后的格式
 							if (pSize < 3) {
 								Thumbnails.of(pBlock).size(1080, 1080).outputFormat(format)
 										.toOutputStream(response.getOutputStream());

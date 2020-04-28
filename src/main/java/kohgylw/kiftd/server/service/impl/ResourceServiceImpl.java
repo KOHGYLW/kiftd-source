@@ -71,10 +71,9 @@ public class ResourceServiceImpl implements ResourceService {
 
 	// 提供资源的输出流，原理与下载相同，但是个别细节有区别
 	@Override
-	public void getResource(HttpServletRequest request, HttpServletResponse response) {
+	public void getResource(String fid, HttpServletRequest request, HttpServletResponse response) {
 		// TODO 自动生成的方法存根
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
-		String fid = request.getParameter("fid");
 		if (fid != null) {
 			Node n = nm.queryById(fid);
 			if (n != null) {
@@ -125,6 +124,11 @@ public class ResourceServiceImpl implements ResourceService {
 						}
 						return;
 					}
+				} else {//处理资源未被授权的问题
+					try {
+						response.sendError(401);
+					} catch (IOException e) {
+					}
 				}
 			}
 		}
@@ -132,7 +136,6 @@ public class ResourceServiceImpl implements ResourceService {
 			//  处理无法下载的资源
 			response.sendError(404);
 		} catch (IOException e) {
-			// TODO 自动生成的 catch 块
 		}
 	}
 

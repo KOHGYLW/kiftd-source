@@ -3,15 +3,13 @@ package kohgylw.kiftd.server.configation;
 import org.springframework.web.servlet.resource.*;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import org.springframework.beans.factory.annotation.*;
 import org.springframework.web.servlet.config.annotation.*;
 
-import kohgylw.kiftd.server.pojo.ExtendStores;
 import kohgylw.kiftd.server.util.*;
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
 
 import javax.servlet.*;
 import org.springframework.boot.web.servlet.*;
@@ -21,7 +19,7 @@ import org.springframework.context.annotation.*;
  * 
  * <h2>Web功能-MVC相关配置类</h2>
  * <p>
- * 该Spring配置类主要负责配置kiftd网页服务器的处理行为。
+ * 该Spring配置类主要负责配置kiftd网页服务器的基本处理行为，并在IOC容器中生成所需的工具实例。
  * </p>
  * 
  * @author 青阳龙野(kohgylw)
@@ -32,29 +30,21 @@ import org.springframework.context.annotation.*;
 @ServletComponentScan({ "kohgylw.kiftd.server.listener", "kohgylw.kiftd.server.filter" })
 @Import({ DataAccess.class })
 public class MVC extends ResourceHttpRequestHandler implements WebMvcConfigurer {
-
+	
+	// 启用DefaultServlet用以处理可直接请求的静态资源
 	@Override
 	public void configureDefaultServletHandling(DefaultServletHandlerConfigurer configurer) {
-		// TODO 自动生成的方法存根
 		configurer.enable();
 	}
-
+	
+	// 设置Web静态资源映射路径
 	public void addResourceHandlers(final ResourceHandlerRegistry registry) {
 		// 将静态页面资源所在文件夹加入至资源路径中
 		registry.addResourceHandler(new String[] { "/**" }).addResourceLocations(new String[] {
 				"file:" + ConfigureReader.instance().getPath() + File.separator + "webContext" + File.separator });
-		// 将所有文件块的保存路径加入至资源路径中（提供某些预览服务）
-		List<String> paths = new ArrayList<>();
-		paths.add("file:" + ConfigureReader.instance().getFileBlockPath());
-		for (ExtendStores es : ConfigureReader.instance().getExtendStores()) {
-			paths.add(
-					"file:" + (es.getPath().getAbsolutePath().endsWith(File.separator) ? es.getPath().getAbsolutePath()
-							: es.getPath().getAbsolutePath() + File.separator));
-		}
-		registry.addResourceHandler(new String[] { "/fileblocks/**" })
-				.addResourceLocations(paths.toArray(new String[0]));
 	}
-
+	
+	// 生成上传管理器，用于接收/缓存上传文件
 	@Bean
 	public MultipartConfigElement multipartConfigElement() {
 		final MultipartConfigFactory factory = new MultipartConfigFactory();
@@ -62,9 +52,10 @@ public class MVC extends ResourceHttpRequestHandler implements WebMvcConfigurer 
 		factory.setLocation(ConfigureReader.instance().getTemporaryfilePath());
 		return factory.createMultipartConfig();
 	}
-
+	
+	// 生成Gson实例，用于服务Json序列化和反序列化
 	@Bean
 	public Gson gson() {
-		return new Gson();
+		return new GsonBuilder().create();
 	}
 }

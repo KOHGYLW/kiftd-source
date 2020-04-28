@@ -34,7 +34,7 @@ public class AudioInfoUtil {
 			final String suffix = n.getFileName().substring(n.getFileName().lastIndexOf(".") + 1);
 			if (suffix.equalsIgnoreCase("mp3") || suffix.equalsIgnoreCase("ogg") || suffix.equalsIgnoreCase("wav")) {
 				final AudioInfo ai = new AudioInfo();
-				ai.setUrl("resourceController/getResource.do?fid=" + n.getFileId());
+				ai.setUrl("resourceController/getResource/" + n.getFileId());
 				ai.setLrc(DEFAULT_LRC);
 				ai.setArtist(ERROR_ARTIST);
 				ai.setCover(DEFAULT_COVER);
@@ -105,7 +105,7 @@ public class AudioInfoUtil {
 					|| ai.getArtist().equals(this.getFileName(e.getFileName())))
 					&& (suffix.equals("jpg") || suffix.equals("jpeg") || suffix.equals("gif") || suffix.equals("bmp")
 							|| suffix.equals("png"))) {
-				ai.setCover("fileblocks/" + e.getFilePath());
+				ai.setCover("resourceController/getResource/" + e.getFileId());
 			}
 		}
 	}

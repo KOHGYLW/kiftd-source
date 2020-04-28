@@ -188,7 +188,8 @@ public class FileBlockUtil {
 	 * 
 	 * <h2>删除文件系统中的一个文件块</h2>
 	 * <p>
-	 * 根据传入的文件节点对象，删除其在文件系统中保存的对应文件块。
+	 * 根据传入的文件节点对象，删除其在文件系统中保存的对应文件块。仅当传入文件节点所对应的文件块不再有其他节点引用时
+	 * 才会真的进行删除操作，否则直接返回true。
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
@@ -197,12 +198,20 @@ public class FileBlockUtil {
 	 * @return boolean 删除结果，true为成功
 	 */
 	public boolean deleteFromFileBlocks(Node f) {
-		// 获取对应的文件块对象
-		File file = getFileFromBlocks(f);
-		if (file != null) {
-			return file.delete();// 执行删除操作
+		// 检查是否还有其他节点引用相同的文件块
+		List<Node> nodes = fm.queryByPath(f.getFilePath());
+		if(nodes == null || nodes.isEmpty()) {
+			// 如果已经无任何节点再引用此文件块，则删除它
+			// 获取对应的文件块对象
+			File file = getFileFromBlocks(f);
+			if (file != null) {
+				return file.delete();// 执行删除操作
+			}
+			return false;
+		}else {
+			// 如果还有，那么直接返回true即可，认为此节点的文件块已经删除了（其他的引用是属于其他节点的）
+			return true;
 		}
-		return false;
 	}
 
 	/**
@@ -265,8 +274,8 @@ public class FileBlockUtil {
 					while (blocks.hasNext()) {
 						File testBlock = blocks.next().toFile();
 						if (testBlock.isFile()) {
-							Node node = fm.queryByPath(testBlock.getName());
-							if (node == null) {
+							List<Node> nodes = fm.queryByPath(testBlock.getName());
+							if (nodes == null || nodes.isEmpty()) {
 								testBlock.delete();
 							}
 						}

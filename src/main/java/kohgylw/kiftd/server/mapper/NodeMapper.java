@@ -47,7 +47,15 @@ public interface NodeMapper
     
     int updateFileNameById(final Map<String, String> map);
     
-    Node queryByPath(final String path);
+    /**
+     * 
+     * <h2>根据文件块DI查询对所有对应的节点</h2>
+     * <p>该方法用于查询某个文件块ID所对应的所有节点副本，如果超过限值，则只查询限值内的节点数量。</p>
+     * @author 青阳龙野(kohgylw)
+     * @param path java.lang.String 目标文件块ID
+     * @return java.util.List 文件节点列表
+     */
+    List<Node> queryByPath(final String path);
     
     /**
 	 * 

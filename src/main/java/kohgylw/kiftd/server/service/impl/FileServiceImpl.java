@@ -303,14 +303,14 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 				|| !ConfigureReader.instance().accessFolder(f, account)) {
 			return NO_AUTHORIZED;
 		}
-		// 从文件块删除
-		if (!this.fbu.deleteFromFileBlocks(file)) {
-			return "cannotDeleteFile";
-		}
 		// 从节点删除
 		if (this.fm.deleteById(fileId) > 0) {
 			this.lu.writeDeleteFileEvent(request, file);
 			return "deleteFileSuccess";
+		}
+		// 从文件块删除
+		if (!this.fbu.deleteFromFileBlocks(file)) {
+			return "cannotDeleteFile";
 		}
 		return "cannotDeleteFile";
 	}
@@ -419,12 +419,12 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 						fu.getAllFoldersId(file.getFileParentFolder()))) {
 					return NO_AUTHORIZED;
 				}
-				// 删除文件块
-				if (!this.fbu.deleteFromFileBlocks(file)) {
-					return "cannotDeleteFile";
-				}
 				// 删除文件节点
 				if (this.fm.deleteById(fileId) <= 0) {
+					return "cannotDeleteFile";
+				}
+				// 删除文件块
+				if (!this.fbu.deleteFromFileBlocks(file)) {
 					return "cannotDeleteFile";
 				}
 				// 日志记录
@@ -930,13 +930,13 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 			return gson.toJson(cifr);
 		}
 	}
-
+	
+	// 执行文件夹上传逻辑
 	@Override
 	public String doImportFolder(HttpServletRequest request, MultipartFile file) {
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
 		String folderId = request.getParameter("folderId");
-		final String originalFileName = new String(file.getOriginalFilename().getBytes(Charset.forName("UTF-8")),
-				Charset.forName("UTF-8"));
+		final String originalFileName = request.getParameter("originalFileName");
 		String folderConstraint = request.getParameter("folderConstraint");
 		String newFolderName = request.getParameter("newFolderName");
 		// 再次检查上传文件名与目标目录ID
