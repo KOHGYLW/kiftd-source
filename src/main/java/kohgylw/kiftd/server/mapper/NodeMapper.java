@@ -58,6 +58,16 @@ public interface NodeMapper
     List<Node> queryByPath(final String path);
     
     /**
+     * 
+     * <h2>根据文件块DI查询对所有对应的节点，并排除指定节点</h2>
+     * <p>该方法用于查询某个文件块ID所对应的所有节点副本，结果中不会包括指定ID的节点，如果超过限值，则只查询限值内的节点数量。</p>
+     * @author 青阳龙野(kohgylw)
+     * @param map java.util.Map 其中必须包含：path 目标文件块ID，fileId 要排除的文件节点ID
+     * @return java.util.List 文件节点列表
+     */
+    List<Node> queryByPathExcludeById(final Map<String, String> map);
+    
+    /**
 	 * 
 	 * <h2>查询与目标文件节点处于同一文件夹下的全部文件节点</h2>
 	 * <p>该方法用于一次性将与目标文件同文件夹的文件节点查询出来，如果超过限值，则只查询限值内的节点数量。</p>

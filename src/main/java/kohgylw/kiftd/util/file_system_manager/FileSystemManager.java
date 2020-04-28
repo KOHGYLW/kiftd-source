@@ -79,7 +79,7 @@ public class FileSystemManager {
 	private PreparedStatement updateFolderById;
 	private PreparedStatement countNodesByFolderId;
 	private PreparedStatement countFoldersByParentFolderId;
-	private PreparedStatement selectNodesByPath;
+	private PreparedStatement selectNodesByPathExcludeById;
 
 	// 加载资源
 	private FileSystemManager() {
@@ -87,8 +87,8 @@ public class FileSystemManager {
 		try {
 			selectFolderById = c.prepareStatement("SELECT * FROM FOLDER WHERE folder_id = ?");
 			selectNodeById = c.prepareStatement("SELECT * FROM FILE WHERE file_id = ?");
-			selectNodesByPath = c
-					.prepareStatement("SELECT * FROM FILE WHERE file_path = ? LIMIT 0," + MAX_FOLDERS_OR_FILES_LIMIT);
+			selectNodesByPathExcludeById = c.prepareStatement(
+					"SELECT * FROM FILE WHERE file_path = ? AND file_id <> ? LIMIT 0," + MAX_FOLDERS_OR_FILES_LIMIT);
 			selectNodesByFolderId = c.prepareStatement(
 					"SELECT * FROM FILE WHERE file_parent_folder = ? LIMIT 0," + MAX_FOLDERS_OR_FILES_LIMIT);
 			selectFoldersByParentFolderId = c.prepareStatement(
@@ -370,11 +370,12 @@ public class FileSystemManager {
 		return nodes;
 	}
 
-	// 查询指定Block ID对应的所有文件节点，如无符合则返回空List
-	public List<Node> selectNodesByPath(String path) throws SQLException {
+	// 查询指定Block ID对应的所有文件节点，但不会包括指定ID的文件节点，如无符合则返回空List
+	private List<Node> selectNodesByPathExcludeById(String path, String fileId) throws SQLException {
 		List<Node> nodes = new ArrayList<>();
-		selectNodesByPath.setString(1, path);
-		ResultSet r = selectNodesByPath.executeQuery();
+		selectNodesByPathExcludeById.setString(1, path);
+		selectNodesByPathExcludeById.setString(2, fileId);
+		ResultSet r = selectNodesByPathExcludeById.executeQuery();
 		while (r.next()) {
 			nodes.add(resultSetAccessNode(r));
 		}
@@ -435,87 +436,117 @@ public class FileSystemManager {
 	private void importFileInto(File f, String folderId, String type) throws Exception {
 		if (f.isFile()) {
 			String name = f.getName();
-			String newName = name;
-			per = 0;
-			message = "正在导入文件：" + name;
+			String newName = name;// 这个变量记录最终使用的文件名，初始等于原文件名，如果冲突可能改为其他名称
+			per = 0;// 操作进度置0
+			message = "正在导入文件：" + name;// 初始化操作信息
+			long size = f.length();// 获得文件体积
+			// 检查目标文件夹内是否有重名文件？
 			List<Node> nodes = selectNodesByFolderId(folderId);
-			Node node = null;
-			long size = f.length();
 			if (nodes.parallelStream().anyMatch((e) -> e.getFileName().equals(name))) {
+				// 有？那么是覆盖还是保留两者？
 				switch (type) {
 				case COVER:
 					// 覆盖
-					node = nodes.parallelStream().filter((e) -> e.getFileName().equals(f.getName())).findFirst().get();
+					Node node = nodes.parallelStream().filter((e) -> e.getFileName().equals(f.getName())).findFirst()
+							.get();// 得到重名节点，覆盖它
+					// 首先，将必须要更新的信息刷入目标节点
 					node.setFileCreationDate(ServerTimeUtil.accurateToDay());
 					node.setFileCreator("SYS_IN");
 					int mb = (int) (size / 1024L / 1024L);
 					node.setFileSize(mb + "");
-					if (updateNode(node) == 0) {
-						throw new SQLException();
+					// 之后，判断该节点所用的Block是否仅归其自己所用？
+					List<Node> nodesHasSomePath = selectNodesByPathExcludeById(node.getFilePath(), node.getFileId());
+					if (nodesHasSomePath == null || nodesHasSomePath.isEmpty()) {
+						// 如果是，那就直接更新文件节点的信息，再将新文件数据刷入原文件块实现覆盖
+						if (updateNode(node) > 0) {
+							final File block = getFileFormBlocks(node);
+							transferFile(f, block);
+							if (selectFolderById(folderId) != null && selectNodeById(node.getFileId()) != null) {
+								return;// 如果该节点的父节点有效，并且过程中本节点也未丢失，则执行完毕
+							} else {
+								deleteNodeById(node.getFileId());
+								block.delete();
+								throw new SQLException();// 否则覆盖失败，清理此节点和残留的文件块，并抛出异常
+							}
+						} else {
+							throw new SQLException();// 如果更新失败，则原节点不会有任何变化，直接抛出异常
+						}
+					} else {
+						// 如果该节点对应的文件块是与其他节点共享的，则要为其独立创建一个文件块，再更新节点的文件块信息
+						final File block = saveToFileBlocks(f);
+						if (block == null) {
+							throw new IOException();
+						}
+						node.setFilePath(block.getName());// 更新该节点的文件块为新的文件块
+						if (updateNode(node) > 0) {
+							if (selectFolderById(folderId) != null && selectNodeById(node.getFileId()) != null) {
+								return;// 如果检查没问题，则覆盖完成
+							} else {
+								deleteNodeById(node.getFileId());
+								block.delete();
+								throw new SQLException();// 否则，也要删除此节点和残留文件块，并抛出异常
+							}
+						} else {
+							throw new SQLException();// 更新失败的话，则原节点不会有任何变化，直接抛出异常
+						}
 					}
-					break;
 				case BOTH:
-					// 保留两者（计数命名）
+					// 保留两者（计数命名法 foo.bar -> foo (1).bar）
 					newName = FileNodeUtil.getNewNodeName(name, nodes);
 					break;
 				default:
+					// 意外情况，比如跳过，则直接视为操作完成。
 					per = 100;
 					return;
 				}
 			}
-			// 处理文件节点，有则用，没有则创建一个
-			if (node == null) {
-				if (getFilesTotalNumByFoldersId(folderId) >= MAX_FOLDERS_OR_FILES_LIMIT) {
-					throw new FilesTotalOutOfLimitException();
-				}
-				node = new Node();
-				node.setFileName(newName);
-				node.setFileId(UUID.randomUUID().toString());
-				node.setFileParentFolder(folderId);
-				File block = saveToFileBlocks(f);
-				if (block == null) {
-					return;
-				}
-				node.setFilePath(block.getName());
-				node.setFileCreationDate(ServerTimeUtil.accurateToDay());
-				node.setFileCreator("SYS_IN");
-				int mb = (int) (size / 1024L / 1024L);
-				node.setFileSize(mb + "");
-				int i = 0;
-				while (true) {
-					try {
-						if (insertNode(node) > 0) {
-							// 插入后，检查父节点是否存在以确保插入的节点一定有父节点，避免产生“死节点”问题。
-							if (selectFolderById(folderId) != null) {
-								return;
-							}
-						}
-						break;
-					} catch (Exception e2) {
-						node.setFileId(UUID.randomUUID().toString());
-						i++;
-					}
-					if (i >= 10) {
-						break;
-					}
-				}
-				// 如果没能从正常的执行中退出，则说明文件存入失败，此时要将残留文件块和节点清理并向上抛出异常。
-				block.delete();
-				deleteNodeById(node.getFileId());
-				throw new SQLException();
-			} else {
-				final File block = getFileFormBlocks(node);
-				transferFile(f, block);
-				if (selectFolderById(folderId) != null && selectNodeById(node.getFileId()) != null) {
-					return;
-				}
-				block.delete();
-				deleteNodeById(node.getFileId());
-				throw new SQLException();
+			// 如果无重名文件，或是选择了保留两者，那么均以新建一个节点进行插入的逻辑处理
+			if (getFilesTotalNumByFoldersId(folderId) >= MAX_FOLDERS_OR_FILES_LIMIT) {
+				throw new FilesTotalOutOfLimitException();
 			}
+			// 首先，生成一个新文件节点并写入基本信息
+			Node node = new Node();
+			node.setFileName(newName);
+			node.setFileId(UUID.randomUUID().toString());
+			node.setFileParentFolder(folderId);
+			node.setFileCreationDate(ServerTimeUtil.accurateToDay());
+			node.setFileCreator("SYS_IN");
+			int mb = (int) (size / 1024L / 1024L);
+			node.setFileSize(mb + "");
+			// 保存文件块并写入新节点
+			File block = saveToFileBlocks(f);
+			if (block == null) {
+				throw new IOException();
+			}
+			node.setFilePath(block.getName());
+			// 之后，将新节点插入文件系统数据库
+			int i = 0;// 记录插入新节点的尝试次数（如果一次未成功，多试几次看看）
+			while (true) {
+				try {
+					// 尝试插入
+					if (insertNode(node) > 0) {
+						// 成功后，要检查父节点是否存在以确保插入的节点一定有父节点，避免产生“死节点”问题。
+						if (selectFolderById(folderId) != null) {
+							return;// 一切顺利，结束操作
+						}
+					}
+					break;
+				} catch (Exception e2) {
+					// 如果插入时出现异常，可能是由于主键重复或意外错误导致的，用新的主键再试
+					node.setFileId(UUID.randomUUID().toString());
+					i++;
+				}
+				if (i >= 10) {
+					break;// 如果重试超过10次仍无法成功，则终止继续重试。
+				}
+			}
+			// 如果没能从正常的执行中退出，则说明文件存入失败，此时要将残留文件块和节点清理并向上抛出异常。
+			block.delete();
+			deleteNodeById(node.getFileId());
+			throw new SQLException();
 		}
+		// 如果导入目标不是个文件（文件夹/不存在），那么直接抛出参数错误异常
 		throw new IllegalArgumentException();
-
 	}
 
 	// 将一个本地文件夹导入至文件系统，必须是文件夹而不是文件。它会自动将其中的文件和文件夹也一并导入。
@@ -642,6 +673,8 @@ public class FileSystemManager {
 		if (f == null) {
 			return;
 		}
+		per = 0;
+		message = "正在删除文件夹：" + f.getFolderName();
 		// 删除该文件夹内的所有文件
 		for (int i = 0; i < size && gono; i++) {
 			deleteFile(nodes.get(i).getFileId());
@@ -653,7 +686,6 @@ public class FileSystemManager {
 			deleteFolder(folders.get(i).getFolderId());
 		}
 		per = 50;
-		message = "正在删除文件夹：" + f.getFolderName();
 		// 删除自己的数据
 		if (deleteFolderById(folderId) > 0) {
 			per = 100;
@@ -670,7 +702,7 @@ public class FileSystemManager {
 		if (n != null) {
 			if (deleteNodeById(nodeId) >= 0) {
 				per = 80;
-				List<Node> nodes = selectNodesByPath(n.getFilePath());
+				List<Node> nodes = selectNodesByPathExcludeById(n.getFilePath(), n.getFileId());
 				if (nodes == null || nodes.isEmpty()) {
 					// 删除文件节点对应的数据块
 					File block = getFileFormBlocks(n);

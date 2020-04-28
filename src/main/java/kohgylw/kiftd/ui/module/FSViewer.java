@@ -234,10 +234,10 @@ public class FSViewer extends KiftdDynamicWindow {
 								}
 							}
 							FSProgressDialog fsd = FSProgressDialog.getNewInstance();
-							Thread deleteListenerDialog = new Thread(() -> {
+							Thread fsProgressDialogThread = new Thread(() -> {
 								fsd.show();
 							});
-							deleteListenerDialog.start();
+							fsProgressDialogThread.start();
 							try {
 								FileSystemManager.getInstance().delete(selectedFolders.toArray(new String[0]),
 										selectedNodes.toArray(new String[0]));
@@ -426,8 +426,9 @@ public class FSViewer extends KiftdDynamicWindow {
 			currentView = FileSystemManager.getInstance().getFolderView(folderId);
 			long maxTotalNum = currentView.getFiles().size() + currentView.getFolders().size();
 			if (maxTotalNum > FilesTable.MAX_LIST_LIMIT) {
-				JOptionPane.showMessageDialog(window, "文件夹列表的长度已超过最大限值（"+FilesTable.MAX_LIST_LIMIT+"），只能显示前" + FilesTable.MAX_LIST_LIMIT + "行。", "警告",
-						JOptionPane.WARNING_MESSAGE);
+				JOptionPane.showMessageDialog(window,
+						"文件夹列表的长度已超过最大限值（" + FilesTable.MAX_LIST_LIMIT + "），只能显示前" + FilesTable.MAX_LIST_LIMIT + "行。",
+						"警告", JOptionPane.WARNING_MESSAGE);
 			}
 			if (currentView != null && currentView.getCurrent() != null) {
 				filesTable.updateValues(currentView.getFolders(), currentView.getFiles());

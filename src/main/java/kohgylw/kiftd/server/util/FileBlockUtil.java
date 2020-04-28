@@ -199,16 +199,18 @@ public class FileBlockUtil {
 	 */
 	public boolean deleteFromFileBlocks(Node f) {
 		// 检查是否还有其他节点引用相同的文件块
-		List<Node> nodes = fm.queryByPath(f.getFilePath());
-		if(nodes == null || nodes.isEmpty()) {
+		Map<String, String> map = new HashMap<>();
+		map.put("path", f.getFilePath());
+		map.put("fileId", f.getFileId());
+		List<Node> nodes = fm.queryByPathExcludeById(map);
+		if (nodes == null || nodes.isEmpty()) {
 			// 如果已经无任何节点再引用此文件块，则删除它
-			// 获取对应的文件块对象
-			File file = getFileFromBlocks(f);
+			File file = getFileFromBlocks(f);// 获取对应的文件块对象
 			if (file != null) {
 				return file.delete();// 执行删除操作
 			}
 			return false;
-		}else {
+		} else {
 			// 如果还有，那么直接返回true即可，认为此节点的文件块已经删除了（其他的引用是属于其他节点的）
 			return true;
 		}

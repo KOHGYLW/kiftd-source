@@ -102,6 +102,11 @@ public class FSProgressDialog extends KiftdDynamicWindow {
 			while (listen) {
 				pBar.setValue(FileSystemManager.per);
 				message.setText(FileSystemManager.message);
+				try {
+					Thread.sleep(16);
+				} catch (InterruptedException e) {
+					listen=false;
+				}
 			}
 			window.dispose();
 		});

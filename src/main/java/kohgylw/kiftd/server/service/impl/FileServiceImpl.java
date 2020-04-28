@@ -132,7 +132,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		return gson.toJson(cufr);// 以JSON格式写回该结果
 	}
 
-	// 格式化存储体积，便于返回上传文件体积的检查提示信息
+	// 格式化存储体积，便于返回上传文件体积的检查提示信息（如果传入0，则会直接返回错误提示信息，将该提示信息发送至前端即可）。
 	private String formatMaxUploadFileSize(long size) {
 		double result = (double) size;
 		String unit = "B";
@@ -180,26 +180,27 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 			return UPLOADERROR;
 		}
 		// 检查是否存在同名文件。不存在：直接存入新节点；存在：检查repeType代表的上传类型：覆盖、跳过、保留两者。
-		final List<Node> files = this.fm.queryByParentFolderId(folderId);
-		if (files.parallelStream().anyMatch((e) -> e.getFileName().equals(originalFileName))) {
+		final List<Node> nodes = this.fm.queryByParentFolderId(folderId);
+		if (nodes.parallelStream().anyMatch((e) -> e.getFileName().equals(originalFileName))) {
 			// 针对存在同名文件的操作
 			if (repeType != null) {
 				switch (repeType) {
 				// 跳过则忽略上传请求并直接返回上传成功（跳过不应上传）
 				case "skip":
 					return UPLOADSUCCESS;
-				// 覆盖则找到已存在文件节点的File并将新内容写入其中，同时更新原节点信息（除了文件名、父目录和ID之外的全部信息）
+				// 如果要覆盖的文件不存在与其他节点共享文件块的情况，则找到该文件块并将新内容写入其中，同时更新原节点信息（除了文件名、父目录和ID之外的全部信息）。
+				// 如果要覆盖的文件是某个文件块的众多副本之一，那么“覆盖”就是新存入一个文件块，然后再更新原节点信息（除了文件名、父目录和ID之外的全部信息）。
 				case "cover":
-					// 其中覆盖操作同时要求用户必须具备删除权限
+					// 特殊操作权限检查，“覆盖”操作同时还要求用户必须具备删除权限，否则不能执行
 					if (!ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER,
 							fu.getAllFoldersId(folderId))) {
 						return UPLOADERROR;
 					}
-					for (Node f : files) {
+					for (Node f : nodes) {
+						// 找到要覆盖的节点
 						if (f.getFileName().equals(originalFileName)) {
-							File block = fbu.getFileFromBlocks(f);
 							try {
-								file.transferTo(block);
+								// 首先先将该节点中必须覆盖的信息更新
 								f.setFileSize(fbu.getFileSize(file));
 								f.setFileCreationDate(ServerTimeUtil.accurateToDay());
 								if (account != null) {
@@ -207,12 +208,33 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 								} else {
 									f.setFileCreator("\u533f\u540d\u7528\u6237");
 								}
-								if (fm.update(f) > 0) {
-									if (isValidNode(f)) {
-										this.lu.writeUploadFileEvent(request, f, account);
-										return UPLOADSUCCESS;
-									} else {
-										block.delete();
+								// 该节点对应的文件块是否独享？
+								Map<String, String> map = new HashMap<>();
+								map.put("path", f.getFilePath());
+								map.put("fileId", f.getFileId());
+								List<Node> nodesHasSomeBlock = fm.queryByPathExcludeById(map);
+								if (nodesHasSomeBlock == null || nodesHasSomeBlock.isEmpty()) {
+									// 如果该节点的文件块仅由该节点引用，那么直接重写此文件块
+									if (fm.update(f) > 0) {
+										if (isValidNode(f)) {
+											File block = fbu.getFileFromBlocks(f);
+											file.transferTo(block);
+											this.lu.writeUploadFileEvent(request, f, account);
+											return UPLOADSUCCESS;
+										}
+									}
+								} else {
+									// 如果此文件块还被其他节点引用，那么为此节点新建一个文件块
+									File block = fbu.saveToFileBlocks(file);
+									// 并将该节点的文件块索引更新为新的文件块
+									f.setFilePath(block.getName());
+									if (fm.update(f) > 0) {
+										if (isValidNode(f)) {
+											this.lu.writeUploadFileEvent(request, f, account);
+											return UPLOADSUCCESS;
+										} else {
+											block.delete();
+										}
 									}
 								}
 								return UPLOADERROR;
@@ -225,7 +247,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 				// 保留两者，使用型如“xxxxx (n).xx”的形式命名新文件。其中n为计数，例如已经存在2个文件，则新文件的n记为2
 				case "both":
 					// 设置新文件名为标号形式
-					fileName = FileNodeUtil.getNewNodeName(originalFileName, files);
+					fileName = FileNodeUtil.getNewNodeName(originalFileName, nodes);
 					break;
 				default:
 					// 其他声明，容错，暂无效果
@@ -283,7 +305,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		return UPLOADERROR;
 	}
 
-	// 删除单个文件，该功能与删除多个文件重复，计划合并二者
+	// 删除单个文件
 	public String deleteFile(final HttpServletRequest request) {
 		// 接收参数并接续要删除的文件
 		final String fileId = request.getParameter("fileId");
@@ -292,25 +314,24 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 			return ERROR_PARAMETER;
 		}
 		// 确认要删除的文件存在
-		final Node file = this.fm.queryById(fileId);
-		if (file == null) {
+		final Node node = this.fm.queryById(fileId);
+		if (node == null) {
 			return "deleteFileSuccess";
 		}
-		final Folder f = this.flm.queryById(file.getFileParentFolder());
+		final Folder f = this.flm.queryById(node.getFileParentFolder());
 		// 权限检查
 		if (!ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER,
-				fu.getAllFoldersId(file.getFileParentFolder()))
+				fu.getAllFoldersId(node.getFileParentFolder()))
 				|| !ConfigureReader.instance().accessFolder(f, account)) {
 			return NO_AUTHORIZED;
 		}
 		// 从节点删除
-		if (this.fm.deleteById(fileId) > 0) {
-			this.lu.writeDeleteFileEvent(request, file);
-			return "deleteFileSuccess";
-		}
-		// 从文件块删除
-		if (!this.fbu.deleteFromFileBlocks(file)) {
-			return "cannotDeleteFile";
+		if (this.fm.deleteById(fileId) >= 0) {
+			// 从文件块删除
+			if (this.fbu.deleteFromFileBlocks(node)) {
+				this.lu.writeDeleteFileEvent(request, node);
+				return "deleteFileSuccess";
+			}
 		}
 		return "cannotDeleteFile";
 	}
@@ -930,7 +951,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 			return gson.toJson(cifr);
 		}
 	}
-	
+
 	// 执行文件夹上传逻辑
 	@Override
 	public String doImportFolder(HttpServletRequest request, MultipartFile file) {

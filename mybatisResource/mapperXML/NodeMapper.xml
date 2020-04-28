@@ -76,6 +76,13 @@
 		#{path,jdbcType=VARCHAR} LIMIT 0,2147483647
 	</select>
 
+	<select id="queryByPathExcludeById" parameterType="java.util.Map"
+		resultMap="BaseResultMap">
+		SELECT * FROM FILE WHERE file_path =
+		#{path,jdbcType=VARCHAR} AND file_id &lt;&gt;
+		#{fileId,jdbcType=VARCHAR} LIMIT 0,2147483647
+	</select>
+
 	<select id="queryBySomeFolder" parameterType="java.lang.String"
 		resultMap="BaseResultMap">
 		SELECT * FROM FILE WHERE file_parent_folder in (SELECT
