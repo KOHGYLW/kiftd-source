@@ -191,10 +191,13 @@ public class FolderUtil {
 	 *            java.lang.String 复制文件夹的父文件夹ID，指定在哪个路径下创建目标文件夹的副本
 	 * @param newName
 	 *            java.lang.String 副本文件夹的新名称，以覆盖原本的名称，如果传入null则仍使用原名
+	 * @param excludeFolderId
+	 *            java.lang.String 这个参数是方便后续迭代时避免循环拷贝的，首次调用必须传入null！
 	 * @return kohgylw.kiftd.server.model.Folder 完整复制成功则返回复制好的文件夹对象，
 	 *         否则返回null（包括传入目标文件夹或父文件夹参数错误的情况）
 	 */
-	public Folder copyFolderByNewNameToPath(Folder prototype, String account, String parentFolderId, String newName) {
+	private Folder copyFolderByNewNameToPath(Folder prototype, String account, String parentFolderId, String newName,
+			String excludeFolderId) {
 		if (prototype == null || parentFolderId == null) {
 			return null;
 		}
@@ -209,13 +212,22 @@ public class FolderUtil {
 			List<Folder> childs = fm.queryByParentId(prototype.getFolderId());
 			// 若有，则迭代执行本操作直至最底层文件夹
 			for (Folder c : childs) {
+				// 如果拷贝路径下还有个“自己”，那么说明目标文件夹是原文件夹的一个子文件夹
+				// 这个时候，必须跳过自己，继续拷贝其他的文件夹
+				if (c.getFolderId().equals(excludeFolderId)) {
+					continue;
+				}
 				// 注意：复制子文件夹时必须将newName传为null！因为子文件夹能存在就不会重名。
-				if (copyFolderByNewNameToPath(c, account, newFolder.getFolderId(), null) == null) {
+				// newFolderId的传参思路是：该参数为null？那肯定是第一层迭代，将此节点的ID作为“禁入ID”传下去，
+				// 如果不为null，则说明是第一层以下的迭代，接收上层传入的newFolderId，确保本层复制不触碰此ID代表的
+				// 文件夹即可。
+				if (copyFolderByNewNameToPath(c, account, newFolder.getFolderId(), null,
+						excludeFolderId == null ? newFolder.getFolderId() : excludeFolderId) == null) {
 					return null;// 如果中途哪个子文件夹复制失败，则返回失败
 				}
 			}
 			// 之后，再复制原文件夹中的文件节点，并将文件的副本放在文件夹的副本下
-			List<Node> nodes = fim.queryByParentFolderId(parentFolderId);
+			List<Node> nodes = fim.queryByParentFolderId(prototype.getFolderId());
 			for (Node n : nodes) {
 				Node newNode = fbu.insertNewNode(n.getFileName(), account, n.getFilePath(), n.getFileSize(),
 						newFolder.getFolderId());
@@ -228,5 +240,26 @@ public class FolderUtil {
 		} catch (FoldersTotalOutOfLimitException e) {
 			return null;
 		}
+	}
+	
+	/**
+	 * 
+	 * <h2>在指定路径内复制一份目标文件夹的拷贝，并可设定新名称</h2>
+	 * <p>
+	 * 该方法用于在一个路径下创建一个完整的目标文件夹复制树，复制的文件夹将会使用指定的新名称，完成后返回创建结果。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @param prototype
+	 *            kohgylw.kiftd.server.model.Folder 要复制的目标文件夹，即复制的样板
+	 * @param parentFolderId
+	 *            java.lang.String 复制文件夹的父文件夹ID，指定在哪个路径下创建目标文件夹的副本
+	 * @param newName
+	 *            java.lang.String 副本文件夹的新名称，以覆盖原本的名称，如果传入null则仍使用原名
+	 * @return kohgylw.kiftd.server.model.Folder 完整复制成功则返回复制好的文件夹对象，
+	 *         否则返回null（包括传入目标文件夹或父文件夹参数错误的情况）
+	 */
+	public Folder copyFolderByNewNameToPath(Folder prototype, String account, String parentFolderId, String newName) {
+		return copyFolderByNewNameToPath(prototype, account, parentFolderId, newName, null);
 	}
 }
