@@ -48,4 +48,14 @@ public interface FolderMapper
     int updateFolderConstraintById(final Map<String, Object> map);
 
 	int moveById(Map<String, String> map);
+	
+	/**
+	 * 
+	 * <h2>将指定文件夹节点（按照ID确定）更新</h2>
+	 * <p>该方法将会按照ID找到对应的文件夹条目，并更新除文件夹ID以外的全部属性。</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @param f kohgylw.kiftd.server.model.Folder 更新的文件夹，必须完整非空
+	 * @return int 影响条目
+	 */
+	int update(final Folder f);
 }

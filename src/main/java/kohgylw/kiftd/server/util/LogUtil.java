@@ -73,9 +73,10 @@ public class LogUtil {
 			StackTraceElement[] stes = e.getStackTrace();
 			for (int i = 0; i < stes.length && i < 10; i++) {
 				StackTraceElement ste = stes[i];
-				exceptionInfo.append("\r\n	at "+ste.getClassName()+"."+ste.getMethodName()+"("+ste.getFileName()+":"+ste.getLineNumber()+")");
+				exceptionInfo.append("\r\n	at " + ste.getClassName() + "." + ste.getMethodName() + "("
+						+ ste.getFileName() + ":" + ste.getLineNumber() + ")");
 			}
-			if(stes.length > 10) {
+			if (stes.length > 10) {
 				exceptionInfo.append("\r\n......");
 			}
 			writeToLog("Exception", exceptionInfo.toString());
@@ -375,7 +376,7 @@ public class LogUtil {
 	 * @param locationpath
 	 *            String 被移动到的位置
 	 */
-	public void writeMoveFileEvent(HttpServletRequest request, Node f) {
+	public void writeMoveFileEvent(HttpServletRequest request, Node f, boolean isCopy) {
 		if (ConfigureReader.instance().inspectLogLevel(LogLevel.Event)) {
 			String account = (String) request.getSession().getAttribute("ACCOUNT");
 			if (account == null || account.length() == 0) {
@@ -386,18 +387,19 @@ public class LogUtil {
 			writerThread.execute(() -> {
 				Folder folder = fm.queryById(f.getFileParentFolder());
 				List<Folder> l = fu.getParentList(folder.getFolderId());
-				String pl = new String();
+				StringBuffer pl = new StringBuffer();
 				for (Folder i : l) {
-					pl = pl + i.getFolderName() + "/";
+					pl.append(i.getFolderName() + "/");
 				}
-				String content = ">IP [" + ip + "]\r\n>ACCOUNT [" + a + "]\r\n>OPERATE [Move file]\r\n>NEW PATH [" + pl
-						+ folder.getFolderName() + "/" + f.getFileName() + "]";
+				String content = ">IP [" + ip + "]\r\n>ACCOUNT [" + a + "]\r\n>OPERATE ["
+						+ (isCopy ? "Copy file" : "Move file") + "]\r\n>TO [" + pl.toString() + folder.getFolderName()
+						+ "/" + f.getFileName() + "]";
 				writeToLog("Event", content);
 			});
 		}
 	}
 
-	public void writeMoveFileEvent(HttpServletRequest request, Folder f) {
+	public void writeMoveFileEvent(HttpServletRequest request, Folder f, boolean isCopy) {
 		if (ConfigureReader.instance().inspectLogLevel(LogLevel.Event)) {
 			String account = (String) request.getSession().getAttribute("ACCOUNT");
 			if (account == null || account.length() == 0) {
@@ -407,12 +409,12 @@ public class LogUtil {
 			String ip = idg.getIpAddr(request);
 			writerThread.execute(() -> {
 				List<Folder> l = fu.getParentList(f.getFolderId());
-				String pl = new String();
+				StringBuffer pl = new StringBuffer();
 				for (Folder i : l) {
-					pl = pl + i.getFolderName() + "/";
+					pl.append(i.getFolderName() + "/");
 				}
-				String content = ">IP [" + ip + "]\r\n>ACCOUNT [" + a + "]\r\n>OPERATE [Move Folder]\r\n>NEW PATH ["
-						+ pl + f.getFolderName() + "]";
+				String content = ">IP [" + ip + "]\r\n>ACCOUNT [" + a + "]\r\n>OPERATE ["
+						+ (isCopy ? "Copy Folder" : "Move Folder") + "]\r\n>TO [" + pl.toString() + f.getFolderName() + "]";
 				writeToLog("Event", content);
 			});
 		}
@@ -467,12 +469,12 @@ public class LogUtil {
 					if (f != null) {
 						Folder folder = fm.queryById(f.getFileParentFolder());
 						List<Folder> l = fu.getParentList(folder.getFolderId());
-						String pl = new String();
+						StringBuffer pl = new StringBuffer();
 						for (Folder i : l) {
-							pl = pl + i.getFolderName() + "/";
+							pl.append(i.getFolderName() + "/");
 						}
-						content.append(
-								">PATH [" + pl + folder.getFolderName() + "]\r\n>NAME [" + f.getFileName() + "]\r\n");
+						content.append(">PATH [" + pl.toString() + folder.getFolderName() + "]\r\n>NAME ["
+								+ f.getFileName() + "]\r\n");
 					}
 				}
 				content.append("----------------");

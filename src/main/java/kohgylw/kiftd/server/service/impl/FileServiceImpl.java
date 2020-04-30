@@ -216,7 +216,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 								if (nodesHasSomeBlock == null || nodesHasSomeBlock.isEmpty()) {
 									// 如果该节点的文件块仅由该节点引用，那么直接重写此文件块
 									if (fm.update(f) > 0) {
-										if (isValidNode(f)) {
+										if (fbu.isValidNode(f)) {
 											File block = fbu.getFileFromBlocks(f);
 											file.transferTo(block);
 											this.lu.writeUploadFileEvent(request, f, account);
@@ -229,7 +229,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 									// 并将该节点的文件块索引更新为新的文件块
 									f.setFilePath(block.getName());
 									if (fm.update(f) > 0) {
-										if (isValidNode(f)) {
+										if (fbu.isValidNode(f)) {
 											this.lu.writeUploadFileEvent(request, f, account);
 											return UPLOADSUCCESS;
 										} else {
@@ -268,41 +268,16 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 			return UPLOADERROR;
 		}
 		final String fsize = this.fbu.getFileSize(file);
-		final Node f2 = new Node();
-		f2.setFileId(UUID.randomUUID().toString());
-		if (account != null) {
-			f2.setFileCreator(account);
+		Node newNode = fbu.insertNewNode(fileName, account, block.getName(), fsize, folderId);
+		if (newNode != null) {
+			// 存入成功，则写入日志并返回成功提示
+			this.lu.writeUploadFileEvent(request, newNode, account);
+			return UPLOADSUCCESS;
 		} else {
-			f2.setFileCreator("\u533f\u540d\u7528\u6237");
+			// 存入失败则删除残余文件块，并返回失败提示
+			block.delete();
+			return UPLOADERROR;
 		}
-		f2.setFileCreationDate(ServerTimeUtil.accurateToDay());
-		f2.setFileName(fileName);
-		f2.setFileParentFolder(folderId);
-		f2.setFilePath(block.getName());
-		f2.setFileSize(fsize);
-		int i = 0;
-		// 尽可能避免UUID重复的情况发生，重试10次
-		while (true) {
-			try {
-				if (this.fm.insert(f2) > 0) {
-					if (isValidNode(f2)) {
-						this.lu.writeUploadFileEvent(request, f2, account);
-						return UPLOADSUCCESS;
-					} else {
-						block.delete();
-						return UPLOADERROR;
-					}
-				}
-				break;
-			} catch (Exception e) {
-				f2.setFileId(UUID.randomUUID().toString());
-				i++;
-			}
-			if (i >= 10) {
-				break;
-			}
-		}
-		return UPLOADERROR;
 	}
 
 	// 删除单个文件
@@ -353,7 +328,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 						final File fo = this.fbu.getFileFromBlocks(f);
 						if (fo != null) {
 							writeRangeFileStream(request, response, fo, f.getFileName(), CONTENT_TYPE,
-									ConfigureReader.instance().getDownloadMaxRate(account));
+									ConfigureReader.instance().getDownloadMaxRate(account), fbu.getETag(fo));
 							// 日志记录（仅针对一次下载）
 							if (request.getHeader("Range") == null) {
 								this.lu.writeDownloadFileEvent(request, f);
@@ -519,7 +494,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 			String fname = "kiftd_" + ServerTimeUtil.accurateToDay() + "_\u6253\u5305\u4e0b\u8f7d.zip";
 			if (zip.exists()) {
 				writeRangeFileStream(request, response, zip, fname, CONTENT_TYPE,
-						ConfigureReader.instance().getDownloadMaxRate(account));
+						ConfigureReader.instance().getDownloadMaxRate(account), fbu.getETag(zip));
 				zip.delete();
 			}
 		}
@@ -590,107 +565,180 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 	// 执行移动文件操作
 	@Override
 	public String doMoveFiles(HttpServletRequest request) {
-		final String strIdList = request.getParameter("strIdList");
-		final String strFidList = request.getParameter("strFidList");
-		final String strOptMap = request.getParameter("strOptMap");
-		final String locationpath = request.getParameter("locationpath");
-		final String account = (String) request.getSession().getAttribute("ACCOUNT");
+		// 先获得必要的操作参数
+		final String strIdList = request.getParameter("strIdList");// 涉及的文件ID列表
+		final String strFidList = request.getParameter("strFidList");// 涉及的文件夹ID列表
+		final String strOptMap = request.getParameter("strOptMap");// 冲突文件或文件夹的处理列表（若存在）
+		final String locationpath = request.getParameter("locationpath");// 目标文件夹ID
+		// 操作方式，仅当传入“COPY”时才会作为复制执行，否则均按移动处理
+		final String method = request.getParameter("method");
+		boolean isCopy = "COPY".equals(method);// 是否为复制模式
+		final String account = (String) request.getSession().getAttribute("ACCOUNT");// 操作账户
+		// 先检查目标文件夹的合法性
 		Folder targetFolder = flm.queryById(locationpath);
 		if (targetFolder == null) {
 			return ERROR_PARAMETER;
 		}
+		// 再检查是否有权访问目标文件夹
 		if (!ConfigureReader.instance().accessFolder(targetFolder, account)) {
 			return NO_AUTHORIZED;
 		}
+		// 以及是否具备操作权限
 		if (!ConfigureReader.instance().authorized(account, AccountAuth.MOVE_FILES, fu.getAllFoldersId(locationpath))) {
 			return NO_AUTHORIZED;
 		}
+		// 对涉及的文件和文件夹逐一进行移动或复制操作
 		try {
-			final List<String> idList = gson.fromJson(strIdList, new TypeToken<List<String>>() {
-			}.getType());
+			// 获取存在冲突的文件的对应处理表
 			final Map<String, String> optMap = gson.fromJson(strOptMap, new TypeToken<Map<String, String>>() {
 			}.getType());
+			// 获取涉及移动的文件节点的ID数组
+			final List<String> idList = gson.fromJson(strIdList, new TypeToken<List<String>>() {
+			}.getType());
+			// 对涉及的文件节点逐一进行操作
 			for (final String id : idList) {
+				// 先对涉及的原节点进行合法性检查
 				if (id == null || id.length() <= 0) {
-					return ERROR_PARAMETER;
+					return ERROR_PARAMETER;// 文件节点的ID格式不正确
 				}
 				final Node node = this.fm.queryById(id);
 				if (node == null) {
-					return ERROR_PARAMETER;
+					return ERROR_PARAMETER;// 该文件节点不存在
 				}
-				if (node.getFileParentFolder().equals(locationpath)) {
+				// 目标路径检查
+				// 在移动模式下，如果原节点已经在目标文件夹中了，则直接跳过它
+				// 复制模式则继续检查
+				if (node.getFileParentFolder().equals(locationpath) && !isCopy) {
 					continue;
 				}
+				// 权限检查
 				if (!ConfigureReader.instance().accessFolder(flm.queryById(node.getFileParentFolder()), account)) {
-					return NO_AUTHORIZED;
+					return NO_AUTHORIZED;// 无权访问节点所在的文件夹
 				}
 				if (!ConfigureReader.instance().authorized(account, AccountAuth.MOVE_FILES,
 						fu.getAllFoldersId(node.getFileParentFolder()))) {
-					return NO_AUTHORIZED;
+					return NO_AUTHORIZED;// 无操作权限
 				}
+				// 执行文件移动操作
 				if (fm.queryByParentFolderId(locationpath).parallelStream()
 						.anyMatch((e) -> e.getFileName().equals(node.getFileName()))) {
+					// 如果节点存在冲突，但又未声明对应的处理方法，则执行失败
 					if (optMap.get(id) == null) {
 						return ERROR_PARAMETER;
 					}
+					// 否则，按照处理声明进行处理
 					switch (optMap.get(id)) {
 					case "cover":
+						// 覆盖，需要额外的“删除”操作权限
 						if (!ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER,
 								fu.getAllFoldersId(locationpath))) {
-							return NO_AUTHORIZED;
+							return NO_AUTHORIZED;// 无删除权限不能执行
 						}
+						// 得到冲突节点
 						Node n = fm.queryByParentFolderId(locationpath).parallelStream()
 								.filter((e) -> e.getFileName().equals(node.getFileName())).findFirst().get();
+						// 先将冲突节点删除
 						if (fm.deleteById(n.getFileId()) > 0) {
-							Map<String, String> map = new HashMap<>();
-							map.put("fileId", node.getFileId());
-							map.put("locationpath", locationpath);
-							if (this.fm.moveById(map) <= 0) {
-								return "cannotMoveFiles";
+							// 判断是否是复制模式
+							if (isCopy) {
+								// 若是，则新建一个与操作节点使用相同文件块的新节点添加到目标文件夹下
+								Node copyNode = fbu.insertNewNode(node.getFileName(), account, node.getFilePath(),
+										node.getFileSize(), locationpath);
+								if (copyNode == null) {
+									return "cannotMoveFiles";
+								}
+								// 成功，记录日志
+								this.lu.writeMoveFileEvent(request, copyNode, isCopy);
+							} else {
+								// 否则，修改操作节点的父文件夹为目标文件夹
+								Map<String, String> map = new HashMap<>();
+								map.put("fileId", node.getFileId());
+								map.put("locationpath", locationpath);
+								if (this.fm.moveById(map) <= 0) {
+									return "cannotMoveFiles";
+								}
+								// 成功，记录日志
+								this.lu.writeMoveFileEvent(request, node, isCopy);
 							}
+							// 最后，尝试删除冲突节点的文件块。注意：该操作必须在复制节点插入后再执行！
+							fbu.deleteFromFileBlocks(n);
 						} else {
+							// 如果原节点删除失败，则操作失败
 							return "cannotMoveFiles";
 						}
-						this.lu.writeMoveFileEvent(request, node);
+						// 到这里应该是覆盖成功了，继续执行后面的操作
 						break;
 					case "both":
+						// 保留两者，由于会导致节点数目增加，因此要先判断移动后是否会导致文件列表超限
 						if (fm.countByParentFolderId(locationpath) >= FileNodeUtil.MAXIMUM_NUM_OF_SINGLE_FOLDER) {
 							return FILES_TOTAL_OUT_OF_LIMIT;
 						}
-						node.setFileName(FileNodeUtil.getNewNodeName(node.getFileName(),
-								fm.queryByParentFolderId(locationpath)));
-						if (fm.update(node) <= 0) {
+						// 如果不超限，则判断是否为复制模式
+						if (isCopy) {
+							// 是，则创建一个新节点并与原节点引用相同的文件块
+							Node copyNode = fbu.insertNewNode(
+									FileNodeUtil.getNewNodeName(node.getFileName(),
+											fm.queryByParentFolderId(locationpath)),
+									account, node.getFilePath(), node.getFileSize(), locationpath);
+							if (copyNode == null) {
+								return "cannotMoveFiles";
+							}
+							this.lu.writeMoveFileEvent(request, copyNode, isCopy);
+						} else {
+							// 不是，则将原节点重新命名为原名+序号，再移动至目标文件夹下
+							node.setFileName(FileNodeUtil.getNewNodeName(node.getFileName(),
+									fm.queryByParentFolderId(locationpath)));
+							node.setFileParentFolder(locationpath);
+							if (fm.update(node) <= 0) {
+								return "cannotMoveFiles";
+							}
+							this.lu.writeMoveFileEvent(request, node, isCopy);
+						}
+						// 到这里应该是保留成功了，继续执行后面的操作
+						break;
+					case "skip":
+						// 跳过，不做任何处理
+						break;
+					default:
+						// 其他处理方法为错误参数，必须中断操作以免损坏文件系统
+						return ERROR_PARAMETER;
+					}
+				} else {
+					// 如果节点不存在冲突
+					// 那么移入会导致节点数目增加，也要先检查移动后是否会导致文件列表超过限额
+					if (fm.countByParentFolderId(locationpath) >= FileNodeUtil.MAXIMUM_NUM_OF_SINGLE_FOLDER) {
+						return FILES_TOTAL_OUT_OF_LIMIT;
+					}
+					// 如果不超限，则判断是否为复制模式
+					if (isCopy) {
+						// 是，则创建一个新节点并与原节点引用相同的文件块
+						Node newNode = fbu.insertNewNode(node.getFileName(), account, node.getFilePath(),
+								node.getFileSize(), locationpath);
+						if (newNode == null) {
 							return "cannotMoveFiles";
 						}
+						// 成功后，记录日志
+						this.lu.writeMoveFileEvent(request, newNode, isCopy);
+					} else {
+						// 不是，移动原节点至目标文件夹内
 						Map<String, String> map = new HashMap<>();
 						map.put("fileId", node.getFileId());
 						map.put("locationpath", locationpath);
 						if (this.fm.moveById(map) <= 0) {
 							return "cannotMoveFiles";
 						}
-						this.lu.writeMoveFileEvent(request, node);
-						break;
-					case "skip":
-						break;
-					default:
-						return ERROR_PARAMETER;
+						// 成功后，记录日志
+						this.lu.writeMoveFileEvent(request, node, isCopy);
 					}
-				} else {
-					if (fm.countByParentFolderId(locationpath) >= FileNodeUtil.MAXIMUM_NUM_OF_SINGLE_FOLDER) {
-						return FILES_TOTAL_OUT_OF_LIMIT;
-					}
-					Map<String, String> map = new HashMap<>();
-					map.put("fileId", node.getFileId());
-					map.put("locationpath", locationpath);
-					if (this.fm.moveById(map) <= 0) {
-						return "cannotMoveFiles";
-					}
-					this.lu.writeMoveFileEvent(request, node);
 				}
+				// 完成了一个原节点的操作，继续循环直至所有涉及节点均操作完毕
 			}
+			// 获取涉及移动的文件夹的ID数组
 			final List<String> fidList = gson.fromJson(strFidList, new TypeToken<List<String>>() {
 			}.getType());
+			// 对涉及的文件夹节点逐一进行操作
 			for (final String fid : fidList) {
+				// 该过程与移动文件节点的流程类似
 				if (fid == null || fid.length() <= 0) {
 					return ERROR_PARAMETER;
 				}
@@ -698,7 +746,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 				if (folder == null) {
 					return ERROR_PARAMETER;
 				}
-				if (folder.getFolderParent().equals(locationpath)) {
+				if (folder.getFolderParent().equals(locationpath) && !isCopy) {
 					continue;
 				}
 				if (!ConfigureReader.instance().accessFolder(folder, account)) {
@@ -708,77 +756,130 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 						fu.getAllFoldersId(folder.getFolderParent()))) {
 					return NO_AUTHORIZED;
 				}
-				if (fid.equals(locationpath) || fu.getParentList(locationpath).parallelStream()
-						.anyMatch((e) -> e.getFolderId().equals(folder.getFolderId()))) {
-					return ERROR_PARAMETER;
+				// 对于非复制操作，还必须确保移动目标不在被移动文件夹的内部，否则移动后就永远无法访问它了
+				if (!isCopy) {
+					if (fid.equals(locationpath) || fu.getParentList(locationpath).parallelStream()
+							.anyMatch((e) -> e.getFolderId().equals(folder.getFolderId()))) {
+						return ERROR_PARAMETER;
+					}
 				}
+				// 判断目标文件夹内是否有文件夹与待移入文件夹冲突？
 				if (flm.queryByParentId(locationpath).parallelStream()
 						.anyMatch((e) -> e.getFolderName().equals(folder.getFolderName()))) {
+					// 存在冲突，则根据声明的措施进行处理
 					if (optMap.get(fid) == null) {
 						return ERROR_PARAMETER;
 					}
 					switch (optMap.get(fid)) {
 					case "cover":
+						// 覆盖，需要额外的“删除”权限
 						if (!ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER,
 								fu.getAllFoldersId(locationpath))) {
 							return NO_AUTHORIZED;
 						}
+						// 获得冲突的文件夹
 						Folder f = flm.queryByParentId(locationpath).parallelStream()
 								.filter((e) -> e.getFolderName().equals(folder.getFolderName())).findFirst().get();
-						Map<String, String> map = new HashMap<>();
-						map.put("folderId", folder.getFolderId());
-						map.put("locationpath", locationpath);
-						if (this.flm.moveById(map) > 0) {
+						// 判断是否为复制模式
+						if (isCopy) {
+							// 是，则先在目标文件夹内复制整个原文件夹的节点树
+							Folder newFolder = fu.copyFolderByNewNameToPath(folder, account, locationpath, null);
+							if (newFolder != null) {
+								// 再删除冲突的文件夹
+								// 注意，上述两个过程不可颠倒！因为有可能会出现复制自己再覆盖自己的情况
+								if (fu.deleteAllChildFolder(f.getFolderId()) > 0) {
+									this.lu.writeMoveFileEvent(request, newFolder, isCopy);
+									break;
+								}
+							}
+						} else {
+							// 不是，则先将冲突的文件夹删除
 							if (fu.deleteAllChildFolder(f.getFolderId()) > 0) {
-								this.lu.writeMoveFileEvent(request, folder);
-								break;
+								// 再将原文件夹移入目标文件夹内
+								Map<String, String> map = new HashMap<>();
+								map.put("folderId", folder.getFolderId());
+								map.put("locationpath", locationpath);
+								if (this.flm.moveById(map) > 0) {
+									this.lu.writeMoveFileEvent(request, folder, isCopy);
+									break;
+								}
 							}
 						}
 						return "cannotMoveFiles";
 					case "both":
+						// 保留两者，需要先判断移动后是否会导致目标文件夹的文件列表超限
 						if (flm.countByParentId(locationpath) >= FileNodeUtil.MAXIMUM_NUM_OF_SINGLE_FOLDER) {
 							return FOLDERS_TOTAL_OUT_OF_LIMIT;
 						}
-						Map<String, String> map3 = new HashMap<>();
-						map3.put("folderId", folder.getFolderId());
-						map3.put("locationpath", locationpath);
-						if (this.flm.moveById(map3) > 0) {
-							Map<String, String> map2 = new HashMap<String, String>();
-							map2.put("folderId", folder.getFolderId());
-							map2.put("newName", FileNodeUtil.getNewFolderName(folder.getFolderName(),
-									flm.queryByParentId(locationpath)));
-							if (flm.updateFolderNameById(map2) <= 0) {
+						// 接下来，判断是否为拷贝模式
+						if (isCopy) {
+							// 是，则以新名称生成对应的原文件夹副本在目标文件夹里面
+							Folder newFolder = fu.copyFolderByNewNameToPath(folder, account, locationpath, FileNodeUtil
+									.getNewFolderName(folder.getFolderName(), flm.queryByParentId(locationpath)));
+							if (newFolder == null) {
 								return "cannotMoveFiles";
 							}
-							this.lu.writeMoveFileEvent(request, folder);
-							break;
+							// 更新成功，记录日志
+							this.lu.writeMoveFileEvent(request, newFolder, isCopy);
+						} else {
+							// 不是，将原节点的名称改为计数名称，父文件夹改为目标文件夹
+							folder.setFolderParent(locationpath);
+							folder.setFolderName(FileNodeUtil.getNewFolderName(folder.getFolderName(),
+									flm.queryByParentId(locationpath)));
+							if (this.flm.update(folder) <= 0) {
+								return "cannotMoveFiles";
+							}
+							// 更新成功，记录日志
+							this.lu.writeMoveFileEvent(request, folder, isCopy);
 						}
-						this.lu.writeMoveFileEvent(request, folder);
+						// 保留两者成功，继续后面的操作
 						break;
 					case "skip":
+						// 跳过，无需进行任何操作
 						break;
 					default:
+						// 意外的应对声明，终止操作
 						return ERROR_PARAMETER;
 					}
+					// 冲突情况处理完成
 				} else {
+					// 不存在冲突，直接移动或复制
+					// 仍然是先检查移动后是否会引发文件列表超限
 					if (flm.countByParentId(locationpath) >= FileNodeUtil.MAXIMUM_NUM_OF_SINGLE_FOLDER) {
 						return FOLDERS_TOTAL_OUT_OF_LIMIT;
 					}
-					Map<String, String> map = new HashMap<>();
-					map.put("folderId", folder.getFolderId());
-					map.put("locationpath", locationpath);
-					if (this.flm.moveById(map) > 0) {
-						this.lu.writeMoveFileEvent(request, folder);
+					// 是否是复制模式？
+					if (isCopy) {
+						// 是，复制原文件夹的结构树至目标文件夹内
+						Folder newFolder = fu.copyFolderByNewNameToPath(folder, account, locationpath, null);
+						if (newFolder == null) {
+							return "cannotMoveFiles";
+						}
+						// 操作成功，记录日志
+						this.lu.writeMoveFileEvent(request, newFolder, isCopy);
 					} else {
-						return "cannotMoveFiles";
+						// 否，直接将原文件夹移入目标文件夹内
+						Map<String, String> map = new HashMap<>();
+						map.put("folderId", folder.getFolderId());
+						map.put("locationpath", locationpath);
+						if (this.flm.moveById(map) <= 0) {
+							return "cannotMoveFiles";
+						}
+						// 操作成功，记录日志
+						this.lu.writeMoveFileEvent(request, folder, isCopy);
 					}
+					// 无冲突情况处理完成
 				}
+				// 至此，一个文件夹的移动或复制操作结束，继续循环直至全部完成
 			}
+			// 由于移动文件夹可能会导致文件夹被删除，因此要将“检查特定文件夹额外权限设置”标志置为true，用于清理失效的设置。
 			if (fidList.size() > 0) {
 				ServerInitListener.needCheck = true;
 			}
+			// 上述操作全部成功而未中途退出的话，则证明移动任务顺利结束，返回成功提示信息
 			return "moveFilesSuccess";
 		} catch (Exception e) {
+			// 如果中途产生了异常，那么返回失败提示
 			return ERROR_PARAMETER;
 		}
 	}
@@ -786,13 +887,18 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 	// 移动文件前的确认检查（可视作移动的前置操作）
 	@Override
 	public String confirmMoveFiles(HttpServletRequest request) {
-		final String strIdList = request.getParameter("strIdList");
-		final String strFidList = request.getParameter("strFidList");
-		final String locationpath = request.getParameter("locationpath");
-		final String account = (String) request.getSession().getAttribute("ACCOUNT");
+		// 接收必要的参数
+		final String strIdList = request.getParameter("strIdList");// 涉及的文件ID列表
+		final String strFidList = request.getParameter("strFidList");// 涉及的文件夹ID列表
+		final String locationpath = request.getParameter("locationpath");// 目标文件夹
+		final String method = request.getParameter("method");// 移动方式，除非为“COPY”否则都按“MOVE”处理
+		final String account = (String) request.getSession().getAttribute("ACCOUNT");// 操作账户
+		// 确定移动模式是否为复制模式
+		boolean isCopy = "COPY".equals(method);
+		// 判断目标文件夹是否合法及文件是否会重名
 		Folder targetFolder = flm.queryById(locationpath);
-		int needMovefilesCount = 0;
-		int needMoveFoldersCount = 0;
+		int needMovefilesCount = 0;// 记录可以合法移动（或复制）的文件数目
+		int needMoveFoldersCount = 0;// 同理，记录可以合法移动（或复制）的文件夹数目
 		if (ConfigureReader.instance().accessFolder(targetFolder, account) && ConfigureReader.instance()
 				.authorized(account, AccountAuth.MOVE_FILES, fu.getAllFoldersId(locationpath))) {
 			try {
@@ -802,32 +908,35 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 				}.getType());
 				List<Node> repeNodes = new ArrayList<>();
 				List<Folder> repeFolders = new ArrayList<>();
+				// 检查每个涉及的文件节点是否合法
 				for (final String fileId : idList) {
 					if (fileId == null || fileId.length() <= 0) {
-						return ERROR_PARAMETER;
+						return ERROR_PARAMETER;// ID格式不对
 					}
 					final Node node = this.fm.queryById(fileId);
 					if (node == null) {
-						return ERROR_PARAMETER;
+						return ERROR_PARAMETER;// 查无此节点
 					}
-					if (node.getFileParentFolder().equals(locationpath)) {
-						continue;
+					if (node.getFileParentFolder().equals(locationpath) && !isCopy) {
+						continue;// 又不是复制模式，又已经在目标文件夹里了，则直接跳过
 					}
 					if (!ConfigureReader.instance().accessFolder(flm.queryById(node.getFileParentFolder()), account)) {
-						return NO_AUTHORIZED;
+						return NO_AUTHORIZED;// 无权访问目标文件夹
 					}
 					if (!ConfigureReader.instance().authorized(account, AccountAuth.MOVE_FILES,
 							fu.getAllFoldersId(node.getFileParentFolder()))) {
-						return NO_AUTHORIZED;
+						return NO_AUTHORIZED;// 无权操作
 					}
 					if (fm.queryByParentFolderId(locationpath).parallelStream()
 							.anyMatch((e) -> e.getFileName().equals(node.getFileName()))) {
-						repeNodes.add(node);
+						repeNodes.add(node);// 与目标文件夹里的某个文件夹重名？重名列表加一
 					} else {
-						needMovefilesCount++;
+						needMovefilesCount++;// 上述问题都没出现？合法文件加一
 					}
 				}
+				// 检查每个涉及的文件夹节点是否合法
 				for (final String folderId : fidList) {
+					// 下面的判断与文件基本类似
 					if (folderId == null || folderId.length() <= 0) {
 						return ERROR_PARAMETER;
 					}
@@ -835,7 +944,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 					if (folder == null) {
 						return ERROR_PARAMETER;
 					}
-					if (folder.getFolderParent().equals(locationpath)) {
+					if (folder.getFolderParent().equals(locationpath) && !isCopy) {
 						continue;
 					}
 					if (!ConfigureReader.instance().accessFolder(folder, account)) {
@@ -845,30 +954,36 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 							fu.getAllFoldersId(folder.getFolderParent()))) {
 						return NO_AUTHORIZED;
 					}
-					if (folderId.equals(locationpath) || fu.getParentList(locationpath).parallelStream()
-							.anyMatch((e) -> e.getFolderId().equals(folder.getFolderId()))) {
-						return "CANT_MOVE_TO_INSIDE:" + folder.getFolderName();
+					// 对于文件夹而言，在移动模式下还要检查是否将一个文件夹移动到自己内部了，避免死循环
+					// 复制模式无需检查这一项
+					if (!isCopy) {
+						if (folderId.equals(locationpath) || fu.getParentList(locationpath).parallelStream()
+								.anyMatch((e) -> e.getFolderId().equals(folder.getFolderId()))) {
+							return "CANT_MOVE_TO_INSIDE:" + folder.getFolderName();
+						}
 					}
 					if (flm.queryByParentId(locationpath).parallelStream()
 							.anyMatch((e) -> e.getFolderName().equals(folder.getFolderName()))) {
-						repeFolders.add(folder);
+						repeFolders.add(folder);// 与目标文件夹里的某个文件夹重名？重名列表加一
 					} else {
-						needMoveFoldersCount++;
+						needMoveFoldersCount++;// 上述问题都没出现？合法文件夹加一
 					}
 				}
+				// 计算移动后会不会超出文件列表的最大限额
 				long estimateFilesTotal = fm.countByParentFolderId(locationpath) + needMovefilesCount;
 				if (estimateFilesTotal > FileNodeUtil.MAXIMUM_NUM_OF_SINGLE_FOLDER || estimateFilesTotal < 0) {
-					return FILES_TOTAL_OUT_OF_LIMIT;
+					return FILES_TOTAL_OUT_OF_LIMIT;// 如果会超限，则不允许此次移动
 				}
 				long estimateFoldersTotal = flm.countByParentId(locationpath) + needMoveFoldersCount;
 				if (estimateFoldersTotal > FileNodeUtil.MAXIMUM_NUM_OF_SINGLE_FOLDER || estimateFoldersTotal < 0) {
-					return FOLDERS_TOTAL_OUT_OF_LIMIT;
+					return FOLDERS_TOTAL_OUT_OF_LIMIT;// 文件夹也要做相同的检查
 				}
+				// 是否有冲突的文件或文件夹？
 				if (repeNodes.size() > 0 || repeFolders.size() > 0) {
 					Map<String, List<? extends Object>> repeMap = new HashMap<>();
 					repeMap.put("repeFolders", repeFolders);
 					repeMap.put("repeNodes", repeNodes);
-					return "duplicationFileName:" + gson.toJson(repeMap);
+					return "duplicationFileName:" + gson.toJson(repeMap);// 若有，则将冲突列表返回前端
 				}
 				return "confirmMoveFiles";
 			} catch (Exception e) {
@@ -1049,41 +1164,16 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 			return UPLOADERROR;
 		}
 		final String fsize = this.fbu.getFileSize(file);
-		final Node f2 = new Node();
-		f2.setFileId(UUID.randomUUID().toString());
-		if (account != null) {
-			f2.setFileCreator(account);
+		Node newNode = fbu.insertNewNode(fileName, account, block.getName(), fsize, folderId);
+		if (newNode != null) {
+			// 成功，则记录日志并返回成功提示
+			this.lu.writeUploadFileEvent(request, newNode, account);
+			return UPLOADSUCCESS;
 		} else {
-			f2.setFileCreator("\u533f\u540d\u7528\u6237");
+			// 失败，则清理残留文件块并返回失败提示
+			block.delete();
+			return UPLOADERROR;
 		}
-		f2.setFileCreationDate(ServerTimeUtil.accurateToDay());
-		f2.setFileName(fileName);
-		f2.setFileParentFolder(folderId);
-		f2.setFilePath(block.getName());
-		f2.setFileSize(fsize);
-		int i = 0;
-		// 尽可能避免UUID重复的情况发生，重试10次
-		while (true) {
-			try {
-				if (this.fm.insert(f2) > 0) {
-					if (isValidNode(f2)) {
-						this.lu.writeUploadFileEvent(request, f2, account);
-						return UPLOADSUCCESS;
-					} else {
-						block.delete();
-						return UPLOADERROR;
-					}
-				}
-				break;
-			} catch (Exception e) {
-				f2.setFileId(UUID.randomUUID().toString());
-				i++;
-			}
-			if (i >= 10) {
-				break;
-			}
-		}
-		return UPLOADERROR;
 	}
 
 	/**
@@ -1141,22 +1231,5 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 			}
 		}
 		return null;
-	}
-
-	// 再次检查新增的文件是否存在同名问题
-	private boolean isValidNode(Node n) {
-		Node[] repeats = fm.queryByParentFolderId(n.getFileParentFolder()).parallelStream()
-				.filter((e) -> e.getFileName().equals(n.getFileName())).toArray(Node[]::new);
-		if (flm.queryById(n.getFileParentFolder()) == null || repeats.length > 1) {
-			// 如果插入后存在：
-			// 1，该节点没有有效的父级文件夹（死节点）；
-			// 2，与同级的其他节点重名，
-			// 那么它就是一个无效的节点，应将插入操作撤销
-			// 所谓撤销，也就是将该节点的数据立即删除（如果有）
-			fm.deleteById(n.getFileId());
-			return false;// 返回“无效”的判定结果
-		} else {
-			return true;// 否则，该节点有效，返回结果
-		}
 	}
 }

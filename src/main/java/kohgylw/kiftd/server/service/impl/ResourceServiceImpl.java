@@ -34,6 +34,7 @@ import kohgylw.kiftd.server.util.KiftdFFMPEGLocator;
 import kohgylw.kiftd.server.util.LogUtil;
 import kohgylw.kiftd.server.util.NoticeUtil;
 import kohgylw.kiftd.server.util.PowerPoint2PDFUtil;
+import kohgylw.kiftd.server.util.ServerTimeUtil;
 import kohgylw.kiftd.server.util.Txt2PDFUtil;
 import kohgylw.kiftd.server.util.TxtCharsetGetter;
 import kohgylw.kiftd.server.util.VideoTranscodeUtil;
@@ -69,10 +70,11 @@ public class ResourceServiceImpl implements ResourceService {
 	@Resource
 	private KiftdFFMPEGLocator kfl;
 
+	private static final long RESOURCE_CACHE_MAX_AGE = 1800L;// 资源缓存的寿命30分钟，正好对应账户的自动注销时间
+
 	// 提供资源的输出流，原理与下载相同，但是个别细节有区别
 	@Override
 	public void getResource(String fid, HttpServletRequest request, HttpServletResponse response) {
-		// TODO 自动生成的方法存根
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
 		if (fid != null) {
 			Node n = nm.queryById(fid);
@@ -124,7 +126,7 @@ public class ResourceServiceImpl implements ResourceService {
 						}
 						return;
 					}
-				} else {//处理资源未被授权的问题
+				} else {// 处理资源未被授权的问题
 					try {
 						response.sendError(401);
 					} catch (IOException e) {
@@ -144,6 +146,17 @@ public class ResourceServiceImpl implements ResourceService {
 			HttpServletResponse response) {
 		try (RandomAccessFile randomFile = new RandomAccessFile(resource, "r")) {
 			long contentLength = randomFile.length();
+			String ifModifiedSince = request.getHeader("If-Modified-Since");
+			if (ifModifiedSince != null
+					&& ifModifiedSince.trim().equals(ServerTimeUtil.getLastModifiedFormBlock(resource))) {
+				response.setStatus(304);
+				return;
+			}
+			String ifNoneMatch = request.getHeader("If-None-Match");
+			if (ifNoneMatch != null && ifNoneMatch.trim().equals(this.fbu.getETag(resource))) {
+				response.setStatus(304);
+				return;
+			}
 			String range = request.getHeader("Range");
 			long start = 0, end = 0;
 			if (range != null && range.startsWith("bytes=")) {
@@ -162,9 +175,9 @@ public class ResourceServiceImpl implements ResourceService {
 			byte[] buffer = new byte[ConfigureReader.instance().getBuffSize()];
 			response.setContentType(contentType);
 			response.setHeader("Accept-Ranges", "bytes");
-			String lastModified = resource.lastModified() + "";
-			response.setHeader("ETag", lastModified);
-			response.setHeader("Last-Modified", lastModified);
+			response.setHeader("ETag", this.fbu.getETag(resource));
+			response.setHeader("Last-Modified", ServerTimeUtil.getLastModifiedFormBlock(resource));
+			response.setHeader("Cache-Control", "max-age=" + RESOURCE_CACHE_MAX_AGE);
 			// 第一次请求只返回content length来让客户端请求多次实际数据
 			if (range == null) {
 				response.setHeader("Content-length", contentLength + "");
@@ -233,7 +246,7 @@ public class ResourceServiceImpl implements ResourceService {
 							suffix = n.getFileName().substring(n.getFileName().lastIndexOf(".")).trim().toLowerCase();
 						}
 						if (".docx".equals(suffix)) {
-							String contentType = "application/octet-stream";
+							String contentType = ctm.getContentType(".pdf");
 							response.setContentType(contentType);
 							// 执行转换并写出输出流
 							try {
@@ -275,7 +288,7 @@ public class ResourceServiceImpl implements ResourceService {
 							suffix = n.getFileName().substring(n.getFileName().lastIndexOf(".")).trim().toLowerCase();
 						}
 						if (".txt".equals(suffix)) {
-							String contentType = "application/octet-stream";
+							String contentType = ctm.getContentType(".pdf");
 							response.setContentType(contentType);
 							// 执行转换并写出输出流
 							try {
@@ -334,7 +347,7 @@ public class ResourceServiceImpl implements ResourceService {
 						switch (suffix) {
 						case ".ppt":
 						case ".pptx":
-							String contentType = "application/octet-stream";
+							String contentType = ctm.getContentType(".pdf");
 							response.setContentType(contentType);
 							// 执行转换并写出输出流
 							try {
@@ -373,6 +386,19 @@ public class ResourceServiceImpl implements ResourceService {
 						&& ConfigureReader.instance().accessFolder(fm.queryById(n.getFileParentFolder()), account)) {
 					File file = fbu.getFileFromBlocks(n);
 					if (file != null && file.isFile()) {
+						// 检查是否有可用缓存
+						String ifModifiedSince = request.getHeader("If-Modified-Since");
+						if (ifModifiedSince != null
+								&& ifModifiedSince.trim().equals(ServerTimeUtil.getLastModifiedFormBlock(file))) {
+							response.setStatus(304);
+							return;
+						}
+						String ifNoneMatch = request.getHeader("If-None-Match");
+						if (ifNoneMatch != null && ifNoneMatch.trim().equals(this.fbu.getETag(file))) {
+							response.setStatus(304);
+							return;
+						}
+						// 如无，则返回新数据
 						// 后缀检查
 						String suffix = "";
 						if (n.getFileName().indexOf(".") >= 0) {
@@ -382,9 +408,9 @@ public class ResourceServiceImpl implements ResourceService {
 							String contentType = "text/plain";
 							response.setContentType(contentType);
 							response.setCharacterEncoding("UTF-8");
-							String lastModified = file.lastModified() + "";
-							response.setHeader("ETag", lastModified);
-							response.setHeader("Last-Modified", lastModified);
+							response.setHeader("ETag", this.fbu.getETag(file));
+							response.setHeader("Last-Modified", ServerTimeUtil.getLastModifiedFormBlock(file));
+							response.setHeader("Cache-Control", "max-age=" + RESOURCE_CACHE_MAX_AGE);
 							// 执行转换并写出输出流
 							try {
 								String inputFileEncode = tcg.getTxtCharset(new FileInputStream(file));

@@ -237,19 +237,43 @@ public class HomeController {
 	public String playAudios(final HttpServletRequest request) {
 		return this.pas.getAudioInfoListByJson(request);
 	}
-
+	
+	/**
+	 * 
+	 * <h2>移动文件操作前置确认</h2>
+	 * <p>该逻辑用于在执行移动或复制前确认目标文件夹是否合法以及是否会产生文件名冲突。</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @param request javax.servlet.http.HttpServletRequest 请求对象
+	 * @return java.lang.String 判断结果，详情请见具体实现
+	 */
 	@RequestMapping(value = { "/confirmMoveFiles.ajax" }, produces = { CHARSET_BY_AJAX })
 	@ResponseBody
 	public String confirmMoveFiles(final HttpServletRequest request) {
 		return fis.confirmMoveFiles(request);
 	}
-
+	
+	/**
+	 * 
+	 * <h2>执行移动文件操作</h2>
+	 * <p>该逻辑用于正式执行移动或复制操作，在调用之前应先执行判断操作。</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @param request javax.servlet.http.HttpServletRequest 请求对象
+	 * @return java.lang.String 执行结果，详情请见具体实现
+	 */
 	@RequestMapping({ "/moveCheckedFiles.ajax" })
 	@ResponseBody
 	public String moveCheckedFiles(final HttpServletRequest request) {
 		return fis.doMoveFiles(request);
 	}
-
+	
+	/**
+	 * 
+	 * <h2>执行全局查询</h2>
+	 * <p>该逻辑用于进行全局搜索，将会迭代搜索目标文件夹及其全部子文件夹以查找符合关键字的结果，并返回单独的搜索结果视图。</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @param request javax.servlet.http.HttpServletRequest 请求对象
+	 * @return java.lang.String 搜索结果，详情请见具体实现
+	 */
 	@RequestMapping(value = { "/sreachInCompletePath.ajax" }, produces = { CHARSET_BY_AJAX })
 	@ResponseBody
 	public String sreachInCompletePath(final HttpServletRequest request) {

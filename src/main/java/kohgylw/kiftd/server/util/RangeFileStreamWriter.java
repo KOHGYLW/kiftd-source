@@ -22,6 +22,8 @@ import javax.servlet.http.HttpServletResponse;
  */
 public class RangeFileStreamWriter {
 
+	private static final long DOWNLOAD_CACHE_MAX_AGE = 1800L;
+
 	/**
 	 * 
 	 * <h2>使用断点续传技术提供输出流</h2>
@@ -45,13 +47,24 @@ public class RangeFileStreamWriter {
 	 * @return void
 	 */
 	protected void writeRangeFileStream(HttpServletRequest request, HttpServletResponse response, File fo, String fname,
-			String contentType, long maxRate) {
+			String contentType, long maxRate, String eTag) {
 		long fileLength = fo.length();// 文件总大小
 		long startOffset = 0; // 起始偏移量
 		boolean hasEnd = false;// 请求区间是否存在结束标识
 		long endOffset = 0; // 结束偏移量
 		long contentLength = 0; // 响应体长度
 		String rangeBytes = "";// 请求中的Range参数
+		// 检查是否有可用的缓存
+		String ifModifiedSince = request.getHeader("If-Modified-Since");
+		if (ifModifiedSince != null && ifModifiedSince.trim().equals(ServerTimeUtil.getLastModifiedFormBlock(fo))) {
+			response.setStatus(304);
+			return;
+		}
+		String ifNoneMatch = request.getHeader("If-None-Match");
+		if (ifNoneMatch != null && ifNoneMatch.trim().equals(eTag)) {
+			response.setStatus(304);
+			return;
+		}
 		// 设置请求头，基于kiftd文件系统推荐使用application/octet-stream
 		response.setContentType(contentType);
 		// 设置文件信息
@@ -67,6 +80,10 @@ public class RangeFileStreamWriter {
 		}
 		// 设置支持断点续传功能
 		response.setHeader("Accept-Ranges", "bytes");
+		// 设置缓存控制信息
+		response.setHeader("ETag", eTag);
+		response.setHeader("Last-Modified", ServerTimeUtil.getLastModifiedFormBlock(fo));
+		response.setHeader("Cache-Control", "max-age=" + DOWNLOAD_CACHE_MAX_AGE);
 		// 针对具备断点续传性质的请求进行解析
 		String rangeTag = request.getHeader("Range");
 		if (rangeTag != null && rangeTag.startsWith("bytes=")) {
@@ -130,7 +147,7 @@ public class RangeFileStreamWriter {
 			try {
 				response.sendError(500);
 			} catch (IOException e1) {
-				
+
 			}
 		}
 	}

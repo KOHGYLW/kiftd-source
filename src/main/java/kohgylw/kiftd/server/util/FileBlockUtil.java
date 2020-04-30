@@ -457,4 +457,104 @@ public class FileBlockUtil {
 		}
 	}
 
+	/**
+	 * 
+	 * <h2>生成指定文件块资源对应的ETag标识</h2>
+	 * <p>
+	 * 该方法用于生产指定文件块的ETag标识，从而方便前端控制缓存。生成规则为：{文件最后修改时间计数}_{文件路径对应的Hash码}。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @param block
+	 *            java.io.File 需要生成的文件块对象，应为文件，但也支持文件夹，或者是null
+	 * @return java.lang.String 生成的ETag值。当传入的block是null或其不存在时，返回空字符串
+	 */
+	public String getETag(File block) {
+		if (block != null && block.exists()) {
+			return (block.lastModified() + "_" + block.hashCode()).trim();
+		}
+		return "";
+	}
+
+	/**
+	 * 
+	 * <h2>插入一个新的文件节点至文件系统数据库中</h2>
+	 * <p>
+	 * 该方法将尝试生成一个新的文件节点并存入文件系统数据库，并确保该文件节点再插入后不会与已有节点产生冲突。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @param fileName
+	 *            java.lang.String 文件名称
+	 * @param account
+	 *            java.lang.String 创建者账户，若传入null则按匿名创建者处理
+	 * @param filePath
+	 *            java.lang.String 文件节点对应的文件块索引
+	 * @param fileSize
+	 *            java.lang.String 文件体积
+	 * @param fileParentFolder
+	 *            java.lang.String 文件的父文件夹ID
+	 * @return kohgylw.kiftd.server.model.Node 操作成功则返回节点对象，否则返回null
+	 */
+	public Node insertNewNode(String fileName, String account, String filePath, String fileSize,
+			String fileParentFolder) {
+		final Node f2 = new Node();
+		f2.setFileId(UUID.randomUUID().toString());
+		if (account != null) {
+			f2.setFileCreator(account);
+		} else {
+			f2.setFileCreator("\u533f\u540d\u7528\u6237");
+		}
+		f2.setFileCreationDate(ServerTimeUtil.accurateToDay());
+		f2.setFileName(fileName);
+		f2.setFileParentFolder(fileParentFolder);
+		f2.setFilePath(filePath);
+		f2.setFileSize(fileSize);
+		int i = 0;
+		// 尽可能避免UUID重复的情况发生，重试10次
+		while (true) {
+			try {
+				if (this.fm.insert(f2) > 0) {
+					if (isValidNode(f2)) {
+						return f2;
+					} else {
+						break;
+					}
+				}
+				break;
+			} catch (Exception e) {
+				f2.setFileId(UUID.randomUUID().toString());
+				i++;
+			}
+			if (i >= 10) {
+				break;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * 
+	 * <h2>检查指定的文件节点是否存在同名问题</h2>
+	 * <p>该方法用于检查传入节点是否存在冲突问题，一般在新节点插入后执行，若存在冲突会立即删除此节点，最后会返回检查结果。</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @param n kohgylw.kiftd.server.model.Node 待检查的节点
+	 * @return boolean 通过检查则返回true，否则返回false并删除此节点
+	 */
+	public boolean isValidNode(Node n) {
+		Node[] repeats = fm.queryByParentFolderId(n.getFileParentFolder()).parallelStream()
+				.filter((e) -> e.getFileName().equals(n.getFileName())).toArray(Node[]::new);
+		if (flm.queryById(n.getFileParentFolder()) == null || repeats.length > 1) {
+			// 如果插入后存在：
+			// 1，该节点没有有效的父级文件夹（死节点）；
+			// 2，与同级的其他节点重名，
+			// 那么它就是一个无效的节点，应将插入操作撤销
+			// 所谓撤销，也就是将该节点的数据立即删除（如果有）
+			fm.deleteById(n.getFileId());
+			return false;// 返回“无效”的判定结果
+		} else {
+			return true;// 否则，该节点有效，返回结果
+		}
+	}
+
 }

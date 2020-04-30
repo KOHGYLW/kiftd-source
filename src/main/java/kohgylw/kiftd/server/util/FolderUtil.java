@@ -149,24 +149,16 @@ public class FolderUtil {
 		return null;
 	}
 
-//	// 检查新建的文件夹是否存在同名问题。若有，删除同名文件夹并返回是否进行了该操作（旨在确保上传文件夹操作不被重复上传干扰）
-//	public boolean hasRepeatFolder(Folder f) {
-//		Folder[] repeats = fm.queryByParentId(f.getFolderParent()).parallelStream()
-//				.filter((e) -> e.getFolderName().equals(f.getFolderName())).toArray(Folder[]::new);
-//		if (repeats.length > 1) {
-//			deleteAllChildFolder(f.getFolderId());
-//			return true;
-//		} else {
-//			return false;
-//		}
-//	}
-	
 	/**
 	 * 
 	 * <h2>检查新建的文件夹是否有效</h2>
-	 * <p>该方法主要是用于插入文件夹数据后，再次确认新插入的数据是否有效。这个方法应在插入过程结束后、返回结果前执行。</p>
+	 * <p>
+	 * 该方法主要是用于插入文件夹数据后，再次确认新插入的数据是否有效。这个方法应在插入过程结束后、返回结果前执行。
+	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param f kohgylw.kiftd.server.model.Folder 要检查的文件夹对象
+	 * @param f
+	 *            kohgylw.kiftd.server.model.Folder 要检查的文件夹对象
 	 * @return boolean 是否有效，若返回false则进行了数据回滚
 	 */
 	public boolean isValidFolder(Folder f) {
@@ -182,6 +174,59 @@ public class FolderUtil {
 			return false;// 返回“无效”的判定结果
 		} else {
 			return true;// 否则，该节点有效，返回结果
+		}
+	}
+
+	/**
+	 * 
+	 * <h2>在指定路径内复制一份目标文件夹的拷贝，并可设定新名称</h2>
+	 * <p>
+	 * 该方法用于在一个路径下创建一个完整的目标文件夹复制树，复制的文件夹将会使用指定的新名称，完成后返回创建结果。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @param prototype
+	 *            kohgylw.kiftd.server.model.Folder 要复制的目标文件夹，即复制的样板
+	 * @param parentFolderId
+	 *            java.lang.String 复制文件夹的父文件夹ID，指定在哪个路径下创建目标文件夹的副本
+	 * @param newName
+	 *            java.lang.String 副本文件夹的新名称，以覆盖原本的名称，如果传入null则仍使用原名
+	 * @return kohgylw.kiftd.server.model.Folder 完整复制成功则返回复制好的文件夹对象，
+	 *         否则返回null（包括传入目标文件夹或父文件夹参数错误的情况）
+	 */
+	public Folder copyFolderByNewNameToPath(Folder prototype, String account, String parentFolderId, String newName) {
+		if (prototype == null || parentFolderId == null) {
+			return null;
+		}
+		try {
+			// 先在指定文件夹下创建原文件夹的副本
+			Folder newFolder = createNewFolder(parentFolderId, account,
+					newName == null ? prototype.getFolderName() : newName, "" + prototype.getFolderConstraint());
+			if (newFolder == null) {
+				return null;// 副本创建失败则直接返回失败，无需继续执行后续的操作
+			}
+			// 创建成功后，检查原文件夹内是否有子文件夹
+			List<Folder> childs = fm.queryByParentId(prototype.getFolderId());
+			// 若有，则迭代执行本操作直至最底层文件夹
+			for (Folder c : childs) {
+				// 注意：复制子文件夹时必须将newName传为null！因为子文件夹能存在就不会重名。
+				if (copyFolderByNewNameToPath(c, account, newFolder.getFolderId(), null) == null) {
+					return null;// 如果中途哪个子文件夹复制失败，则返回失败
+				}
+			}
+			// 之后，再复制原文件夹中的文件节点，并将文件的副本放在文件夹的副本下
+			List<Node> nodes = fim.queryByParentFolderId(parentFolderId);
+			for (Node n : nodes) {
+				Node newNode = fbu.insertNewNode(n.getFileName(), account, n.getFilePath(), n.getFileSize(),
+						newFolder.getFolderId());
+				if (newNode == null) {
+					return null;// 某个文件节点复制失败同样返回失败
+				}
+			}
+			// 上述操作都成功了？那么复制成功。
+			return newFolder;
+		} catch (FoldersTotalOutOfLimitException e) {
+			return null;
 		}
 	}
 }

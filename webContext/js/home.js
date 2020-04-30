@@ -13,6 +13,9 @@ var fs;// 选中的要上传的文件列表
 var ifs;// 选中的要上传的文件夹内的文件列表
 var checkedMovefiles;// 移动文件的存储列表
 var isCopy;// 移动文件是否为复制模式，如果是，则“复制”，否则“剪切”
+var repeMap;// 移动文件时，保存用户对每个冲突项目的处理操作
+var strMoveOptMap;// 移动（或复制）操作导致文件名冲突的项目
+var mRepeSize;// 移动（或复制）操作导致文件名冲突的项目数
 var constraintLevel;// 当前文件夹限制等级
 var account;// 用户账户
 var isUpLoading = false;// 是否正在执行上传操作
@@ -844,7 +847,6 @@ function showAccountView(folderView) {
 	// 对操作菜单进行初始化，根据权限显示可操作的按钮（并非约束）。
 	$("#fileListDropDown li").addClass("disabled");
 	$("#fileListDropDown li a").attr("onclick", "");
-	$("#fileListDropDown li a").attr("href", "javascript:void(0);");
 	if (authList != null) {
 		if (checkAuth(authList, "C")) {
 			$("#createFolderButtonLi").removeClass("disabled");
@@ -875,9 +877,9 @@ function showAccountView(folderView) {
 		if (checkAuth(authList, "M")) {
 			$("#cutFileButtonLi").removeClass("disabled");
 			$("#stickFileButtonLi").removeClass("disabled");
-			// $("#copyFileButtonLi").removeClass("disabled");
+			$("#copyFileButtonLi").removeClass("disabled");
 			$("#cutFileButtonLi a").attr("onclick", "cutFile()");
-			// $("#copyFileButtonLi a").attr("onclick","copyFile()");
+			$("#copyFileButtonLi a").attr("onclick", "copyFile()");
 			$("#stickFileButtonLi a").attr("onclick", "stickFile()");
 			if (checkedMovefiles !== undefined && checkedMovefiles.size > 0) {
 				$("#stickFilesCount").text("（" + checkedMovefiles.size + "）");
@@ -2584,28 +2586,33 @@ function stickFile() {
 	if (checkedMovefiles !== undefined && checkedMovefiles.size > 0) {
 		if (isCopy) {
 			$('#moveFilesMessage').text(
-					"提示：确定将这" + checkedMovefiles.size + "项移复制当前位置么？");
+					"提示：确定将这" + checkedMovefiles.size + "项复制到当前位置么？");
+			$('#moveFilesBox')
+					.html(
+							"<button id='dmvfbutton' type='button' class='btn btn-danger' onclick='doMoveFiles()'>全部复制</button>");
 		} else {
 			$('#moveFilesMessage').text(
 					"提示：确定将这" + checkedMovefiles.size + "项移动到当前位置么？");
+			$('#moveFilesBox')
+					.html(
+							"<button id='dmvfbutton' type='button' class='btn btn-danger' onclick='doMoveFiles()'>全部移动</button>");
 		}
-		$('#moveFilesBox')
-				.html(
-						"<button id='dmvfbutton' type='button' class='btn btn-danger' onclick='doMoveFiles()'>全部移动</button>");
 		$("#selectFileMoveModelAsAll").removeAttr("checked");
 		$("#selectFileMoveModelAlert").hide();
 		$('#moveFilesModal').modal('show');
 	}
 }
 
-var repeMap;
-var strMoveOptMap;
-var mRepeSize;
-
-// 执行文件移动操作
+// 先行确认文件移动操作
 function doMoveFiles() {
 	$("#dmvfbutton").attr('disabled', true);
-	$('#moveFilesMessage').text("提示：正在移动，请稍候...");
+	var method = "MOVE";
+	if (isCopy) {
+		$('#moveFilesMessage').text("提示：正在复制，请稍候...");
+		method = "COPY";
+	} else {
+		$('#moveFilesMessage').text("提示：正在移动，请稍候...");
+	}
 	// 确认移动目标位置
 	$
 			.ajax({
@@ -2614,7 +2621,8 @@ function doMoveFiles() {
 				data : {
 					strIdList : checkedMovefiles.filesId,
 					strFidList : checkedMovefiles.foldersId,
-					locationpath : locationpath
+					locationpath : locationpath,
+					method : method
 				},
 				url : "homeController/confirmMoveFiles.ajax",
 				success : function(result) {
@@ -2623,27 +2631,27 @@ function doMoveFiles() {
 					} else {
 						switch (result) {
 						case "noAuthorized":
-							$('#moveFilesMessage').text("提示：您的操作未被授权，移动失败");
+							$('#moveFilesMessage').text("提示：您的操作未被授权，操作失败");
 							$("#dmvfbutton").attr('disabled', false);
 							break;
 						case "errorParameter":
 							$('#moveFilesMessage').text(
-									"提示：参数不正确，未能全部移动文件，请刷新后重试");
+									"提示：参数不正确，无法完成此操作，请刷新后重试");
 							$("#dmvfbutton").attr('disabled', false);
 							break;
 						case "cannotMoveFiles":
 							$('#moveFilesMessage').text(
-									"提示：出现意外错误，可能未能移动全部文件，请刷新后重试");
+									"提示：出现意外错误，可能未能完成此操作，请刷新后重试");
 							$("#dmvfbutton").attr('disabled', false);
 							break;
 						case "filesTotalOutOfLimit":
 							$('#moveFilesMessage').text(
-									"提示：该文件夹内存储的文件数量已达上限，无法移入更多文件");
+									"提示：该文件夹内存储的文件数量已达上限，无法添加更多文件");
 							$("#dmvfbutton").attr('disabled', false);
 							break;
 						case "foldersTotalOutOfLimit":
 							$('#moveFilesMessage').text(
-									"提示：该文件夹内存储的文件夹数量已达上限，无法移入更多文件夹");
+									"提示：该文件夹内存储的文件夹数量已达上限，无法添加更多文件夹");
 							$("#dmvfbutton").attr('disabled', false);
 							break;
 						case "confirmMoveFiles":
@@ -2680,7 +2688,7 @@ function doMoveFiles() {
 												+ result.substring(20));
 							} else {
 								$('#moveFilesMessage').text(
-										"提示：出现意外错误，可能未能移动全部文件，请刷新后重试");
+										"提示：出现意外错误，可能未能完成此操作，请刷新后重试");
 								$("#dmvfbutton").attr('disabled', false);
 							}
 							break;
@@ -2688,13 +2696,13 @@ function doMoveFiles() {
 					}
 				},
 				error : function() {
-					$('#moveFilesMessage').text("提示：出现意外错误，可能未能移动全部文件");
+					$('#moveFilesMessage').text("提示：出现意外错误，可能未能完成此操作，请刷新后重试");
 					$("#dmvfbutton").attr('disabled', false);
 				}
 			});
 }
 
-// 对冲突的移动进行依次询问
+// 移动或复制——对冲突的文件进行依次询问
 function selectFileMoveModel(t) {
 	if ($("#selectFileMoveModelAsAll").prop("checked")) {
 		while (repeIndex < mRepeSize) {
@@ -2730,63 +2738,73 @@ function selectFileMoveModel(t) {
 	}
 }
 
-// 发送移动文件请求
+// 正式执行移动或复制文件操作
 function sendMoveFilesReq() {
-	// 执行移动行为
+	// 取到对冲突文件的操作列表
 	var strOptMap = JSON.stringify(strMoveOptMap);
-	$.ajax({
-		type : "POST",
-		dataType : "text",
-		data : {
-			strIdList : checkedMovefiles.filesId,
-			strFidList : checkedMovefiles.foldersId,
-			strOptMap : strOptMap,
-			locationpath : locationpath
-		},
-		url : "homeController/moveCheckedFiles.ajax",
-		success : function(result) {
-			if (result == "mustLogin") {
-				window.location.href = "prv/login.html";
-			} else {
-				switch (result) {
-				case "noAuthorized":
-					$('#moveFilesMessage').text("提示：您的操作未被授权，移动失败");
+	// 取到操作类型，是移动还是复制
+	var method = "MOVE";
+	if (isCopy) {
+		method = "COPY";
+	}
+	$
+			.ajax({
+				type : "POST",
+				dataType : "text",
+				data : {
+					strIdList : checkedMovefiles.filesId,
+					strFidList : checkedMovefiles.foldersId,
+					strOptMap : strOptMap,
+					locationpath : locationpath,
+					method : method
+				},
+				url : "homeController/moveCheckedFiles.ajax",
+				success : function(result) {
+					if (result == "mustLogin") {
+						window.location.href = "prv/login.html";
+					} else {
+						switch (result) {
+						case "noAuthorized":
+							$('#moveFilesMessage').text("提示：您的操作未被授权，操作失败");
+							$("#dmvfbutton").attr('disabled', false);
+							break;
+						case "errorParameter":
+							$('#moveFilesMessage').text(
+									"提示：参数不正确，无法完成此操作，请刷新后重试");
+							$("#dmvfbutton").attr('disabled', false);
+							break;
+						case "filesTotalOutOfLimit":
+							$('#moveFilesMessage').text(
+									"提示：该文件夹内存储的文件数量已达上限，无法添加更多文件");
+							$("#dmvfbutton").attr('disabled', false);
+							break;
+						case "foldersTotalOutOfLimit":
+							$('#moveFilesMessage').text(
+									"提示：该文件夹内存储的文件夹数量已达上限，无法添加更多文件夹");
+							$("#dmvfbutton").attr('disabled', false);
+							break;
+						case "cannotMoveFiles":
+							$('#moveFilesMessage').text(
+									"提示：出现意外错误，可能未能完成此操作，请刷新后重试");
+							$("#dmvfbutton").attr('disabled', false);
+							break;
+						case "moveFilesSuccess":
+							$('#moveFilesModal').modal('hide');
+							showFolderView(locationpath);
+							break;
+						default:
+							$('#moveFilesMessage').text(
+									"提示：出现意外错误，可能未能完成此操作，请刷新后重试");
+							$("#dmvfbutton").attr('disabled', false);
+							break;
+						}
+					}
+				},
+				error : function() {
+					$('#moveFilesMessage').text("提示：出现意外错误，可能未能完成此操作，请刷新后重试");
 					$("#dmvfbutton").attr('disabled', false);
-					break;
-				case "errorParameter":
-					$('#moveFilesMessage').text("提示：参数不正确，未能全部移动文件，请刷新后重试");
-					$("#dmvfbutton").attr('disabled', false);
-					break;
-				case "filesTotalOutOfLimit":
-					$('#moveFilesMessage')
-							.text("提示：该文件夹内存储的文件数量已达上限，无法移入更多文件。");
-					$("#dmvfbutton").attr('disabled', false);
-					break;
-				case "foldersTotalOutOfLimit":
-					$('#moveFilesMessage').text(
-							"提示：该文件夹内存储的文件夹数量已达上限，无法移入更多文件夹。");
-					$("#dmvfbutton").attr('disabled', false);
-					break;
-				case "cannotMoveFiles":
-					$('#moveFilesMessage').text("提示：出现意外错误，可能未能移动全部文件，请刷新后重试");
-					$("#dmvfbutton").attr('disabled', false);
-					break;
-				case "moveFilesSuccess":
-					$('#moveFilesModal').modal('hide');
-					showFolderView(locationpath);
-					break;
-				default:
-					$('#moveFilesMessage').text("提示：出现意外错误，可能未能移动全部文件，请刷新后重试");
-					$("#dmvfbutton").attr('disabled', false);
-					break;
 				}
-			}
-		},
-		error : function() {
-			$('#moveFilesMessage').text("提示：出现意外错误，可能未能移动全部文件");
-			$("#dmvfbutton").attr('disabled', false);
-		}
-	});
+			});
 }
 
 var screenedFoldrView;// 经过排序的文件视图
@@ -3210,7 +3228,7 @@ function iteratorImport(i, newFolderName) {
 		fd.append("file", uploadfile);// 将文件对象添加到FormData对象中，字段名为uploadfile
 		fd.append("folderId", locationpath);
 		fd.append("folderConstraint", fc);
-		fd.append("originalFileName",fname);
+		fd.append("originalFileName", fname);
 		if (!!newFolderName) {
 			fd.append("newFolderName", newFolderName);
 		}
@@ -3481,18 +3499,7 @@ function getFileChain(fileId, fileName) {
 // 复制链接内容
 function copyFileChain() {
 	let node = document.getElementById('fileChainTextarea');// input框
-	let issafariBrowser = /Safari/.test(navigator.userAgent)
-			&& !/Chrome/.test(navigator.userAgent);
-	if (issafariBrowser) {
-		node.setSelectionRange(0, 9999);
-	} else {
-		const range = document.createRange();
-		range.selectNode(node);
-		const selection = window.getSelection();
-		if (selection.rangeCount > 0)
-			selection.removeAllRanges();
-		selection.addRange(range);
-	}
+	node.select();
 	document.execCommand('copy');
 }
 
