@@ -58,12 +58,12 @@ public class FolderUtil {
 	 * 
 	 * <h2>删除一个文件夹树</h2>
 	 * <p>
-	 * 该方法将会尝试删除一个文件夹内的所有文件和文件夹，最后也会删除传入文件夹本身。
-	 * 它是线程执行的，因此不会阻塞原线程，也不会返回任何结果。
+	 * 该方法将会尝试删除一个文件夹内的所有文件和文件夹，最后也会删除传入文件夹本身。 它是线程执行的，因此不会阻塞原线程，也不会返回任何结果。
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param folderId java.lang.String 要删除的文件夹树的ID，不能为null。
+	 * @param folderId
+	 *            java.lang.String 要删除的文件夹树的ID，不能为null。
 	 */
 	public void deleteAllChildFolder(final String folderId) {
 		final Thread deleteChildFolderThread = new Thread(() -> this.iterationDeleteFolder(folderId));
@@ -215,21 +215,23 @@ public class FolderUtil {
 			if (newFolder == null) {
 				return null;// 副本创建失败则直接返回失败，无需继续执行后续的操作
 			}
+			// excludeFolderId的传参思路是：该参数为null？那肯定是第一层迭代，将此节点的ID作为“禁入ID”传下去，
+			// 如果不为null，则说明是第一层以下的迭代，接收上层传入的excludeFolderId，确保本层复制不触碰此ID代表的
+			// 文件夹即可。
+			if(excludeFolderId == null) {
+				excludeFolderId = newFolder.getFolderId();
+			}
 			// 创建成功后，检查原文件夹内是否有子文件夹
 			List<Folder> childs = fm.queryByParentId(prototype.getFolderId());
 			// 若有，则迭代执行本操作直至最底层文件夹
 			for (Folder c : childs) {
 				// 如果拷贝路径下还有个“自己”，那么说明目标文件夹是原文件夹的一个子文件夹
 				// 这个时候，必须跳过自己，继续拷贝其他的文件夹
-				if (c.getFolderId().equals(excludeFolderId)) {
+				if (c.getFolderId().equals(excludeFolderId) || c.getFolderId().equals(newFolder.getFolderId())) {
 					continue;
 				}
 				// 注意：复制子文件夹时必须将newName传为null！因为子文件夹能存在就不会重名。
-				// newFolderId的传参思路是：该参数为null？那肯定是第一层迭代，将此节点的ID作为“禁入ID”传下去，
-				// 如果不为null，则说明是第一层以下的迭代，接收上层传入的newFolderId，确保本层复制不触碰此ID代表的
-				// 文件夹即可。
-				if (copyFolderByNewNameToPath(c, account, newFolder.getFolderId(), null,
-						excludeFolderId == null ? newFolder.getFolderId() : excludeFolderId) == null) {
+				if (copyFolderByNewNameToPath(c, account, newFolder.getFolderId(), null, excludeFolderId) == null) {
 					return null;// 如果中途哪个子文件夹复制失败，则返回失败
 				}
 			}
