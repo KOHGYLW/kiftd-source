@@ -228,14 +228,12 @@ public class LogUtil {
 	 * 写入下载文件信息
 	 * </p>
 	 */
-	public void writeDownloadFileEvent(HttpServletRequest request, Node f) {
+	public void writeDownloadFileEvent(String account, String ip, Node f) {
 		if (ConfigureReader.instance().inspectLogLevel(LogLevel.Event)) {
-			String account = (String) request.getSession().getAttribute("ACCOUNT");
 			if (account == null || account.length() == 0) {
 				account = "Anonymous";
 			}
 			String a = account;
-			String ip = idg.getIpAddr(request);
 			writerThread.execute(() -> {
 				Folder folder = fm.queryById(f.getFileParentFolder());
 				List<Folder> l = fu.getParentList(folder.getFolderId());
@@ -414,7 +412,8 @@ public class LogUtil {
 					pl.append(i.getFolderName() + "/");
 				}
 				String content = ">IP [" + ip + "]\r\n>ACCOUNT [" + a + "]\r\n>OPERATE ["
-						+ (isCopy ? "Copy Folder" : "Move Folder") + "]\r\n>TO [" + pl.toString() + f.getFolderName() + "]";
+						+ (isCopy ? "Copy Folder" : "Move Folder") + "]\r\n>TO [" + pl.toString() + f.getFolderName()
+						+ "]";
 				writeToLog("Event", content);
 			});
 		}

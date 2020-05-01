@@ -30,6 +30,7 @@ import kohgylw.kiftd.server.util.ContentTypeMap;
 import kohgylw.kiftd.server.util.Docx2PDFUtil;
 import kohgylw.kiftd.server.util.FileBlockUtil;
 import kohgylw.kiftd.server.util.FolderUtil;
+import kohgylw.kiftd.server.util.IpAddrGetter;
 import kohgylw.kiftd.server.util.KiftdFFMPEGLocator;
 import kohgylw.kiftd.server.util.LogUtil;
 import kohgylw.kiftd.server.util.NoticeUtil;
@@ -69,6 +70,8 @@ public class ResourceServiceImpl implements ResourceService {
 	private ContentTypeMap ctm;
 	@Resource
 	private KiftdFFMPEGLocator kfl;
+	@Resource
+	private IpAddrGetter idg;
 
 	private static final long RESOURCE_CACHE_MAX_AGE = 1800L;// 资源缓存的寿命30分钟，正好对应账户的自动注销时间
 
@@ -120,9 +123,10 @@ public class ResourceServiceImpl implements ResourceService {
 						default:
 							break;
 						}
+						String ip = idg.getIpAddr(request);
 						sendResource(file, n.getFileName(), contentType, request, response);
 						if (request.getHeader("Range") == null) {
-							this.lu.writeDownloadFileEvent(request, n);
+							this.lu.writeDownloadFileEvent(account, ip, n);
 						}
 						return;
 					}
@@ -248,10 +252,11 @@ public class ResourceServiceImpl implements ResourceService {
 						if (".docx".equals(suffix)) {
 							String contentType = ctm.getContentType(".pdf");
 							response.setContentType(contentType);
+							String ip = idg.getIpAddr(request);
 							// 执行转换并写出输出流
 							try {
 								d2pu.convertPdf(new FileInputStream(file), response.getOutputStream());
-								lu.writeDownloadFileEvent(request, n);
+								lu.writeDownloadFileEvent(account, ip, n);
 								return;
 							} catch (IOException e) {
 							} catch (Exception e) {
@@ -290,10 +295,11 @@ public class ResourceServiceImpl implements ResourceService {
 						if (".txt".equals(suffix)) {
 							String contentType = ctm.getContentType(".pdf");
 							response.setContentType(contentType);
+							String ip = idg.getIpAddr(request);
 							// 执行转换并写出输出流
 							try {
 								t2pu.convertPdf(file, response.getOutputStream());
-								lu.writeDownloadFileEvent(request, n);
+								lu.writeDownloadFileEvent(account, ip, n);
 								return;
 							} catch (Exception e) {
 								Printer.instance.print(e.getMessage());
@@ -349,11 +355,12 @@ public class ResourceServiceImpl implements ResourceService {
 						case ".pptx":
 							String contentType = ctm.getContentType(".pdf");
 							response.setContentType(contentType);
+							String ip = idg.getIpAddr(request);
 							// 执行转换并写出输出流
 							try {
 								p2pu.convertPdf(new FileInputStream(file), response.getOutputStream(),
 										".ppt".equals(suffix) ? PowerPointType.PPT : PowerPointType.PPTX);
-								lu.writeDownloadFileEvent(request, n);
+								lu.writeDownloadFileEvent(account, ip, n);
 								return;
 							} catch (IOException e) {
 							} catch (Exception e) {

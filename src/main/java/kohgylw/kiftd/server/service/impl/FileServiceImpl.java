@@ -56,6 +56,8 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 	private FileBlockUtil fbu;
 	@Resource
 	private FolderUtil fu;
+	@Resource
+	private IpAddrGetter idg;
 
 	private static final String CONTENT_TYPE = "application/octet-stream";
 
@@ -326,12 +328,13 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 					if (ConfigureReader.instance().accessFolder(folder, account)) {
 						// 执行写出
 						final File fo = this.fbu.getFileFromBlocks(f);
+						final String ip = idg.getIpAddr(request); 
 						if (fo != null) {
 							writeRangeFileStream(request, response, fo, f.getFileName(), CONTENT_TYPE,
 									ConfigureReader.instance().getDownloadMaxRate(account), fbu.getETag(fo));
 							// 日志记录（仅针对一次下载）
 							if (request.getHeader("Range") == null) {
-								this.lu.writeDownloadFileEvent(request, f);
+								this.lu.writeDownloadFileEvent(account, ip, f);
 							}
 							return;
 						}
@@ -512,7 +515,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 				final List<String> fidList = gson.fromJson(strFidList, new TypeToken<List<String>>() {
 				}.getType());
 				for (String fid : fidList) {
-					countFolderFilesId(account, fid, fidList);
+					countFolderFilesId(account, fid, idList);
 				}
 				long packTime = 0L;
 				for (final String fid : idList) {
