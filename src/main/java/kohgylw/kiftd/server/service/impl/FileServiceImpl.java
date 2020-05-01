@@ -442,9 +442,10 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 					return NO_AUTHORIZED;
 				}
 				final List<Folder> l = this.fu.getParentList(fid);
-				if (fu.deleteAllChildFolder(fid) <= 0) {
+				if (flm.deleteById(fid) <= 0) {
 					return "cannotDeleteFile";
 				} else {
+					fu.deleteAllChildFolder(fid);
 					this.lu.writeDeleteFolderEvent(request, folder, l);
 				}
 			}
@@ -780,21 +781,22 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 						// 获得冲突的文件夹
 						Folder f = flm.queryByParentId(locationpath).parallelStream()
 								.filter((e) -> e.getFolderName().equals(folder.getFolderName())).findFirst().get();
-						// 判断是否为复制模式
-						if (isCopy) {
-							// 是，则先在目标文件夹内复制整个原文件夹的节点树
-							Folder newFolder = fu.copyFolderByNewNameToPath(folder, account, locationpath, null);
-							if (newFolder != null) {
-								// 再删除冲突的文件夹
-								// 注意，上述两个过程不可颠倒！因为有可能会出现复制自己再覆盖自己的情况
-								if (fu.deleteAllChildFolder(f.getFolderId()) > 0) {
+						// 先删除冲突文件夹的节点
+						if (flm.deleteById(f.getFolderId()) > 0) {
+							// 判断是否为复制模式
+							if (isCopy) {
+								// 是，则先在目标文件夹内复制整个原文件夹的节点树
+								Folder newFolder = fu.copyFolderByNewNameToPath(folder, account, locationpath, null);
+								// 之后删除冲突文件夹的所有子文件夹，必须在复制后执行！否则可能会出现还没复制完就被删了的问题
+								fu.deleteAllChildFolder(f.getFolderId());
+								if (newFolder != null) {
+									// 注意，上述过程均不可颠倒！否则可能会导致文件夹名冲突或复制内容不全的问题
 									this.lu.writeMoveFileEvent(request, newFolder, isCopy);
 									break;
 								}
-							}
-						} else {
-							// 不是，则先将冲突的文件夹删除
-							if (fu.deleteAllChildFolder(f.getFolderId()) > 0) {
+							} else {
+								// 不是，直接删除冲突文件夹的所有子文件夹
+								fu.deleteAllChildFolder(f.getFolderId());
 								// 再将原文件夹移入目标文件夹内
 								Map<String, String> map = new HashMap<>();
 								map.put("folderId", folder.getFolderId());
@@ -805,6 +807,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 								}
 							}
 						}
+						// 上述操作没从正常的位置break，则说明操作出错，返回错误提示
 						return "cannotMoveFiles";
 					case "both":
 						// 保留两者，需要先判断移动后是否会导致目标文件夹的文件列表超限
@@ -878,7 +881,9 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 			}
 			// 上述操作全部成功而未中途退出的话，则证明移动任务顺利结束，返回成功提示信息
 			return "moveFilesSuccess";
-		} catch (Exception e) {
+		} catch (
+
+		Exception e) {
 			// 如果中途产生了异常，那么返回失败提示
 			return ERROR_PARAMETER;
 		}

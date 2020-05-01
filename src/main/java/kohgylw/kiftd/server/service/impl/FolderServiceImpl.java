@@ -132,7 +132,8 @@ public class FolderServiceImpl implements FolderService {
 		}
 		// 执行迭代删除
 		final List<Folder> l = this.fu.getParentList(folderId);
-		if (this.fu.deleteAllChildFolder(folderId) > 0) {
+		if (this.fm.deleteById(folderId) > 0) {
+			fu.deleteAllChildFolder(folderId);
 			this.lu.writeDeleteFolderEvent(request, folder, l);
 			ServerInitListener.needCheck = true;
 			return "deleteFolderSuccess";
@@ -255,7 +256,8 @@ public class FolderServiceImpl implements FolderService {
 				return "deleteError";
 			}
 			final List<Folder> l = this.fu.getParentList(rf.getFolderId());
-			if (this.fu.deleteAllChildFolder(rf.getFolderId()) > 0) {
+			if (this.fm.deleteById(rf.getFolderId()) > 0) {
+				fu.deleteAllChildFolder(rf.getFolderId());
 				this.lu.writeDeleteFolderEvent(request, rf, l);
 			} else {
 				return "deleteError";
@@ -276,7 +278,7 @@ public class FolderServiceImpl implements FolderService {
 			cnfbnr.setResult("error");
 			return gson.toJson(cnfbnr);
 		}
-		if (!TextFormateUtil.instance().matcherFolderName(folderName) || folderName.indexOf(".") == 0) {
+		if (!TextFormateUtil.instance().matcherFolderName(folderName)) {
 			cnfbnr.setResult("error");
 			return gson.toJson(cnfbnr);
 		}

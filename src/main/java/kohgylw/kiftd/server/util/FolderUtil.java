@@ -54,10 +54,20 @@ public class FolderUtil {
 		return idList;
 	}
 
-	public int deleteAllChildFolder(final String folderId) {
+	/**
+	 * 
+	 * <h2>删除一个文件夹树</h2>
+	 * <p>
+	 * 该方法将会尝试删除一个文件夹内的所有文件和文件夹，最后也会删除传入文件夹本身。
+	 * 它是线程执行的，因此不会阻塞原线程，也不会返回任何结果。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @param folderId java.lang.String 要删除的文件夹树的ID，不能为null。
+	 */
+	public void deleteAllChildFolder(final String folderId) {
 		final Thread deleteChildFolderThread = new Thread(() -> this.iterationDeleteFolder(folderId));
 		deleteChildFolderThread.start();
-		return this.fm.deleteById(folderId);
 	}
 
 	private void iterationDeleteFolder(final String folderId) {
@@ -83,9 +93,6 @@ public class FolderUtil {
 			return null;
 		}
 		if (parentId == null || folderName == null || parentId.length() <= 0 || folderName.length() <= 0) {
-			return null;
-		}
-		if (folderName.indexOf(".") == 0) {
 			return null;
 		}
 		final Folder parentFolder = this.fm.queryById(parentId);
@@ -241,7 +248,7 @@ public class FolderUtil {
 			return null;
 		}
 	}
-	
+
 	/**
 	 * 
 	 * <h2>在指定路径内复制一份目标文件夹的拷贝，并可设定新名称</h2>

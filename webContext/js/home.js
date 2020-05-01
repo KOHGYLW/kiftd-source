@@ -1291,6 +1291,7 @@ function showDeleteFolderModel(folderId, folderName) {
 					"<button id='dmbutton' type='button' class='btn btn-danger' onclick='deleteFolder("
 							+ '"' + folderId + '"' + ")'>删除</button>");
 	$("#dmbutton").attr('disabled', false);
+	$("#cancelDeleteFolderBtn").attr('disabled', false);
 	$('#deleteFolderMessage').text(
 			"提示：确定要彻底删除文件夹：[" + folderName + "]及其全部内容么？该操作不可恢复");
 	$('#deleteFolderModal').modal('toggle');
@@ -1299,6 +1300,7 @@ function showDeleteFolderModel(folderId, folderName) {
 // 执行删除文件夹
 function deleteFolder(folderId) {
 	$("#dmbutton").attr('disabled', true);
+	$("#cancelDeleteFolderBtn").attr('disabled', true);
 	$('#deleteFolderMessage').text("提示：正在删除，请稍候...");
 	$.ajax({
 		type : "POST",
@@ -1314,24 +1316,29 @@ function deleteFolder(folderId) {
 				if (result == "noAuthorized") {
 					$('#deleteFolderMessage').text("提示：您的操作未被授权，删除文件夹失败");
 					$("#dmbutton").attr('disabled', false);
+					$("#cancelDeleteFolderBtn").attr('disabled', true);
 				} else if (result == "errorParameter") {
 					$('#deleteFolderMessage').text("提示：参数不正确，删除文件夹失败");
 					$("#dmbutton").attr('disabled', false);
+					$("#cancelDeleteFolderBtn").attr('disabled', true);
 				} else if (result == "cannotDeleteFolder") {
 					$('#deleteFolderMessage').text("提示：出现意外错误，可能未能删除文件夹");
 					$("#dmbutton").attr('disabled', false);
+					$("#cancelDeleteFolderBtn").attr('disabled', true);
 				} else if (result == "deleteFolderSuccess") {
 					$('#deleteFolderModal').modal('hide');
 					showFolderView(locationpath);
 				} else {
 					$('#deleteFolderMessage').text("提示：出现意外错误，可能未能删除文件夹");
 					$("#dmbutton").attr('disabled', false);
+					$("#cancelDeleteFolderBtn").attr('disabled', true);
 				}
 			}
 		},
 		error : function() {
 			$('#deleteFolderMessage').text("提示：出现意外错误，可能未能删除文件夹");
 			$("#dmbutton").attr('disabled', false);
+			$("#cancelDeleteFolderBtn").attr('disabled', true);
 		}
 	});
 }
@@ -1747,6 +1754,7 @@ function showDeleteFileModel(fileId, fileName) {
 					"<button id='dfmbutton' type='button' class='btn btn-danger' onclick='deleteFile("
 							+ '"' + fileId + '"' + ")'>删除</button>");
 	$("#dfmbutton").attr('disabled', false);
+	$("#cancelDeleteFileBox").attr('disabled', false);
 	$('#deleteFileMessage').text("提示：确定要彻底删除文件：[" + fileName + "]么？该操作不可恢复");
 	$('#deleteFileModal').modal('toggle');
 }
@@ -1754,6 +1762,7 @@ function showDeleteFileModel(fileId, fileName) {
 // 执行删除文件操作
 function deleteFile(fileId) {
 	$("#dfmbutton").attr('disabled', true);
+	$("#cancelDeleteFileBox").attr('disabled', true);
 	$('#deleteFileMessage').text("提示：正在删除，请稍候...");
 	$.ajax({
 		type : "POST",
@@ -1769,24 +1778,29 @@ function deleteFile(fileId) {
 				if (result == "noAuthorized") {
 					$('#deleteFileMessage').text("提示：您的操作未被授权，删除失败");
 					$("#dfmbutton").attr('disabled', false);
+					$("#cancelDeleteFileBox").attr('disabled', false);
 				} else if (result == "errorParameter") {
 					$('#deleteFileMessage').text("提示：参数不正确，删除失败");
 					$("#dfmbutton").attr('disabled', false);
+					$("#cancelDeleteFileBox").attr('disabled', false);
 				} else if (result == "cannotDeleteFile") {
 					$('#deleteFileMessage').text("提示：出现意外错误，可能未能删除文件");
 					$("#dfmbutton").attr('disabled', false);
+					$("#cancelDeleteFileBox").attr('disabled', false);
 				} else if (result == "deleteFileSuccess") {
 					$('#deleteFileModal').modal('hide');
 					showFolderView(locationpath);
 				} else {
 					$('#deleteFileMessage').text("提示：出现意外错误，可能未能删除文件");
 					$("#dfmbutton").attr('disabled', false);
+					$("#cancelDeleteFileBox").attr('disabled', false);
 				}
 			}
 		},
 		error : function() {
 			$('#deleteFileMessage').text("提示：出现意外错误，可能未能删除文件");
 			$("#dfmbutton").attr('disabled', false);
+			$("#cancelDeleteFileBox").attr('disabled', false);
 		}
 	});
 }
@@ -2114,12 +2128,14 @@ function showDownloadAllCheckedModel() {
 						"<button id='dclmbutton' type='button' class='btn btn-primary' onclick='downloadAllChecked()'>开始下载</button>");
 		$("#dclmbutton").attr('disabled', false);
 	}
+	$("#cancelDownloadAllCheckedBtn").attr('disabled', false);
 	$("#downloadAllCheckedModal").modal('toggle');
 }
 
 // 下载选中的所有文件
 function downloadAllChecked() {
 	$("#dclmbutton").attr('disabled', true);
+	$("#cancelDownloadAllCheckedBtn").attr('disabled', true);
 	var faf = getCheckedFilesAndFolders();
 	$("#downloadAllCheckedName").text(
 			"提示：服务器正在对选中资源进行压缩（共" + faf.size
@@ -2172,6 +2188,8 @@ function downloadAllChecked() {
 			if (result == "ERROR") {
 				$("#downloadAllCheckedName")
 						.text("提示：压缩过程出错。无法完成压缩，请重试或告知管理员。");
+				$("#dclmbutton").attr('disabled', false);
+				$("#cancelDownloadAllCheckedBtn").attr('disabled', false);
 			} else {
 				$("#downloadAllCheckedLoad").text("");
 				$("#downloadAllCheckedName").text("提示：压缩完成！准备开始下载...");
@@ -2192,6 +2210,8 @@ function downloadAllChecked() {
 		},
 		error : function() {
 			$("#downloadAllCheckedName").text("提示：请求失败。无法完成压缩，请重试或告知管理员。");
+			$("#dclmbutton").attr('disabled', false);
+			$("#cancelDownloadAllCheckedBtn").attr('disabled', false);
 		}
 	});
 }
@@ -2201,6 +2221,7 @@ function showDeleteAllCheckedModel() {
 	$('#deleteFileBox').html("");
 	var faf = getCheckedFilesAndFolders();
 	$("#dfmbutton").attr('disabled', false);
+	$("#cancelDeleteFileBox").attr('disabled', false);
 	if (faf.size == 0) {
 		$('#deleteFileMessage').html(checkFilesTip);
 	} else {
@@ -2217,6 +2238,7 @@ function deleteAllChecked() {
 	// TODO 提交全部删除请求
 	var faf = getCheckedFilesAndFolders();
 	$("#dfmbutton").attr('disabled', true);
+	$("#cancelDeleteFileBox").attr('disabled', true);
 	$('#deleteFileMessage').text("提示：正在删除，请稍候...");
 	$.ajax({
 		type : "POST",
@@ -2233,24 +2255,29 @@ function deleteAllChecked() {
 				if (result == "noAuthorized") {
 					$('#deleteFileMessage').text("提示：您的操作未被授权，删除失败");
 					$("#dfmbutton").attr('disabled', false);
+					$("#cancelDeleteFileBox").attr('disabled', false);
 				} else if (result == "errorParameter") {
 					$('#deleteFileMessage').text("提示：参数不正确，未能全部删除文件");
 					$("#dfmbutton").attr('disabled', false);
+					$("#cancelDeleteFileBox").attr('disabled', false);
 				} else if (result == "cannotDeleteFile") {
 					$('#deleteFileMessage').text("提示：出现意外错误，可能未能删除全部文件");
 					$("#dfmbutton").attr('disabled', false);
+					$("#cancelDeleteFileBox").attr('disabled', false);
 				} else if (result == "deleteFileSuccess") {
 					$('#deleteFileModal').modal('hide');
 					showFolderView(locationpath);
 				} else {
 					$('#deleteFileMessage').text("提示：出现意外错误，可能未能删除全部文件");
 					$("#dfmbutton").attr('disabled', false);
+					$("#cancelDeleteFileBox").attr('disabled', false);
 				}
 			}
 		},
 		error : function() {
 			$('#deleteFileMessage').text("提示：出现意外错误，可能未能删除全部文件");
 			$("#dfmbutton").attr('disabled', false);
+			$("#cancelDeleteFileBox").attr('disabled', false);
 		}
 	});
 }
@@ -2598,6 +2625,7 @@ function stickFile() {
 							"<button id='dmvfbutton' type='button' class='btn btn-danger' onclick='doMoveFiles()'>全部移动</button>");
 		}
 		$("#selectFileMoveModelAsAll").removeAttr("checked");
+		$("#cancelMoveFilesBtn").attr('disabled', false);
 		$("#selectFileMoveModelAlert").hide();
 		$('#moveFilesModal').modal('show');
 	}
@@ -2606,6 +2634,7 @@ function stickFile() {
 // 先行确认文件移动操作
 function doMoveFiles() {
 	$("#dmvfbutton").attr('disabled', true);
+	$("#cancelMoveFilesBtn").attr('disabled', true);
 	var method = "MOVE";
 	if (isCopy) {
 		$('#moveFilesMessage').text("提示：正在复制，请稍候...");
@@ -2633,26 +2662,31 @@ function doMoveFiles() {
 						case "noAuthorized":
 							$('#moveFilesMessage').text("提示：您的操作未被授权，操作失败");
 							$("#dmvfbutton").attr('disabled', false);
+							$("#cancelMoveFilesBtn").attr('disabled', false);
 							break;
 						case "errorParameter":
 							$('#moveFilesMessage').text(
 									"提示：参数不正确，无法完成此操作，请刷新后重试");
 							$("#dmvfbutton").attr('disabled', false);
+							$("#cancelMoveFilesBtn").attr('disabled', false);
 							break;
 						case "cannotMoveFiles":
 							$('#moveFilesMessage').text(
 									"提示：出现意外错误，可能未能完成此操作，请刷新后重试");
 							$("#dmvfbutton").attr('disabled', false);
+							$("#cancelMoveFilesBtn").attr('disabled', false);
 							break;
 						case "filesTotalOutOfLimit":
 							$('#moveFilesMessage').text(
 									"提示：该文件夹内存储的文件数量已达上限，无法添加更多文件");
 							$("#dmvfbutton").attr('disabled', false);
+							$("#cancelMoveFilesBtn").attr('disabled', false);
 							break;
 						case "foldersTotalOutOfLimit":
 							$('#moveFilesMessage').text(
 									"提示：该文件夹内存储的文件夹数量已达上限，无法添加更多文件夹");
 							$("#dmvfbutton").attr('disabled', false);
+							$("#cancelMoveFilesBtn").attr('disabled', false);
 							break;
 						case "confirmMoveFiles":
 							strMoveOptMap = {};
@@ -2690,6 +2724,7 @@ function doMoveFiles() {
 								$('#moveFilesMessage').text(
 										"提示：出现意外错误，可能未能完成此操作，请刷新后重试");
 								$("#dmvfbutton").attr('disabled', false);
+								$("#cancelMoveFilesBtn").attr('disabled', false);
 							}
 							break;
 						}
@@ -2698,6 +2733,7 @@ function doMoveFiles() {
 				error : function() {
 					$('#moveFilesMessage').text("提示：出现意外错误，可能未能完成此操作，请刷新后重试");
 					$("#dmvfbutton").attr('disabled', false);
+					$("#cancelMoveFilesBtn").attr('disabled', false);
 				}
 			});
 }
@@ -2767,26 +2803,31 @@ function sendMoveFilesReq() {
 						case "noAuthorized":
 							$('#moveFilesMessage').text("提示：您的操作未被授权，操作失败");
 							$("#dmvfbutton").attr('disabled', false);
+							$("#cancelMoveFilesBtn").attr('disabled', false);
 							break;
 						case "errorParameter":
 							$('#moveFilesMessage').text(
 									"提示：参数不正确，无法完成此操作，请刷新后重试");
 							$("#dmvfbutton").attr('disabled', false);
+							$("#cancelMoveFilesBtn").attr('disabled', false);
 							break;
 						case "filesTotalOutOfLimit":
 							$('#moveFilesMessage').text(
 									"提示：该文件夹内存储的文件数量已达上限，无法添加更多文件");
 							$("#dmvfbutton").attr('disabled', false);
+							$("#cancelMoveFilesBtn").attr('disabled', false);
 							break;
 						case "foldersTotalOutOfLimit":
 							$('#moveFilesMessage').text(
 									"提示：该文件夹内存储的文件夹数量已达上限，无法添加更多文件夹");
 							$("#dmvfbutton").attr('disabled', false);
+							$("#cancelMoveFilesBtn").attr('disabled', false);
 							break;
 						case "cannotMoveFiles":
 							$('#moveFilesMessage').text(
 									"提示：出现意外错误，可能未能完成此操作，请刷新后重试");
 							$("#dmvfbutton").attr('disabled', false);
+							$("#cancelMoveFilesBtn").attr('disabled', false);
 							break;
 						case "moveFilesSuccess":
 							$('#moveFilesModal').modal('hide');
@@ -2796,6 +2837,7 @@ function sendMoveFilesReq() {
 							$('#moveFilesMessage').text(
 									"提示：出现意外错误，可能未能完成此操作，请刷新后重试");
 							$("#dmvfbutton").attr('disabled', false);
+							$("#cancelMoveFilesBtn").attr('disabled', false);
 							break;
 						}
 					}
@@ -2803,6 +2845,7 @@ function sendMoveFilesReq() {
 				error : function() {
 					$('#moveFilesMessage').text("提示：出现意外错误，可能未能完成此操作，请刷新后重试");
 					$("#dmvfbutton").attr('disabled', false);
+					$("#cancelMoveFilesBtn").attr('disabled', false);
 				}
 			});
 }
