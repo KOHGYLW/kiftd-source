@@ -328,7 +328,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 					if (ConfigureReader.instance().accessFolder(folder, account)) {
 						// 执行写出
 						final File fo = this.fbu.getFileFromBlocks(f);
-						final String ip = idg.getIpAddr(request); 
+						final String ip = idg.getIpAddr(request);
 						if (fo != null) {
 							writeRangeFileStream(request, response, fo, f.getFileName(), CONTENT_TYPE,
 									ConfigureReader.instance().getDownloadMaxRate(account), fbu.getETag(fo));
@@ -476,7 +476,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 				// 创建ZIP压缩包并将全部文件压缩
 				if (idList.size() > 0 || fidList.size() > 0) {
 					final String zipname = this.fbu.createZip(idList, fidList, account);
-					this.lu.writeDownloadCheckedFileEvent(request, idList);
+					this.lu.writeDownloadCheckedFileEvent(request, idList, fidList);
 					// 返回生成的压缩包路径
 					return zipname;
 				}
@@ -557,11 +557,15 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 	private void countFolderFilesId(String account, String fid, List<String> idList) {
 		Folder f = flm.queryById(fid);
 		if (ConfigureReader.instance().accessFolder(f, account)) {
-			idList.addAll(Arrays.asList(
-					fm.queryByParentFolderId(fid).parallelStream().map((e) -> e.getFileId()).toArray(String[]::new)));
-			List<Folder> cFolders = flm.queryByParentId(fid);
-			for (Folder cFolder : cFolders) {
-				countFolderFilesId(account, cFolder.getFolderId(), idList);
+			try {
+				idList.addAll(Arrays.asList(fm.queryByParentFolderId(fid).parallelStream().map((e) -> e.getFileId())
+						.toArray(String[]::new)));
+				List<Folder> cFolders = flm.queryByParentId(fid);
+				for (Folder cFolder : cFolders) {
+					countFolderFilesId(account, cFolder.getFolderId(), idList);
+				}
+			} catch (Exception e2) {
+				// 超限？那就不再加了。
 			}
 		}
 	}

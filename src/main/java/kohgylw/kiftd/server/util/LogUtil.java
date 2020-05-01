@@ -447,12 +447,12 @@ public class LogUtil {
 	}
 
 	/**
-	 * 以格式化记录下载文件日志
+	 * 以格式化记录打包下载文件日志
 	 * <p>
-	 * 写入下载文件信息
+	 * 写入打包下载文件信息
 	 * </p>
 	 */
-	public void writeDownloadCheckedFileEvent(HttpServletRequest request, List<String> idList) {
+	public void writeDownloadCheckedFileEvent(HttpServletRequest request, List<String> idList, List<String> fidList) {
 		if (ConfigureReader.instance().inspectLogLevel(LogLevel.Event)) {
 			String account = (String) request.getSession().getAttribute("ACCOUNT");
 			if (account == null || account.length() == 0) {
@@ -462,7 +462,7 @@ public class LogUtil {
 			String ip = idg.getIpAddr(request);
 			writerThread.execute(() -> {
 				StringBuffer content = new StringBuffer(">IP [" + ip + "]\r\n>ACCOUNT [" + a
-						+ "]\r\n>OPERATE [Download checked file]\r\n----------------\r\n");
+						+ "]\r\n>OPERATE [Download package]\r\n----------------\r\n");
 				for (String fid : idList) {
 					Node f = fim.queryById(fid);
 					if (f != null) {
@@ -472,8 +472,19 @@ public class LogUtil {
 						for (Folder i : l) {
 							pl.append(i.getFolderName() + "/");
 						}
-						content.append(">PATH [" + pl.toString() + folder.getFolderName() + "]\r\n>NAME ["
-								+ f.getFileName() + "]\r\n");
+						content.append(
+								">File [" + pl.toString() + folder.getFolderName() + "/" + f.getFileName() + "]\r\n");
+					}
+				}
+				for (String ffid : fidList) {
+					Folder fl = fm.queryById(ffid);
+					if (fl != null) {
+						List<Folder> l = fu.getParentList(fl.getFolderId());
+						StringBuffer pl = new StringBuffer();
+						for (Folder i : l) {
+							pl.append(i.getFolderName() + "/");
+						}
+						content.append(">Folder [" + pl.toString() + fl.getFolderName() + "]\r\n");
 					}
 				}
 				content.append("----------------");
