@@ -627,6 +627,10 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 						fu.getAllFoldersId(node.getFileParentFolder()))) {
 					return NO_AUTHORIZED;// 无操作权限
 				}
+				// 记录原始的文件路径，便于执行后记录日志
+				String originPath = fbu.getNodePath(node);
+				// 记录操作者IP地址
+				String ip = idg.getIpAddr(request);
 				// 执行文件移动操作
 				if (fm.queryByParentFolderId(locationpath).parallelStream()
 						.anyMatch((e) -> e.getFileName().equals(node.getFileName()))) {
@@ -656,17 +660,15 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 									return "cannotMoveFiles";
 								}
 								// 成功，记录日志
-								this.lu.writeMoveFileEvent(request, copyNode, isCopy);
+								this.lu.writeMoveFileEvent(account, ip, originPath, fbu.getNodePath(copyNode), isCopy);
 							} else {
 								// 否则，修改操作节点的父文件夹为目标文件夹
-								Map<String, String> map = new HashMap<>();
-								map.put("fileId", node.getFileId());
-								map.put("locationpath", locationpath);
-								if (this.fm.moveById(map) <= 0) {
+								node.setFileParentFolder(locationpath);
+								if (this.fm.update(node) <= 0) {
 									return "cannotMoveFiles";
 								}
 								// 成功，记录日志
-								this.lu.writeMoveFileEvent(request, node, isCopy);
+								this.lu.writeMoveFileEvent(account, ip, originPath, fbu.getNodePath(node), isCopy);
 							}
 							// 最后，尝试删除冲突节点的文件块。注意：该操作必须在复制节点插入后再执行！
 							fbu.deleteFromFileBlocks(n);
@@ -691,7 +693,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 							if (copyNode == null) {
 								return "cannotMoveFiles";
 							}
-							this.lu.writeMoveFileEvent(request, copyNode, isCopy);
+							this.lu.writeMoveFileEvent(account, ip, originPath, fbu.getNodePath(copyNode), isCopy);
 						} else {
 							// 不是，则将原节点重新命名为原名+序号，再移动至目标文件夹下
 							node.setFileName(FileNodeUtil.getNewNodeName(node.getFileName(),
@@ -700,7 +702,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 							if (fm.update(node) <= 0) {
 								return "cannotMoveFiles";
 							}
-							this.lu.writeMoveFileEvent(request, node, isCopy);
+							this.lu.writeMoveFileEvent(account, ip, originPath, fbu.getNodePath(node), isCopy);
 						}
 						// 到这里应该是保留成功了，继续执行后面的操作
 						break;
@@ -726,17 +728,15 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 							return "cannotMoveFiles";
 						}
 						// 成功后，记录日志
-						this.lu.writeMoveFileEvent(request, newNode, isCopy);
+						this.lu.writeMoveFileEvent(account, ip, originPath, fbu.getNodePath(newNode), isCopy);
 					} else {
 						// 不是，移动原节点至目标文件夹内
-						Map<String, String> map = new HashMap<>();
-						map.put("fileId", node.getFileId());
-						map.put("locationpath", locationpath);
-						if (this.fm.moveById(map) <= 0) {
+						node.setFileParentFolder(locationpath);
+						if (this.fm.update(node) <= 0) {
 							return "cannotMoveFiles";
 						}
 						// 成功后，记录日志
-						this.lu.writeMoveFileEvent(request, node, isCopy);
+						this.lu.writeMoveFileEvent(account, ip, originPath, fbu.getNodePath(node), isCopy);
 					}
 				}
 				// 完成了一个原节点的操作，继续循环直至所有涉及节点均操作完毕
@@ -771,6 +771,9 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 						return ERROR_PARAMETER;
 					}
 				}
+				// 记录原始的文件夹路径和操作者IP地址
+				String originPath = fu.getFolderPath(folder);
+				String ip = idg.getIpAddr(request);
 				// 判断目标文件夹内是否有文件夹与待移入文件夹冲突？
 				if (flm.queryByParentId(locationpath).parallelStream()
 						.anyMatch((e) -> e.getFolderName().equals(folder.getFolderName()))) {
@@ -797,19 +800,21 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 								// 之后删除冲突文件夹的所有子文件夹，必须在复制后执行！否则可能会出现还没复制完就被删了的问题
 								fu.deleteAllChildFolder(f.getFolderId());
 								if (newFolder != null) {
+									// 成功后，记录日志
 									// 注意，上述过程均不可颠倒！否则可能会导致文件夹名冲突或复制内容不全的问题
-									this.lu.writeMoveFileEvent(request, newFolder, isCopy);
+									this.lu.writeMoveFolderEvent(account, ip, originPath, fu.getFolderPath(newFolder),
+											isCopy);
 									break;
 								}
 							} else {
 								// 不是，直接删除冲突文件夹的所有子文件夹
 								fu.deleteAllChildFolder(f.getFolderId());
 								// 再将原文件夹移入目标文件夹内
-								Map<String, String> map = new HashMap<>();
-								map.put("folderId", folder.getFolderId());
-								map.put("locationpath", locationpath);
-								if (this.flm.moveById(map) > 0) {
-									this.lu.writeMoveFileEvent(request, folder, isCopy);
+								folder.setFolderParent(locationpath);
+								if (this.flm.update(folder) > 0) {
+									// 成功后，记录日志
+									this.lu.writeMoveFolderEvent(account, ip, originPath, fu.getFolderPath(folder),
+											isCopy);
 									break;
 								}
 							}
@@ -829,8 +834,8 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 							if (newFolder == null) {
 								return "cannotMoveFiles";
 							}
-							// 更新成功，记录日志
-							this.lu.writeMoveFileEvent(request, newFolder, isCopy);
+							// 成功，记录日志
+							this.lu.writeMoveFolderEvent(account, ip, originPath, fu.getFolderPath(newFolder), isCopy);
 						} else {
 							// 不是，将原节点的名称改为计数名称，父文件夹改为目标文件夹
 							folder.setFolderParent(locationpath);
@@ -839,8 +844,8 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 							if (this.flm.update(folder) <= 0) {
 								return "cannotMoveFiles";
 							}
-							// 更新成功，记录日志
-							this.lu.writeMoveFileEvent(request, folder, isCopy);
+							// 成功，记录日志
+							this.lu.writeMoveFolderEvent(account, ip, originPath, fu.getFolderPath(folder), isCopy);
 						}
 						// 保留两者成功，继续后面的操作
 						break;
@@ -866,17 +871,15 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 							return "cannotMoveFiles";
 						}
 						// 操作成功，记录日志
-						this.lu.writeMoveFileEvent(request, newFolder, isCopy);
+						this.lu.writeMoveFolderEvent(account, ip, originPath, fu.getFolderPath(newFolder), isCopy);
 					} else {
 						// 否，直接将原文件夹移入目标文件夹内
-						Map<String, String> map = new HashMap<>();
-						map.put("folderId", folder.getFolderId());
-						map.put("locationpath", locationpath);
-						if (this.flm.moveById(map) <= 0) {
+						folder.setFolderParent(locationpath);
+						if (this.flm.update(folder) <= 0) {
 							return "cannotMoveFiles";
 						}
 						// 操作成功，记录日志
-						this.lu.writeMoveFileEvent(request, folder, isCopy);
+						this.lu.writeMoveFolderEvent(account, ip, originPath, fu.getFolderPath(folder), isCopy);
 					}
 					// 无冲突情况处理完成
 				}
@@ -888,9 +891,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 			}
 			// 上述操作全部成功而未中途退出的话，则证明移动任务顺利结束，返回成功提示信息
 			return "moveFilesSuccess";
-		} catch (
-
-		Exception e) {
+		} catch (Exception e) {
 			// 如果中途产生了异常，那么返回失败提示
 			return ERROR_PARAMETER;
 		}
@@ -1244,4 +1245,5 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		}
 		return null;
 	}
+
 }

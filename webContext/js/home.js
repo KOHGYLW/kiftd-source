@@ -2616,7 +2616,7 @@ function stickFile() {
 					"提示：确定将这" + checkedMovefiles.size + "项复制到当前位置么？");
 			$('#moveFilesBox')
 					.html(
-							"<button id='dmvfbutton' type='button' class='btn btn-danger' onclick='doMoveFiles()'>全部复制</button>");
+							"<button id='dmvfbutton' type='button' class='btn btn-primary' onclick='doMoveFiles()'>全部复制</button>");
 		} else {
 			$('#moveFilesMessage').text(
 					"提示：确定将这" + checkedMovefiles.size + "项移动到当前位置么？");

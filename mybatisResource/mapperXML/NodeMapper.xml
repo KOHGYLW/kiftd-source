@@ -91,10 +91,4 @@
 		#{fileId,jdbcType=VARCHAR}) LIMIT 0,2147483647
 	</select>
 
-	<update id="moveById" parameterType="java.util.Map">
-		UPDATE FILE SET
-		file_parent_folder = #{locationpath,jdbcType=VARCHAR} WHERE file_id =
-		#{fileId,jdbcType=VARCHAR}
-	</update>
-
 </mapper>

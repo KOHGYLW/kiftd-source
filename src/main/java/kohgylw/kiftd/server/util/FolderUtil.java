@@ -218,7 +218,7 @@ public class FolderUtil {
 			// excludeFolderId的传参思路是：该参数为null？那肯定是第一层迭代，将此节点的ID作为“禁入ID”传下去，
 			// 如果不为null，则说明是第一层以下的迭代，接收上层传入的excludeFolderId，确保本层复制不触碰此ID代表的
 			// 文件夹即可。
-			if(excludeFolderId == null) {
+			if (excludeFolderId == null) {
 				excludeFolderId = newFolder.getFolderId();
 			}
 			// 创建成功后，检查原文件夹内是否有子文件夹
@@ -270,5 +270,27 @@ public class FolderUtil {
 	 */
 	public Folder copyFolderByNewNameToPath(Folder prototype, String account, String parentFolderId, String newName) {
 		return copyFolderByNewNameToPath(prototype, account, parentFolderId, newName, null);
+	}
+
+	/**
+	 * 
+	 * <h2>获取一个文件夹当前的逻辑路径</h2>
+	 * <p>
+	 * 该方法用于获取指定文件夹当前的完整逻辑路径，型如“/ROOT/doc”。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @param f
+	 *            kohgylw.kiftd.server.model.Folder 要获取路径的文件夹
+	 * @return java.lang.String 指定节点的逻辑路径，包含其自身完整的文件夹路径名，各级之间以“/”分割。
+	 */
+	public String getFolderPath(Folder f) {
+		List<Folder> l = getParentList(f.getFolderId());
+		StringBuffer pl = new StringBuffer();
+		for (Folder i : l) {
+			pl.append(i.getFolderName() + "/");
+		}
+		pl.append(f.getFolderName());
+		return pl.toString();
 	}
 }

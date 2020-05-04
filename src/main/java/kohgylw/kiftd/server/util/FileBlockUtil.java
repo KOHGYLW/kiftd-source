@@ -536,9 +536,13 @@ public class FileBlockUtil {
 	/**
 	 * 
 	 * <h2>检查指定的文件节点是否存在同名问题</h2>
-	 * <p>该方法用于检查传入节点是否存在冲突问题，一般在新节点插入后执行，若存在冲突会立即删除此节点，最后会返回检查结果。</p>
+	 * <p>
+	 * 该方法用于检查传入节点是否存在冲突问题，一般在新节点插入后执行，若存在冲突会立即删除此节点，最后会返回检查结果。
+	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param n kohgylw.kiftd.server.model.Node 待检查的节点
+	 * @param n
+	 *            kohgylw.kiftd.server.model.Node 待检查的节点
 	 * @return boolean 通过检查则返回true，否则返回false并删除此节点
 	 */
 	public boolean isValidNode(Node n) {
@@ -555,6 +559,31 @@ public class FileBlockUtil {
 		} else {
 			return true;// 否则，该节点有效，返回结果
 		}
+	}
+
+	/**
+	 * 
+	 * <h2>获取一个节点当前的逻辑路径</h2>
+	 * <p>
+	 * 该方法用于获取指定节点当前的完整逻辑路径，型如“/ROOT/doc/test.txt”。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @param n
+	 *            kohgylw.kiftd.server.model.Node 要获取路径的节点
+	 * @return java.lang.String 指定节点的逻辑路径，包含其完整的上级文件夹路径和自身的文件名，各级之间以“/”分割。
+	 */
+	public String getNodePath(Node n) {
+		Folder folder = flm.queryById(n.getFileParentFolder());
+		List<Folder> l = fu.getParentList(folder.getFolderId());
+		StringBuffer pl = new StringBuffer();
+		for (Folder i : l) {
+			pl.append(i.getFolderName() + "/");
+		}
+		pl.append(folder.getFolderName());
+		pl.append("/");
+		pl.append(n.getFileName());
+		return pl.toString();
 	}
 
 }
