@@ -106,7 +106,7 @@ public class LogUtil {
 					pl = pl + i.getFolderName() + "/";
 				}
 				String content = ">IP [" + ip + "]\r\n>ACCOUNT [" + a + "]\r\n>OPERATE [Create new folder]\r\n>PATH ["
-						+ pl + "]\r\n>NAME [" + f.getFolderName() + "]，CONSTRAINT [" + f.getFolderConstraint() + "]";
+						+ pl + "]\r\n>NAME [" + f.getFolderName() + "],CONSTRAINT [" + f.getFolderConstraint() + "]";
 				writeToLog("Event", content);
 			});
 		}
@@ -133,7 +133,7 @@ public class LogUtil {
 					pl = pl + i.getFolderName() + "/";
 				}
 				String content = ">IP [" + ip + "]\r\n>ACCOUNT [" + a + "]\r\n>OPERATE [Edit folder]\r\n>PATH [" + pl
-						+ "]\r\n>NAME [" + f.getFolderName() + "]->[" + newName + "]，CONSTRAINT ["
+						+ "]\r\n>NAME [" + f.getFolderName() + "]->[" + newName + "],CONSTRAINT ["
 						+ f.getFolderConstraint() + "]->[" + newConstraint + "]";
 				writeToLog("Event", content);
 			});
