@@ -100,6 +100,7 @@ public class ConfigureReader {
 	private boolean enableDownloadByZip = true;// 是否启用“打包下载”功能
 
 	private static final int MAX_EXTENDSTORES_NUM = 255;// 扩展存储区最大数目
+	private static final String[] SYS_ACCOUNTS = { "SYS_IN", "Anonymous", "匿名用户" };// 一些系统的特殊账户
 
 	private ConfigureReader() {
 		this.propertiesStatus = -1;
@@ -155,8 +156,15 @@ public class ConfigureReader {
 	}
 
 	public boolean foundAccount(final String account) {
+		// 如果是匿名账户，那么永远不存在
 		if (account == null) {
 			return false;
+		}
+		// 一些系统内置的特殊账户名直接认为已经存在（避免新账户注册为这种账户）
+		for (String sysAccount : SYS_ACCOUNTS) {
+			if (sysAccount.equals(account)) {
+				return true;
+			}
 		}
 		final String accountPwd = this.accountp.getProperty(account + ".pwd");
 		return accountPwd != null && accountPwd.length() > 0;
