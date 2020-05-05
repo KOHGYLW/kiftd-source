@@ -58,16 +58,17 @@ public class ServerTimeUtil {
 	 * @param block
 	 *            java.io.File 要生成的文件块对象，应该是文件，但也支持文件夹，或者null
 	 * @return java.lang.String 记录最后修改日期的时间截，格式类似于“Wed, 29 Apr 2020 08:18:43
-	 *         CST”，若传入文件不存在或为null，则返回空字符串
+	 *         GMT”，若传入文件不存在或为null，则返回当前时间
 	 */
 	public static String getLastModifiedFormBlock(File block) {
+		ZonedDateTime longToTime;
 		if (block != null && block.exists()) {
-			ZonedDateTime longToTime = ZonedDateTime.ofInstant(Instant.ofEpochMilli(block.lastModified()),
-					ZoneId.systemDefault());
-			DateTimeFormatter dtf = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss zZ", Locale.US)
-					.withZone(ZoneId.systemDefault());
-			return longToTime.format(dtf).trim();
+			longToTime = ZonedDateTime.ofInstant(Instant.ofEpochMilli(block.lastModified()), ZoneId.of("GMT"));
+		} else {
+			longToTime = ZonedDateTime.now(ZoneId.of("GMT"));
 		}
-		return "";
+		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss z", Locale.US)
+				.withZone(ZoneId.of("GMT"));
+		return longToTime.format(dtf).trim();
 	}
 }

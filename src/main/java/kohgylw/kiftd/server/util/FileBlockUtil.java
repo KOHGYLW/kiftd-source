@@ -471,9 +471,15 @@ public class FileBlockUtil {
 	 */
 	public String getETag(File block) {
 		if (block != null && block.exists()) {
-			return (block.lastModified() + "_" + block.hashCode()).trim();
+			StringBuffer sb = new StringBuffer();
+			sb.append("\"");
+			sb.append(block.lastModified());
+			sb.append("_");
+			sb.append(block.hashCode());
+			sb.append("\"");
+			return sb.toString().trim();
 		}
-		return "";
+		return "\"0\"";
 	}
 
 	/**

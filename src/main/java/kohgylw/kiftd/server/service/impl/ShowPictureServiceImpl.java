@@ -72,10 +72,13 @@ public class ShowPictureServiceImpl implements ShowPictureService {
 							PictureInfo pi = new PictureInfo();
 							pi.setFileName(fileName);
 							int pSize = Integer.parseInt(n.getFileSize());
+							File block = fbu.getFileFromBlocks(n);
+							long lastModified = block.lastModified();// 尽可能地让覆盖后的图片也能立即更新
 							if (pSize > 1 && !suffix.equals("gif")) {
-								pi.setUrl("homeController/showCondensedPicture.do?fileId=" + n.getFileId());
+								pi.setUrl("homeController/showCondensedPicture.do?fileId=" + n.getFileId()
+										+ "&lastmodified=" + lastModified);
 							} else {
-								pi.setUrl("resourceController/getResource/" + n.getFileId());
+								pi.setUrl("resourceController/getResource/" + n.getFileId() + "?lastmodified=" + lastModified);
 							}
 							pictureViewList.add(pi);
 							if (n.getFileId().equals(fileId)) {

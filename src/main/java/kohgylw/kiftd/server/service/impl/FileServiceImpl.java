@@ -329,11 +329,13 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 						// 执行写出
 						final File fo = this.fbu.getFileFromBlocks(f);
 						final String ip = idg.getIpAddr(request);
+						final String range = request.getHeader("Range");
 						if (fo != null) {
-							writeRangeFileStream(request, response, fo, f.getFileName(), CONTENT_TYPE,
+							int status = writeRangeFileStream(request, response, fo, f.getFileName(), CONTENT_TYPE,
 									ConfigureReader.instance().getDownloadMaxRate(account), fbu.getETag(fo));
 							// 日志记录（仅针对一次下载）
-							if (request.getHeader("Range") == null) {
+							if (status == HttpServletResponse.SC_OK
+									|| (range != null && range.startsWith("bytes=0-"))) {
 								this.lu.writeDownloadFileEvent(account, ip, f);
 							}
 							return;

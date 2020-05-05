@@ -44,9 +44,9 @@ public class RangeFileStreamWriter {
 	 *            java.lang.String HTTP Content-Type类型（用于控制客户端行为）
 	 * @param maxRate
 	 *            long 最大输出速率，以KB/s为单位，若为负数则不限制输出速率（用于限制客户端的下载速度）
-	 * @return void
+	 * @return int 操作结束时返回的状态码
 	 */
-	protected void writeRangeFileStream(HttpServletRequest request, HttpServletResponse response, File fo, String fname,
+	protected int writeRangeFileStream(HttpServletRequest request, HttpServletResponse response, File fo, String fname,
 			String contentType, long maxRate, String eTag) {
 		long fileLength = fo.length();// 文件总大小
 		long startOffset = 0; // 起始偏移量
@@ -54,16 +54,42 @@ public class RangeFileStreamWriter {
 		long endOffset = 0; // 结束偏移量
 		long contentLength = 0; // 响应体长度
 		String rangeBytes = "";// 请求中的Range参数
+		int status = HttpServletResponse.SC_OK;// 初始响应码为200
 		// 检查是否有可用的缓存
+		String lastModified = ServerTimeUtil.getLastModifiedFormBlock(fo);
 		String ifModifiedSince = request.getHeader("If-Modified-Since");
-		if (ifModifiedSince != null && ifModifiedSince.trim().equals(ServerTimeUtil.getLastModifiedFormBlock(fo))) {
-			response.setStatus(304);
-			return;
-		}
 		String ifNoneMatch = request.getHeader("If-None-Match");
-		if (ifNoneMatch != null && ifNoneMatch.trim().equals(eTag)) {
-			response.setStatus(304);
-			return;
+		// 是否提供了两个判断参数之一？
+		if (ifModifiedSince != null || ifNoneMatch != null) {
+			// 是，那么是否提供了Etag？
+			if (ifNoneMatch != null) {
+				// 是，则只检查Etag，理论上其比Last-Modified更准确
+				if (ifNoneMatch.trim().equals(eTag)) {
+					status = HttpServletResponse.SC_NOT_MODIFIED;
+					response.setStatus(status);// 304
+					return status;
+				}
+			} else {
+				// 不是，则再检查Last-Modified
+				if (ifModifiedSince.trim().equals(lastModified)) {
+					status = HttpServletResponse.SC_NOT_MODIFIED;
+					response.setStatus(status);// 304
+					return status;
+				}
+			}
+		}
+		// 检查断点续传请求是否过期，两个条件，有就要满足，没有就算了
+		String ifUnmodifiedSince = request.getHeader("If-Unmodified-Since");
+		if (ifUnmodifiedSince != null && !(ifUnmodifiedSince.trim().equals(lastModified))) {
+			status = HttpServletResponse.SC_PRECONDITION_FAILED;
+			response.setStatus(status);// 412
+			return status;
+		}
+		String ifMatch = request.getHeader("If-Match");
+		if (ifMatch != null && !(ifMatch.trim().equals(eTag))) {
+			status = HttpServletResponse.SC_PRECONDITION_FAILED;
+			response.setStatus(status);// 412
+			return status;
 		}
 		// 设置请求头，基于kiftd文件系统推荐使用application/octet-stream
 		response.setContentType(contentType);
@@ -85,9 +111,12 @@ public class RangeFileStreamWriter {
 		response.setHeader("Last-Modified", ServerTimeUtil.getLastModifiedFormBlock(fo));
 		response.setHeader("Cache-Control", "max-age=" + DOWNLOAD_CACHE_MAX_AGE);
 		// 针对具备断点续传性质的请求进行解析
-		String rangeTag = request.getHeader("Range");
-		if (rangeTag != null && rangeTag.startsWith("bytes=")) {
-			response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
+		final String rangeTag = request.getHeader("Range");
+		final String ifRange = request.getHeader("If-Range");
+		if (rangeTag != null && rangeTag.startsWith("bytes=")
+				&& (ifRange == null || ifRange.trim().equals(eTag) || ifRange.trim().equals(lastModified))) {
+			status = HttpServletResponse.SC_PARTIAL_CONTENT;
+			response.setStatus(status);
 			rangeBytes = rangeTag.replaceAll("bytes=", "");
 			if (rangeBytes.endsWith("-")) {
 				// 解析请求参数范围为仅有起始偏移量而无结束偏移量的情况
@@ -141,14 +170,18 @@ public class RangeFileStreamWriter {
 			}
 			out.flush();
 			out.close();
+			return status;
 		} catch (IOException ex) {
 			// 针对任何IO异常忽略，传输失败不处理
+			status = HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+			return status;
 		} catch (IllegalArgumentException e) {
+			status = HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 			try {
-				response.sendError(500);
+				response.sendError(status);
 			} catch (IOException e1) {
-
 			}
+			return status;
 		}
 	}
 }

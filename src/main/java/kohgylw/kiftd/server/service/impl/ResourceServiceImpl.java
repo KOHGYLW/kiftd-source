@@ -124,15 +124,16 @@ public class ResourceServiceImpl implements ResourceService {
 							break;
 						}
 						String ip = idg.getIpAddr(request);
-						sendResource(file, n.getFileName(), contentType, request, response);
-						if (request.getHeader("Range") == null) {
+						String range = request.getHeader("Range");
+						int status = sendResource(file, n.getFileName(), contentType, request, response);
+						if (status == HttpServletResponse.SC_OK || (range != null && range.startsWith("bytes=0-"))) {
 							this.lu.writeDownloadFileEvent(account, ip, n);
 						}
 						return;
 					}
 				} else {// 处理资源未被授权的问题
 					try {
-						response.sendError(401);
+						response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
 					} catch (IOException e) {
 					}
 				}
@@ -145,22 +146,67 @@ public class ResourceServiceImpl implements ResourceService {
 		}
 	}
 
-	// 使用各个浏览器（主要是Safari）兼容的通用格式发送资源至请求来源，类似于断点续传下载功能
-	private void sendResource(File resource, String fname, String contentType, HttpServletRequest request,
+	/**
+	 * 
+	 * <h2>返回资源</h2>
+	 * <p>
+	 * 该方法用于回传某个文件资源，支持断点续传。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @param resource
+	 *            java.io.File 要发送的文件资源
+	 * @param fname
+	 *            java.lang.String 要传递给客户端的文件名，会加入到响应头中
+	 * @param contentType
+	 *            java.lang.String 返回资源的CONTENT_TYPE标识名，例如“text/html”
+	 * @param request
+	 *            javax.servlet.http.HttpServletRequest 请求对象
+	 * @param response
+	 *            javax.servlet.http.HttpServletResponse 响应对象
+	 * @return int 操作完毕后返回的状态码，例如“200”
+	 */
+	private int sendResource(File resource, String fname, String contentType, HttpServletRequest request,
 			HttpServletResponse response) {
+		// 状态码，初始为200
+		int status = HttpServletResponse.SC_OK;
+		// 开始资源传输
 		try (RandomAccessFile randomFile = new RandomAccessFile(resource, "r")) {
 			long contentLength = randomFile.length();
-			String ifModifiedSince = request.getHeader("If-Modified-Since");
-			if (ifModifiedSince != null
-					&& ifModifiedSince.trim().equals(ServerTimeUtil.getLastModifiedFormBlock(resource))) {
-				response.setStatus(304);
-				return;
+			final String lastModified = ServerTimeUtil.getLastModifiedFormBlock(resource);
+			// 如果请求中包含了对本地缓存的过期判定参数，则执行过期判定
+			final String eTag = this.fbu.getETag(resource);
+			final String ifModifiedSince = request.getHeader("If-Modified-Since");
+			final String ifNoneMatch = request.getHeader("If-None-Match");
+			if (ifModifiedSince != null || ifNoneMatch != null) {
+				if (ifNoneMatch != null) {
+					if (ifNoneMatch.trim().equals(eTag)) {
+						status = HttpServletResponse.SC_NOT_MODIFIED;
+						response.setStatus(status);// 304
+						return status;
+					}
+				} else {
+					if (ifModifiedSince.trim().equals(lastModified)) {
+						status = HttpServletResponse.SC_NOT_MODIFIED;
+						response.setStatus(status);// 304
+						return status;
+					}
+				}
 			}
-			String ifNoneMatch = request.getHeader("If-None-Match");
-			if (ifNoneMatch != null && ifNoneMatch.trim().equals(this.fbu.getETag(resource))) {
-				response.setStatus(304);
-				return;
+			// 检查断点续传请求是否过期
+			String ifUnmodifiedSince = request.getHeader("If-Unmodified-Since");
+			if (ifUnmodifiedSince != null && !(ifUnmodifiedSince.trim().equals(lastModified))) {
+				status = HttpServletResponse.SC_PRECONDITION_FAILED;
+				response.setStatus(status);// 412
+				return status;
 			}
+			String ifMatch = request.getHeader("If-Match");
+			if (ifMatch != null && !(ifMatch.trim().equals(eTag))) {
+				status = HttpServletResponse.SC_PRECONDITION_FAILED;
+				response.setStatus(status);// 412
+				return status;
+			}
+			// 如果缓存过期或无缓存，则按请求参数返回数据
 			String range = request.getHeader("Range");
 			long start = 0, end = 0;
 			if (range != null && range.startsWith("bytes=")) {
@@ -183,11 +229,12 @@ public class ResourceServiceImpl implements ResourceService {
 			response.setHeader("Last-Modified", ServerTimeUtil.getLastModifiedFormBlock(resource));
 			response.setHeader("Cache-Control", "max-age=" + RESOURCE_CACHE_MAX_AGE);
 			// 第一次请求只返回content length来让客户端请求多次实际数据
-			if (range == null) {
-				response.setHeader("Content-length", contentLength + "");
-			} else {
+			final String ifRange = request.getHeader("If-Range");
+			if (range != null && range.startsWith("bytes=")
+					&& (ifRange == null || ifRange.trim().equals(eTag) || ifRange.trim().equals(lastModified))) {
 				// 以后的多次以断点续传的方式来返回视频数据
-				response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);// 206
+				status = HttpServletResponse.SC_PARTIAL_CONTENT;
+				response.setStatus(status);// 206
 				long requestStart = 0, requestEnd = 0;
 				String[] ranges = range.split("=");
 				if (ranges.length > 1) {
@@ -209,6 +256,8 @@ public class ResourceServiceImpl implements ResourceService {
 					response.setHeader("Content-Range",
 							"bytes " + requestStart + "-" + (contentLength - 1) + "/" + contentLength);
 				}
+			} else {
+				response.setHeader("Content-length", contentLength + "");
 			}
 			ServletOutputStream out = response.getOutputStream();
 			long needSize = requestSize;
@@ -226,8 +275,10 @@ public class ResourceServiceImpl implements ResourceService {
 				needSize -= buffer.length;
 			}
 			out.close();
+			return status;
 		} catch (Exception e) {
-
+			status = HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+			return status;
 		}
 	}
 
@@ -384,6 +435,7 @@ public class ResourceServiceImpl implements ResourceService {
 	@Override
 	public void getLRContextByUTF8(String fileId, HttpServletRequest request, HttpServletResponse response) {
 		final String account = (String) request.getSession().getAttribute("ACCOUNT");
+		final String ip = idg.getIpAddr(request);
 		// 权限检查
 		if (fileId != null) {
 			Node n = nm.queryById(fileId);
@@ -432,6 +484,7 @@ public class ResourceServiceImpl implements ResourceService {
 								}
 								bufferedWriter.close();
 								bufferedReader.close();
+								this.lu.writeDownloadFileEvent(account, ip, n);
 								return;
 							} catch (IOException e) {
 							} catch (Exception e) {

@@ -65,10 +65,12 @@ public class FileChainServiceImpl extends RangeFileStreamWriter implements FileC
 								if (fileName.indexOf(".") >= 0) {
 									suffix = fileName.substring(fileName.indexOf("."));
 								}
-								writeRangeFileStream(request, response, target, f.getFileName(),
+								String range = request.getHeader("Range");
+								int status = writeRangeFileStream(request, response, target, f.getFileName(),
 										ctm.getContentType(suffix), ConfigureReader.instance().getDownloadMaxRate(null),
 										fbu.getETag(target));
-								if (request.getHeader("Range") == null) {
+								if (status == HttpServletResponse.SC_OK
+										|| (range != null && range.startsWith("bytes=0-"))) {
 									this.lu.writeChainEvent(request, f);
 								}
 								return;
