@@ -194,8 +194,8 @@ public class FolderUtil {
 	 * @author 青阳龙野(kohgylw)
 	 * @param prototype
 	 *            kohgylw.kiftd.server.model.Folder 要复制的目标文件夹，即复制的样板
-	 * @param parentFolderId
-	 *            java.lang.String 复制文件夹的父文件夹ID，指定在哪个路径下创建目标文件夹的副本
+	 * @param parentFolder
+	 *            kohgylw.kiftd.server.model.Folder 复制文件夹的父文件夹，指定在哪个路径下创建目标文件夹的副本
 	 * @param newName
 	 *            java.lang.String 副本文件夹的新名称，以覆盖原本的名称，如果传入null则仍使用原名
 	 * @param excludeFolderId
@@ -203,15 +203,18 @@ public class FolderUtil {
 	 * @return kohgylw.kiftd.server.model.Folder 完整复制成功则返回复制好的文件夹对象，
 	 *         否则返回null（包括传入目标文件夹或父文件夹参数错误的情况）
 	 */
-	private Folder copyFolderByNewNameToPath(Folder prototype, String account, String parentFolderId, String newName,
+	private Folder copyFolderByNewNameToPath(Folder prototype, String account, Folder parentFolder, String newName,
 			String excludeFolderId) {
-		if (prototype == null || parentFolderId == null) {
+		if (prototype == null || parentFolder == null) {
 			return null;
 		}
 		try {
 			// 先在指定文件夹下创建原文件夹的副本
-			Folder newFolder = createNewFolder(parentFolderId, account,
-					newName == null ? prototype.getFolderName() : newName, "" + prototype.getFolderConstraint());
+			Folder newFolder = createNewFolder(parentFolder.getFolderId(), account,
+					newName == null ? prototype.getFolderName() : newName,
+					"" + (prototype.getFolderConstraint() < parentFolder.getFolderConstraint()
+							? parentFolder.getFolderConstraint()
+							: prototype.getFolderConstraint()));
 			if (newFolder == null) {
 				return null;// 副本创建失败则直接返回失败，无需继续执行后续的操作
 			}
@@ -231,7 +234,7 @@ public class FolderUtil {
 					continue;
 				}
 				// 注意：复制子文件夹时必须将newName传为null！因为子文件夹能存在就不会重名。
-				if (copyFolderByNewNameToPath(c, account, newFolder.getFolderId(), null, excludeFolderId) == null) {
+				if (copyFolderByNewNameToPath(c, account, newFolder, null, excludeFolderId) == null) {
 					return null;// 如果中途哪个子文件夹复制失败，则返回失败
 				}
 			}
@@ -261,15 +264,15 @@ public class FolderUtil {
 	 * @author 青阳龙野(kohgylw)
 	 * @param prototype
 	 *            kohgylw.kiftd.server.model.Folder 要复制的目标文件夹，即复制的样板
-	 * @param parentFolderId
-	 *            java.lang.String 复制文件夹的父文件夹ID，指定在哪个路径下创建目标文件夹的副本
+	 * @param parentFolder
+	 *            kohgylw.kiftd.server.model.Folder 复制文件夹的父文件夹，指定在哪个路径下创建目标文件夹的副本
 	 * @param newName
 	 *            java.lang.String 副本文件夹的新名称，以覆盖原本的名称，如果传入null则仍使用原名
 	 * @return kohgylw.kiftd.server.model.Folder 完整复制成功则返回复制好的文件夹对象，
 	 *         否则返回null（包括传入目标文件夹或父文件夹参数错误的情况）
 	 */
-	public Folder copyFolderByNewNameToPath(Folder prototype, String account, String parentFolderId, String newName) {
-		return copyFolderByNewNameToPath(prototype, account, parentFolderId, newName, null);
+	public Folder copyFolderByNewNameToPath(Folder prototype, String account, Folder parentFolder, String newName) {
+		return copyFolderByNewNameToPath(prototype, account, parentFolder, newName, null);
 	}
 
 	/**

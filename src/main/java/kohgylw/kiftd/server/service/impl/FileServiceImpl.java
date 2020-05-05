@@ -798,7 +798,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 							// 判断是否为复制模式
 							if (isCopy) {
 								// 是，则先在目标文件夹内复制整个原文件夹的节点树
-								Folder newFolder = fu.copyFolderByNewNameToPath(folder, account, locationpath, null);
+								Folder newFolder = fu.copyFolderByNewNameToPath(folder, account, targetFolder, null);
 								// 之后删除冲突文件夹的所有子文件夹，必须在复制后执行！否则可能会出现还没复制完就被删了的问题
 								fu.deleteAllChildFolder(f.getFolderId());
 								if (newFolder != null) {
@@ -813,6 +813,10 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 								fu.deleteAllChildFolder(f.getFolderId());
 								// 再将原文件夹移入目标文件夹内
 								folder.setFolderParent(locationpath);
+								// 如果原文件夹的访问级别比目标文件夹小，则还需要将访问级别升高至与目标文件夹一致
+								if (folder.getFolderConstraint() < targetFolder.getFolderConstraint()) {
+									folder.setFolderConstraint(targetFolder.getFolderConstraint());
+								}
 								if (this.flm.update(folder) > 0) {
 									// 成功后，记录日志
 									this.lu.writeMoveFolderEvent(account, ip, originPath, fu.getFolderPath(folder),
@@ -831,7 +835,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 						// 接下来，判断是否为拷贝模式
 						if (isCopy) {
 							// 是，则以新名称生成对应的原文件夹副本在目标文件夹里面
-							Folder newFolder = fu.copyFolderByNewNameToPath(folder, account, locationpath, FileNodeUtil
+							Folder newFolder = fu.copyFolderByNewNameToPath(folder, account, targetFolder, FileNodeUtil
 									.getNewFolderName(folder.getFolderName(), flm.queryByParentId(locationpath)));
 							if (newFolder == null) {
 								return "cannotMoveFiles";
@@ -843,6 +847,9 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 							folder.setFolderParent(locationpath);
 							folder.setFolderName(FileNodeUtil.getNewFolderName(folder.getFolderName(),
 									flm.queryByParentId(locationpath)));
+							if (folder.getFolderConstraint() < targetFolder.getFolderConstraint()) {
+								folder.setFolderConstraint(targetFolder.getFolderConstraint());
+							}
 							if (this.flm.update(folder) <= 0) {
 								return "cannotMoveFiles";
 							}
@@ -868,7 +875,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 					// 是否是复制模式？
 					if (isCopy) {
 						// 是，复制原文件夹的结构树至目标文件夹内
-						Folder newFolder = fu.copyFolderByNewNameToPath(folder, account, locationpath, null);
+						Folder newFolder = fu.copyFolderByNewNameToPath(folder, account, targetFolder, null);
 						if (newFolder == null) {
 							return "cannotMoveFiles";
 						}
@@ -877,6 +884,10 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 					} else {
 						// 否，直接将原文件夹移入目标文件夹内
 						folder.setFolderParent(locationpath);
+						// 确保移入后访问级别不越界
+						if (folder.getFolderConstraint() < targetFolder.getFolderConstraint()) {
+							folder.setFolderConstraint(targetFolder.getFolderConstraint());
+						}
 						if (this.flm.update(folder) <= 0) {
 							return "cannotMoveFiles";
 						}
