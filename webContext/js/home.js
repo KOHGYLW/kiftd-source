@@ -2575,7 +2575,11 @@ function cutFile() {
 		$('#moveFilesModal').modal('show');
 	} else {
 		// 否则，隐藏“剪切”和“复制”按钮，显示“粘贴”按钮
-		$("#stickFilesCount").text("（" + checkedMovefiles.size + "）");
+		if (checkedMovefiles.size < 100) {
+			$("#stickFilesCount").text("（" + checkedMovefiles.size + "）");
+		} else {
+			$("#stickFilesCount").text("（99+）");
+		}
 		$("#copyFileButtonLi").removeClass("show");
 		$("#copyFileButtonLi").addClass("hidden");
 		$("#cutFileButtonLi").removeClass("show");
@@ -2597,7 +2601,11 @@ function copyFile() {
 		$('#moveFilesModal').modal('show');
 	} else {
 		// 否则，隐藏“剪切”和“复制”按钮，显示“粘贴”按钮
-		$("#stickFilesCount").text("（" + checkedMovefiles.size + "）");
+		if (checkedMovefiles.size < 100) {
+			$("#stickFilesCount").text("（" + checkedMovefiles.size + "）");
+		} else {
+			$("#stickFilesCount").text("（99+）");
+		}
 		$("#copyFileButtonLi").removeClass("show");
 		$("#copyFileButtonLi").addClass("hidden");
 		$("#cutFileButtonLi").removeClass("show");
@@ -2724,7 +2732,8 @@ function doMoveFiles() {
 								$('#moveFilesMessage').text(
 										"提示：出现意外错误，可能未能完成此操作，请刷新后重试");
 								$("#dmvfbutton").attr('disabled', false);
-								$("#cancelMoveFilesBtn").attr('disabled', false);
+								$("#cancelMoveFilesBtn")
+										.attr('disabled', false);
 							}
 							break;
 						}
