@@ -882,7 +882,12 @@ function showAccountView(folderView) {
 			$("#copyFileButtonLi a").attr("onclick", "copyFile()");
 			$("#stickFileButtonLi a").attr("onclick", "stickFile()");
 			if (checkedMovefiles !== undefined && checkedMovefiles.size > 0) {
-				$("#stickFilesCount").text("（" + checkedMovefiles.size + "）");
+				if (checkedMovefiles.size < 100) {
+					$("#stickFilesCount").text(
+							"（" + checkedMovefiles.size + "）");
+				} else {
+					$("#stickFilesCount").text("（99+）");
+				}
 				$("#copyFileButtonLi").removeClass("show");
 				$("#copyFileButtonLi").addClass("hidden");
 				$("#cutFileButtonLi").removeClass("show");
