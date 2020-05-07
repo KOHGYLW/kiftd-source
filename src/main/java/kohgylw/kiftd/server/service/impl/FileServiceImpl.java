@@ -814,10 +814,17 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 								// 再将原文件夹移入目标文件夹内
 								folder.setFolderParent(locationpath);
 								// 如果原文件夹的访问级别比目标文件夹小，则还需要将访问级别升高至与目标文件夹一致
+								boolean needChangeChildsConstranint = false;
 								if (folder.getFolderConstraint() < targetFolder.getFolderConstraint()) {
 									folder.setFolderConstraint(targetFolder.getFolderConstraint());
+									needChangeChildsConstranint = true;
 								}
 								if (this.flm.update(folder) > 0) {
+									// 如果升高了文件夹的访问级别，那么子文件夹的访问级别也要一起升高
+									if (needChangeChildsConstranint) {
+										fu.changeChildFolderConstraint(folder.getFolderId(),
+												targetFolder.getFolderConstraint());
+									}
 									// 成功后，记录日志
 									this.lu.writeMoveFolderEvent(account, ip, originPath, fu.getFolderPath(folder),
 											isCopy);
@@ -847,11 +854,18 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 							folder.setFolderParent(locationpath);
 							folder.setFolderName(FileNodeUtil.getNewFolderName(folder.getFolderName(),
 									flm.queryByParentId(locationpath)));
+							boolean needChangeChildsConstranint = false;
 							if (folder.getFolderConstraint() < targetFolder.getFolderConstraint()) {
 								folder.setFolderConstraint(targetFolder.getFolderConstraint());
+								needChangeChildsConstranint = true;
 							}
 							if (this.flm.update(folder) <= 0) {
 								return "cannotMoveFiles";
+							}
+							// 如果升高了文件夹的访问级别，那么子文件夹的访问级别也要一起升高
+							if (needChangeChildsConstranint) {
+								fu.changeChildFolderConstraint(folder.getFolderId(),
+										targetFolder.getFolderConstraint());
 							}
 							// 成功，记录日志
 							this.lu.writeMoveFolderEvent(account, ip, originPath, fu.getFolderPath(folder), isCopy);
@@ -885,11 +899,15 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 						// 否，直接将原文件夹移入目标文件夹内
 						folder.setFolderParent(locationpath);
 						// 确保移入后访问级别不越界
+						boolean needChangeChildsConstranint = false;
 						if (folder.getFolderConstraint() < targetFolder.getFolderConstraint()) {
 							folder.setFolderConstraint(targetFolder.getFolderConstraint());
 						}
 						if (this.flm.update(folder) <= 0) {
 							return "cannotMoveFiles";
+						}
+						if (needChangeChildsConstranint) {
+							fu.changeChildFolderConstraint(folder.getFolderId(), targetFolder.getFolderConstraint());
 						}
 						// 操作成功，记录日志
 						this.lu.writeMoveFolderEvent(account, ip, originPath, fu.getFolderPath(folder), isCopy);
