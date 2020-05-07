@@ -902,6 +902,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 						boolean needChangeChildsConstranint = false;
 						if (folder.getFolderConstraint() < targetFolder.getFolderConstraint()) {
 							folder.setFolderConstraint(targetFolder.getFolderConstraint());
+							needChangeChildsConstranint = true;
 						}
 						if (this.flm.update(folder) <= 0) {
 							return "cannotMoveFiles";
