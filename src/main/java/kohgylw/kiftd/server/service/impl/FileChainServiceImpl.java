@@ -63,7 +63,7 @@ public class FileChainServiceImpl extends RangeFileStreamWriter implements FileC
 								String fileName = f.getFileName();
 								String suffix = "";
 								if (fileName.indexOf(".") >= 0) {
-									suffix = fileName.substring(fileName.indexOf("."));
+									suffix = fileName.substring(fileName.indexOf(".")).trim().toLowerCase();
 								}
 								String range = request.getHeader("Range");
 								int status = writeRangeFileStream(request, response, target, f.getFileName(),
