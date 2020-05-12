@@ -5,20 +5,29 @@ import org.springframework.stereotype.Component;
 /**
  * 
  * <h2>后缀名与ContentType对照表</h2>
- * <p>该工具类中保存了常见资源后缀名所对应的ContentType类型，便于返回资源数据时声明其ContentType格式。详见public String getContentType(String suffix)方法。</p>
+ * <p>
+ * 该工具类中保存了常见资源后缀名所对应的ContentType类型，便于返回资源数据时声明其ContentType格式。详见public String
+ * getContentType(String suffix)方法。
+ * </p>
+ * 
  * @author 青阳龙野(kohgylw)
  * @version 1.0
  */
 @Component
 public class ContentTypeMap {
-	
+
 	/**
 	 * 
 	 * <h2>通过后缀名获取对应的ContentType</h2>
-	 * <p>由文件的后缀名得到相应的ContentType以便浏览器识别该资源。该方法将返回ContentType类型字符串，型如“application/octet-stream”。</p>
+	 * <p>
+	 * 由文件的后缀名得到相应的ContentType以便浏览器识别该资源。该方法将返回ContentType类型字符串，型如“application/octet-stream”。
+	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param suffix java.lang.String 资源的后缀名，必须以“.”开头，例如“.jpg”
-	 * @return java.lang.String 传入后缀所对应的ContentType，若无对应类型则统一返回“application/octet-stream”（二进制流）
+	 * @param suffix
+	 *            java.lang.String 资源的后缀名，必须以“.”开头，例如“.jpg”
+	 * @return java.lang.String
+	 *         传入后缀所对应的ContentType，若无对应类型则统一返回“application/octet-stream”（二进制流）
 	 */
 	public String getContentType(String suffix) {
 		switch (suffix) {
@@ -66,7 +75,7 @@ public class ContentTypeMap {
 		case ".top":
 			return "drawing/x-top";
 		case ".avi":
-			return "video/avi";
+			return "video/x-msvideo";
 		case ".pdf":
 			return "application/pdf";
 		case ".htt":
@@ -308,6 +317,8 @@ public class ContentTypeMap {
 		case ".m4e":
 		case ".mp4":
 			return "video/mp4";
+		case ".mov":
+			return "video/quicktime";
 		case ".movie":
 			return "video/x-sgi-movie";
 		case ".mpeg":
@@ -493,6 +504,8 @@ public class ContentTypeMap {
 			return "application/vnd.adobe.xfd";
 		case ".wmv":
 			return "video/x-ms-wmv";
+		case ".flv":
+			return "video/x-flv";
 		case ".hpl":
 			return "application/x-hpl";
 		case ".gp4":
