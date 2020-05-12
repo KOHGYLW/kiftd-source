@@ -332,7 +332,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 						final String range = request.getHeader("Range");
 						if (fo != null) {
 							int status = writeRangeFileStream(request, response, fo, f.getFileName(), CONTENT_TYPE,
-									ConfigureReader.instance().getDownloadMaxRate(account), fbu.getETag(fo));
+									ConfigureReader.instance().getDownloadMaxRate(account), fbu.getETag(fo), true);
 							// 日志记录（仅针对一次下载）
 							if (status == HttpServletResponse.SC_OK
 									|| (range != null && range.startsWith("bytes=0-"))) {
@@ -500,7 +500,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 			String fname = "kiftd_" + ServerTimeUtil.accurateToDay() + "_\u6253\u5305\u4e0b\u8f7d.zip";
 			if (zip.exists()) {
 				writeRangeFileStream(request, response, zip, fname, CONTENT_TYPE,
-						ConfigureReader.instance().getDownloadMaxRate(account), fbu.getETag(zip));
+						ConfigureReader.instance().getDownloadMaxRate(account), fbu.getETag(zip), true);
 				zip.delete();
 			}
 		}

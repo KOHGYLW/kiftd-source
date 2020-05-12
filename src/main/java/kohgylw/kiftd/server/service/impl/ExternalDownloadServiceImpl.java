@@ -91,7 +91,7 @@ public class ExternalDownloadServiceImpl extends RangeFileStreamWriter implement
 					if (target != null && target.isFile()) {
 						String range = request.getHeader("Range");
 						int status = writeRangeFileStream(request, response, target, f.getFileName(), CONTENT_TYPE,
-								ConfigureReader.instance().getDownloadMaxRate(null), fbu.getETag(target));
+								ConfigureReader.instance().getDownloadMaxRate(null), fbu.getETag(target), true);
 						if (status == HttpServletResponse.SC_OK || (range != null && range.startsWith("bytes=0-"))) {
 							this.lu.writeDownloadFileByKeyEvent(request, f);
 						}

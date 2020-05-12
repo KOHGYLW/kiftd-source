@@ -44,10 +44,14 @@ public class RangeFileStreamWriter {
 	 *            java.lang.String HTTP Content-Type类型（用于控制客户端行为）
 	 * @param maxRate
 	 *            long 最大输出速率，以KB/s为单位，若为负数则不限制输出速率（用于限制客户端的下载速度）
+	 * @param eTag
+	 *            java.lang.String 资源的唯一性标识，例如"aabbcc"
+	 * @param isAttachment
+	 *            boolean 是否作为附件回传，若希望用户下载则应设置为true
 	 * @return int 操作结束时返回的状态码
 	 */
 	protected int writeRangeFileStream(HttpServletRequest request, HttpServletResponse response, File fo, String fname,
-			String contentType, long maxRate, String eTag) {
+			String contentType, long maxRate, String eTag, boolean isAttachment) {
 		long fileLength = fo.length();// 文件总大小
 		long startOffset = 0; // 起始偏移量
 		boolean hasEnd = false;// 请求区间是否存在结束标识
@@ -95,14 +99,20 @@ public class RangeFileStreamWriter {
 		response.setContentType(contentType);
 		// 设置文件信息
 		response.setCharacterEncoding("UTF-8");
-		if (request.getHeader("User-Agent").toLowerCase().indexOf("safari") >= 0) {
-			response.setHeader("Content-Disposition",
-					"attachment; filename=\""
-							+ new String(fname.getBytes(Charset.forName("UTF-8")), Charset.forName("ISO-8859-1"))
-							+ "\"; filename*=utf-8''" + EncodeUtil.getFileNameByUTF8(fname));
+		// 设置Content-Disposition信息
+		if (isAttachment) {
+			if (request.getHeader("User-Agent").toLowerCase().indexOf("safari") >= 0) {
+				response.setHeader("Content-Disposition",
+						"attachment; filename=\""
+								+ new String(fname.getBytes(Charset.forName("UTF-8")), Charset.forName("ISO-8859-1"))
+								+ "\"; filename*=utf-8''" + EncodeUtil.getFileNameByUTF8(fname));
+			} else {
+				response.setHeader("Content-Disposition",
+						"attachment; filename=\"" + EncodeUtil.getFileNameByUTF8(fname) + "\"; filename*=utf-8''"
+								+ EncodeUtil.getFileNameByUTF8(fname));
+			}
 		} else {
-			response.setHeader("Content-Disposition", "attachment; filename=\"" + EncodeUtil.getFileNameByUTF8(fname)
-					+ "\"; filename*=utf-8''" + EncodeUtil.getFileNameByUTF8(fname));
+			response.setHeader("Content-Disposition", "inline");
 		}
 		// 设置支持断点续传功能
 		response.setHeader("Accept-Ranges", "bytes");
