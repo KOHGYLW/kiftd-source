@@ -307,7 +307,7 @@ public class ContentTypeMap {
 			return "application/x-g4";
 		case ".m4e":
 		case ".mp4":
-			return "video/mpeg4";
+			return "video/mp4";
 		case ".movie":
 			return "video/x-sgi-movie";
 		case ".mpeg":
