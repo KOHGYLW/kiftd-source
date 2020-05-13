@@ -262,7 +262,7 @@ public class AccountServiceImpl implements AccountService {
 			// 新账户和密码的合法性检查
 			if (account != null && account.length() >= 3 && account.length() <= 32
 					&& ios8859_1Encoder.canEncode(account)) {
-				if(account.indexOf("=") < 0 && account.indexOf(":") < 0) {
+				if (account.indexOf("=") < 0 && account.indexOf(":") < 0 && account.indexOf("#") != 0) {
 					if (password != null && password.length() >= 3 && password.length() <= 32
 							&& ios8859_1Encoder.canEncode(password)) {
 						if (ConfigureReader.instance().createNewAccount(account, password)) {
@@ -275,7 +275,7 @@ public class AccountServiceImpl implements AccountService {
 					} else {
 						return "invalidpwd";
 					}
-				}else {
+				} else {
 					return "illegalaccount";
 				}
 			} else {

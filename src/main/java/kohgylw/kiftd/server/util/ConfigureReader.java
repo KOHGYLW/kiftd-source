@@ -621,7 +621,7 @@ public class ConfigureReader {
 				this.allowChangePassword = false;
 				break;
 			default:
-				Printer.instance.print("错误：用户修改密码功能设置无效。");
+				Printer.instance.print("错误：用户修改密码功能设置无效（只能设置为“Y”或“N”），请重新检查。");
 				return INVALID_CHANGE_PASSWORD_SETTING;
 			}
 		}
@@ -639,7 +639,7 @@ public class ConfigureReader {
 				this.openFileChain = false;
 				break;
 			default:
-				Printer.instance.print("错误：永久资源链接功能设置无效。");
+				Printer.instance.print("错误：永久资源链接功能设置无效（只能设置为“OPEN”或“CLOSE”），请重新检查。");
 				return INVALID_FILE_CHAIN_SETTING;
 			}
 		}
@@ -752,39 +752,45 @@ public class ConfigureReader {
 			dbPwd = "301537gY";
 		}
 		// https支持检查及生效处理
-		if ("true".equals(serverp.getProperty("https.enable"))) {
-			File keyFile = new File(path, "https.p12");
-			if (keyFile.isFile()) {
-				httpsKeyType = "PKCS12";
-			} else {
-				keyFile = new File(path, "https.jks");
+		String enableHttps = serverp.getProperty("https.enable");
+		if (enableHttps != null) {
+			if ("true".equals(enableHttps)) {
+				File keyFile = new File(path, "https.p12");
 				if (keyFile.isFile()) {
-					httpsKeyType = "JKS";
+					httpsKeyType = "PKCS12";
 				} else {
-					Printer.instance.print(
-							"错误：无法启用https支持，因为kiftd未能找到https证书文件。您必须在应用主目录内放置PKCS12（必须命名为https.p12）或JKS（必须命名为https.jks）证书。");
-					return HTTPS_SETTING_ERROR;
+					keyFile = new File(path, "https.jks");
+					if (keyFile.isFile()) {
+						httpsKeyType = "JKS";
+					} else {
+						Printer.instance.print(
+								"错误：无法启用https支持，因为kiftd未能找到https证书文件。您必须在应用主目录内放置PKCS12（必须命名为https.p12）或JKS（必须命名为https.jks）证书。");
+						return HTTPS_SETTING_ERROR;
+					}
 				}
-			}
-			httpsKeyFile = keyFile.getAbsolutePath();
-			httpsKeyPass = serverp.getProperty("https.keypass", "");
-			String httpsports = serverp.getProperty("https.port");
-			if (httpsports == null) {
-				Printer.instance.print("警告：未找到https端口配置，将采用默认值（443）。");
-				httpsPort = 443;
-			} else {
-				try {
-					this.httpsPort = Integer.parseInt(httpsports);
-					if (httpsPort <= 0 || httpsPort > 65535) {
+				httpsKeyFile = keyFile.getAbsolutePath();
+				httpsKeyPass = serverp.getProperty("https.keypass", "");
+				String httpsports = serverp.getProperty("https.port");
+				if (httpsports == null) {
+					Printer.instance.print("警告：未找到https端口配置，将采用默认值（443）。");
+					httpsPort = 443;
+				} else {
+					try {
+						this.httpsPort = Integer.parseInt(httpsports);
+						if (httpsPort <= 0 || httpsPort > 65535) {
+							Printer.instance.print("错误：无法启用https支持，https访问端口号配置不正确。");
+							return HTTPS_SETTING_ERROR;
+						}
+					} catch (Exception e) {
 						Printer.instance.print("错误：无法启用https支持，https访问端口号配置不正确。");
 						return HTTPS_SETTING_ERROR;
 					}
-				} catch (Exception e) {
-					Printer.instance.print("错误：无法启用https支持，https访问端口号配置不正确。");
-					return HTTPS_SETTING_ERROR;
 				}
+				openHttps = true;
+			} else if (!"false".equals(enableHttps)) {
+				Printer.instance.print("错误：https支持功能的启用项配置不正确（只能设置为“true”或“false”），请重新检查。");
+				return HTTPS_SETTING_ERROR;
 			}
-			openHttps = true;
 		}
 		// 是否启用XFF解析
 		String xffConf = serverp.getProperty("IP.xff");
