@@ -293,6 +293,15 @@ public class ServerUIModule extends KiftdDynamicWindow {
 								case ConfigureReader.INVALID_VC:
 									printMessage("KIFT无法启动：登录验证码设置无效。");
 									break;
+								case ConfigureReader.INVALID_MUST_LOGIN_SETTING:
+									printMessage("KIFT无法启动：必须登入设置无效。");
+									break;
+								case ConfigureReader.INVALID_CHANGE_PASSWORD_SETTING:
+									printMessage("KIFT无法启动：用户修改账户密码设置无效。");
+									break;
+								case ConfigureReader.INVALID_FILE_CHAIN_SETTING:
+									printMessage("KIFT无法启动：永久资源链接设置无效。");
+									break;
 								default:
 									printMessage("KIFT无法启动，请检查设置或查看异常信息。");
 									break;
@@ -454,7 +463,7 @@ public class ServerUIModule extends KiftdDynamicWindow {
 					ServerUIModule.setting.setEnabled(true);
 				}
 				fileIOUtil.setEnabled(true);
-				if(filesViewer != null) {
+				if (filesViewer != null) {
 					filesViewer.setEnabled(true);
 				}
 				ServerUIModule.portStatusLab.setText(ServerUIModule.st.getPort() + "");

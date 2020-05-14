@@ -171,6 +171,9 @@ public class AccountServiceImpl implements AccountService {
 		final String encrypted = request.getParameter("encrypted");
 		try {
 			final String changePasswordInfoStr = RSADecryptUtil.dncryption(encrypted, ku.getPrivateKey());
+			if (TextFormateUtil.instance().hasEscapes(changePasswordInfoStr)) {
+				return "hasescapes";
+			}
 			final ChangePasswordInfoPojo info = gson.fromJson(changePasswordInfoStr, ChangePasswordInfoPojo.class);
 			if (System.currentTimeMillis() - Long.parseLong(info.getTime()) > TIME_OUT) {
 				return "error";
@@ -250,6 +253,9 @@ public class AccountServiceImpl implements AccountService {
 		final String encrypted = request.getParameter("encrypted");
 		try {
 			final String signUpInfoStr = RSADecryptUtil.dncryption(encrypted, ku.getPrivateKey());
+			if (TextFormateUtil.instance().hasEscapes(signUpInfoStr)) {
+				return "hasescapes";
+			}
 			final SignUpInfoPojo info = gson.fromJson(signUpInfoStr, SignUpInfoPojo.class);
 			if (System.currentTimeMillis() - Long.parseLong(info.getTime()) > TIME_OUT) {
 				return "error";
