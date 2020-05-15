@@ -159,8 +159,8 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 			final MultipartFile file) {
 		String account = (String) request.getSession().getAttribute("ACCOUNT");
 		final String folderId = request.getParameter("folderId");
-		final String originalFileName = new String(file.getOriginalFilename().getBytes(Charset.forName("UTF-8")),
-				Charset.forName("UTF-8"));
+		final String fname = request.getParameter("fname");
+		final String originalFileName = fname != null ? fname : file.getOriginalFilename();
 		String fileName = originalFileName;
 		final String repeType = request.getParameter("repeType");
 		// 再次检查上传文件名与目标目录ID

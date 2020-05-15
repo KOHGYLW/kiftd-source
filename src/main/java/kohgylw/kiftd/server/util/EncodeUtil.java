@@ -6,13 +6,17 @@ import java.net.URLEncoder;
 /**
  * 
  * <h2>字符串编码工具</h2>
- * <p>该工具提供字符串的编码格式化功能。提供的全部方法均为静态的，因此无需创建该类实例。</p>
+ * <p>
+ * 该工具提供字符串的编码格式化功能。提供的全部方法均为静态的，因此无需创建该类实例。
+ * </p>
+ * 
  * @author 青阳龙野(kohgylw)
  * @version 1.0
  */
 public class EncodeUtil {
-	
-	private EncodeUtil() {}
+
+	private EncodeUtil() {
+	}
 
 	/**
 	 * 
@@ -28,13 +32,9 @@ public class EncodeUtil {
 	 */
 	public static String getFileNameByUTF8(String name) {
 		try {
-			return URLEncoder.encode(name, "UTF-8").replaceAll("\\+", "%20").replaceAll("%28", "\\(")
-					.replaceAll("%29", "\\)").replaceAll("%3B", ";").replaceAll("%40", "@").replaceAll("%23", "\\#")
-					.replaceAll("%26", "\\&");
+			return URLEncoder.encode(name, "UTF-8");
 		} catch (UnsupportedEncodingException e) {
-			// TODO 自动生成的 catch 块
-			return name.replaceAll("\\+", "%20").replaceAll("%28", "\\(").replaceAll("%29", "\\)")
-					.replaceAll("%3B", ";").replaceAll("%40", "@").replaceAll("%23", "\\#").replaceAll("%26", "\\&");
+			return name;
 		}
 	}
 
