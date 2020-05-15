@@ -32,7 +32,7 @@ public class EncodeUtil {
 	 */
 	public static String getFileNameByUTF8(String name) {
 		try {
-			return URLEncoder.encode(name, "UTF-8");
+			return URLEncoder.encode(name, "UTF-8").replaceAll("\\+", " ");
 		} catch (UnsupportedEncodingException e) {
 			return name;
 		}
