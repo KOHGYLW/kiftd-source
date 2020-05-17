@@ -4,7 +4,6 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.nio.charset.Charset;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -101,16 +100,8 @@ public class RangeFileStreamWriter {
 		response.setCharacterEncoding("UTF-8");
 		// 设置Content-Disposition信息
 		if (isAttachment) {
-			if (request.getHeader("User-Agent").toLowerCase().indexOf("safari") >= 0) {
-				response.setHeader("Content-Disposition",
-						"attachment; filename=\""
-								+ new String(fname.getBytes(Charset.forName("UTF-8")), Charset.forName("ISO-8859-1"))
-								+ "\"; filename*=utf-8''" + EncodeUtil.getFileNameByUTF8(fname));
-			} else {
-				response.setHeader("Content-Disposition",
-						"attachment; filename=\"" + EncodeUtil.getFileNameByUTF8(fname) + "\"; filename*=utf-8''"
-								+ EncodeUtil.getFileNameByUTF8(fname));
-			}
+			response.setHeader("Content-Disposition", "attachment; filename=\"" + EncodeUtil.getFileNameByUTF8(fname)
+					+ "\"; filename*=utf-8''" + EncodeUtil.getFileNameByUTF8(fname));
 		} else {
 			response.setHeader("Content-Disposition", "inline");
 		}

@@ -112,7 +112,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 				return ERROR_PARAMETER;
 			}
 			final List<Node> files = this.fm.queryByParentFolderId(folderId);
-			if (files.stream().parallel().anyMatch((n) -> n.getFileName().equals(fileName.replaceAll("\"", "_")))) {
+			if (files.stream().parallel().anyMatch((n) -> n.getFileName().equals(fileName))) {
 				pereFileNameList.add(fileName);
 			}
 		}
@@ -158,7 +158,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		String account = (String) request.getSession().getAttribute("ACCOUNT");
 		final String folderId = request.getParameter("folderId");
 		final String fname = request.getParameter("fname");
-		final String originalFileName = (fname != null ? fname : file.getOriginalFilename()).replaceAll("\"", "_");
+		final String originalFileName = (fname != null ? fname : file.getOriginalFilename());
 		String fileName = originalFileName;
 		final String repeType = request.getParameter("repeType");
 		// 再次检查上传文件名与目标目录ID
@@ -1088,7 +1088,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		final List<Folder> folders = flm.queryByParentId(folderId);
 		try {
 			Folder testFolder = folders.stream().parallel()
-					.filter((n) -> n.getFolderName().equals(folderName.replaceAll("\"", "_"))).findAny().get();
+					.filter((n) -> n.getFolderName().equals(folderName)).findAny().get();
 			if (ConfigureReader.instance().accessFolder(testFolder, account) && ConfigureReader.instance()
 					.authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER, fu.getAllFoldersId(folderId))) {
 				cifr.setResult("repeatFolder_coverOrBoth");
@@ -1167,7 +1167,6 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		// 执行创建文件夹和上传文件操作
 		for (String pName : paths) {
 			Folder newFolder;
-			pName = pName.replaceAll("\"", "_");
 			try {
 				newFolder = fu.createNewFolder(folderId, account, pName, folderConstraint);
 			} catch (FoldersTotalOutOfLimitException e1) {
@@ -1269,7 +1268,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		if (path != null) {
 			String[] paths = path.split("/");
 			if (paths.length > 0) {
-				return paths[paths.length - 1].replaceAll("\"", "_");
+				return paths[paths.length - 1];
 			}
 		}
 		return null;
