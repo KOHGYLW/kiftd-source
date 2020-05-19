@@ -95,6 +95,9 @@ public class FolderUtil {
 		if (parentId == null || folderName == null || parentId.length() <= 0 || folderName.length() <= 0) {
 			return null;
 		}
+		if (folderName.equals(".") || folderName.equals("..")) {
+			return null;
+		}
 		final Folder parentFolder = this.fm.queryById(parentId);
 		if (parentFolder == null) {
 			return null;
@@ -296,7 +299,7 @@ public class FolderUtil {
 		pl.append(f.getFolderName());
 		return pl.toString();
 	}
-	
+
 	/**
 	 * 
 	 * <h2>迭代修改子文件夹约束</h2>

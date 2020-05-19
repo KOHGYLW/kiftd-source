@@ -251,7 +251,7 @@ public class FolderServiceImpl implements FolderService {
 			cnfbnr.setResult("error");
 			return gson.toJson(cnfbnr);
 		}
-		if (!TextFormateUtil.instance().matcherFolderName(folderName)) {
+		if (folderName.equals(".") || folderName.equals("..")) {
 			cnfbnr.setResult("error");
 			return gson.toJson(cnfbnr);
 		}
