@@ -32,6 +32,7 @@ public class FolderViewServiceImpl implements FolderViewService {
 
 	@Override
 	public String getFolderViewToJson(final String fid, final HttpSession session, final HttpServletRequest request) {
+		//long StartTime_Refresh = System.currentTimeMillis();//记录获取文件夹视图的开始时间
 		final ConfigureReader cr = ConfigureReader.instance();
 		if (fid == null || fid.length() == 0) {
 			return "ERROR";
@@ -60,10 +61,11 @@ public class FolderViewServiceImpl implements FolderViewService {
 		List<Folder> fs = new LinkedList<>();
 		for (Folder f : folders) {
 			if (ConfigureReader.instance().accessFolder(f, account)) {
-				fs.add(f);
+				//fs.add(f);
+				fs.add(0, f);//改成头部插入，这样文件夹就是从小到大排列了，符合使用习惯
 			}
 		}
-		fv.setFolderList(fs);
+		fv.setFolderList(fs);//生成文件夹视图
 		long filesOffset = this.flm.countByParentFolderId(fid);// 文件的查询逻辑与文件夹基本相同
 		fv.setFilesOffset(filesOffset);
 		Map<String, Object> keyMap2 = new HashMap<>();
@@ -113,6 +115,8 @@ public class FolderViewServiceImpl implements FolderViewService {
 		fv.setPublishTime(ServerTimeUtil.accurateToMinute());
 		fv.setEnableFFMPEG(kfl.isEnableFFmpeg());
 		fv.setEnableDownloadZip(ConfigureReader.instance().isEnableDownloadByZip());
+		//long EndTime_Refresh = System.currentTimeMillis();//记录获取文件夹视图的结束时间
+		//System.out.println("刷新用时"+(EndTime_Refresh-StartTime_Refresh));//输出获取文件夹视图的耗时
 		return gson.toJson(fv);
 	}
 
@@ -124,7 +128,7 @@ public class FolderViewServiceImpl implements FolderViewService {
 		if (fid == null || fid.length() == 0 || keyWorld == null) {
 			return "ERROR";
 		}
-		// 如果啥么也不查，那么直接返回指定文件夹标准视图
+		// 如果什么也不查，那么直接返回指定文件夹标准视图
 		if (keyWorld.length() == 0) {
 			return getFolderViewToJson(fid, request.getSession(), request);
 		}
