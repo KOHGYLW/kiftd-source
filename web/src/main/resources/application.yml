@@ -1,0 +1,41 @@
+server:
+  port: 8848
+
+mybatis:
+  type-aliases-package: work.cxlm.filecase.domain
+  # 可以拓展 SQL Type 到 Java Type 的映射。
+  # type-handlers-package: xxx.xxx.handlers.type
+  mapper-locations: classpath:mappers/*.xml,classpath:manualMappers/*.xml
+  check-config-location: false
+  configuration:
+    cache-enabled: false
+    lazy-loading-enabled: false
+    multiple-result-sets-enabled: true
+    use-column-label: true
+    use-generated-keys: true
+    auto-mapping-behavior: partial
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+    log-prefix: executableSql.
+
+
+mapper:
+  mappers:
+    - work.cxlm.filecase.dao.basemapper.BaseMapper
+  identity: MYSQL
+  not-empty: true
+  use-simple-type: false
+  check-example-entity-class: true
+
+datasource:
+  use-dynamic: true
+  dynamic-default: main
+
+  pool:
+    main:
+      url: jdbc:mysql://ip:port/file_info?useUnicode=true&characterEncoding=UTF-8&useSSL=false&zeroDateTimeBehavior=convertToNull
+      username: ###
+      password: ###
+      query-timeout: 5000
+      validation-query: SELECT 1
+      test-on-borrow: false
+      test-on-return: false
