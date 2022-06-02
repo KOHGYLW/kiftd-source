@@ -215,7 +215,7 @@ public class RangeFileStreamWriter {
 				}
 				out.flush();
 				out.close();
-			} catch (IOException ex) {
+			} catch (IOException | IndexOutOfBoundsException ex) {
 				// 针对任何IO异常忽略，传输失败不处理
 				status = HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 			} catch (IllegalArgumentException e) {
