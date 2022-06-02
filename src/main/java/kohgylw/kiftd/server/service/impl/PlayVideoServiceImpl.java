@@ -50,7 +50,7 @@ public class PlayVideoServiceImpl implements PlayVideoService {
 					final String suffix = fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase();
 					switch (suffix) {
 					case "mp4":
-						if (kfl.getFFMPEGExecutablePath() != null) {
+						if (kfl.getExecutablePath() != null) {
 							// 因此对于mp4后缀的视频，进一步检查其编码是否为h264，如果是，则允许直接播放
 							File target = fbu.getFileFromBlocks(f);
 							if (target == null || !target.isFile()) {
@@ -79,7 +79,7 @@ public class PlayVideoServiceImpl implements PlayVideoService {
 					case "avi":
 					case "wmv":
 					case "flv":
-						if (kfl.getFFMPEGExecutablePath() != null) {
+						if (kfl.getExecutablePath() != null) {
 							vi.setNeedEncode("Y");
 						} else {
 							vi.setNeedEncode("N");

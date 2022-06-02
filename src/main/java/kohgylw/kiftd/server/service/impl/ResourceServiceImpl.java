@@ -100,7 +100,7 @@ public class ResourceServiceImpl implements ResourceService {
 						case ".wmv":
 						case ".mkv":
 						case ".flv":
-							if (kfl.getFFMPEGExecutablePath() != null) {
+							if (kfl.getExecutablePath() != null) {
 								contentType = "video/mp4";
 								synchronized (VideoTranscodeUtil.videoTranscodeThreads) {
 									VideoTranscodeThread vtt = VideoTranscodeUtil.videoTranscodeThreads.get(fid);
@@ -369,7 +369,7 @@ public class ResourceServiceImpl implements ResourceService {
 
 	@Override
 	public String getVideoTranscodeStatus(HttpServletRequest request) {
-		if (kfl.getFFMPEGExecutablePath() != null) {
+		if (kfl.getExecutablePath() != null) {
 			String fId = request.getParameter("fileId");
 			if (fId != null) {
 				try {

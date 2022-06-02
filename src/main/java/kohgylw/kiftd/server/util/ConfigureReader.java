@@ -85,6 +85,7 @@ public class ConfigureReader {
 	public static final int INVALID_IP_XFF_SETTING = 13;
 	public static final int INVALID_FFMPEG_SETTING = 14;
 	public static final int INVALID_MUST_LOGIN_SETTING = 15;
+	public static final int INVALID_WEBDAV_SETTING = 16;
 	public static final int LEGAL_PROPERTIES = 0;
 	private static Thread accountPropertiesUpdateDaemonThread;
 	private String timeZone;
@@ -99,6 +100,7 @@ public class ConfigureReader {
 	private boolean ipXFFAnalysis = true;// 是否启用XFF解析
 	private boolean enableFFMPEG = true;// 是否启用视频播放的在线解码功能
 	private boolean enableDownloadByZip = true;// 是否启用“打包下载”功能
+	private boolean enableWebDAV = false;// 是否启用WebDAV功能
 
 	private static final int MAX_EXTENDSTORES_NUM = 255;// 扩展存储区最大数目
 	private static final String[] SYS_ACCOUNTS = { "SYS_IN", "Anonymous", "匿名用户" };// 一些系统的特殊账户
@@ -184,13 +186,10 @@ public class ConfigureReader {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param account
-	 *            java.lang.String 账户的ID，如果是匿名访问可传入null
-	 * @param auth
-	 *            kohgylw.kiftd.server.enumeration.AccountAuth
-	 *            要判断的操作类型，使用枚举类中定义的各种操作作为参数传入
-	 * @param folders
-	 *            该操作所发生的文件夹序列，其中应包含该操作对应的文件夹和其所有上级文件夹的ID
+	 * @param account java.lang.String 账户的ID，如果是匿名访问可传入null
+	 * @param auth    kohgylw.kiftd.server.enumeration.AccountAuth
+	 *                要判断的操作类型，使用枚举类中定义的各种操作作为参数传入
+	 * @param folders 该操作所发生的文件夹序列，其中应包含该操作对应的文件夹和其所有上级文件夹的ID
 	 * @return boolean 是否具备该操作的权限，若具备返回true，否则返回false
 	 */
 	public boolean authorized(final String account, final AccountAuth auth, List<String> folders) {
@@ -851,6 +850,23 @@ public class ConfigureReader {
 		} else {
 			enableDownloadByZip = true;
 		}
+		// 是否启用WebDAV功能
+		String webdavConf = serverp.getProperty("webdav");
+		if (webdavConf != null) {
+			switch (webdavConf) {
+			case "disable":
+				enableWebDAV = false;
+				break;
+			case "enable":
+				enableWebDAV = true;
+				break;
+			default:
+				Printer.instance.print("错误：WebDAV功能的配置不正确（只能设置为“disable”或“enable”），请重新检查。");
+				return INVALID_WEBDAV_SETTING;
+			}
+		} else {
+			enableWebDAV = false;
+		}
 		Printer.instance.print("检查完毕。");
 		return LEGAL_PROPERTIES;
 	}
@@ -976,10 +992,8 @@ public class ConfigureReader {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param f
-	 *            Folder 要访问的文件夹对象
-	 * @param account
-	 *            String 要访问的账户
+	 * @param f       Folder 要访问的文件夹对象
+	 * @param account String 要访问的账户
 	 * @return boolean true允许访问，false不允许访问
 	 */
 	public boolean accessFolder(Folder f, String account) {
@@ -1108,8 +1122,7 @@ public class ConfigureReader {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param account
-	 *            java.lang.String 需要检查的账户名
+	 * @param account java.lang.String 需要检查的账户名
 	 * @return long 以byte为单位的最大阈值，若返回0则设置错误，若小于0则不限制。
 	 */
 	public long getUploadFileSize(String account) {
@@ -1142,8 +1155,7 @@ public class ConfigureReader {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param in
-	 *            java.lang.String 要转换的字符串内容，格式应为“{数值}{存储单位（可选）}”，例如“1024KB”或“10mb”。
+	 * @param in java.lang.String 要转换的字符串内容，格式应为“{数值}{存储单位（可选）}”，例如“1024KB”或“10mb”。
 	 * @return long 以Byte为单位计算的体积值，若为0则代表设置错误，若为负数则代表无限制
 	 */
 	private long getMaxSizeByString(String in) {
@@ -1193,9 +1205,8 @@ public class ConfigureReader {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param account
-	 *            java.lang.String 需要获取限制的账户名
-	 * @return long 最大下载速度限制，以KB/s为单位
+	 * @param account java.lang.String 需要获取限制的账户名
+	 * @return long 最大下载速度限制，以B/s为单位
 	 */
 	public long getDownloadMaxRate(String account) {
 		String defaultMaxRateP = accountp.getProperty("defaultMaxRate");
@@ -1211,7 +1222,7 @@ public class ConfigureReader {
 	 * 
 	 * <h2>下载限速设置值转化方法</h2>
 	 * <p>
-	 * 该方法用于将配置文件中的下载速度限制设置值转化为long类型的数值，例如当输入字符串“1”时，输出1，输入“2MB”时，输出2048。
+	 * 该方法用于将配置文件中的下载速度限制设置值转化为long类型的数值，例如当输入字符串“1”时，输出1024，输入“2MB”时，输出2097152。
 	 * </p>
 	 * <p>
 	 * 输入字符串格式规则：{数值}{速率单位（可选）}。其中，速率单位可使用下列字符串之一指代（不区分大小写）：
@@ -1225,9 +1236,8 @@ public class ConfigureReader {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param in
-	 *            java.lang.String 要转换的字符串内容，格式应为“{数值}{速率单位（可选）}”，例如“1024”或“10 mb”。
-	 * @return long 以KB/s为单位计算的下载速度，若为0则代表设置错误，若为负数则代表无限制
+	 * @param in java.lang.String 要转换的字符串内容，格式应为“{数值}{速率单位（可选）}”，例如“1024”或“10 mb”。
+	 * @return long 以B/s为单位计算的下载速度，若为0则代表设置错误，若为负数则代表无限制
 	 */
 	private long getMaxRateByString(String in) {
 		long r = 0L;
@@ -1248,17 +1258,17 @@ public class ConfigureReader {
 				}
 				switch (unit) {
 				case "m":
-					r = Integer.parseInt(value) * 1024L;
-					break;
-				case "g":
 					r = Integer.parseInt(value) * 1048576L;
 					break;
+				case "g":
+					r = Integer.parseInt(value) * 1073741824L;
+					break;
 				default:
-					r = Integer.parseInt(in.trim());
+					r = Integer.parseInt(value) * 1024L;
 					break;
 				}
 			} else {
-				r = Integer.parseInt(in.trim());
+				r = Integer.parseInt(in.trim()) * 1024L;
 			}
 		} catch (Exception e) {
 		}
@@ -1354,10 +1364,8 @@ public class ConfigureReader {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param account
-	 *            java.lang.String 账户ID，该账户必须已经存在，否则会导致修改失败
-	 * @param newPassword
-	 *            java.lang.String 新密码，必须不为null，否则会导致修改失败
+	 * @param account     java.lang.String 账户ID，该账户必须已经存在，否则会导致修改失败
+	 * @param newPassword java.lang.String 新密码，必须不为null，否则会导致修改失败
 	 * @return boolean 操作是否成功，成功则返回true
 	 */
 	public boolean changePassword(String account, String newPassword) throws Exception {
@@ -1386,8 +1394,7 @@ public class ConfigureReader {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param ipAddr
-	 *            java.lang.String 要判断的IP地址
+	 * @param ipAddr java.lang.String 要判断的IP地址
 	 * @return boolean 该地址是否被禁用，被禁用则返回true
 	 */
 	public boolean filterAccessIP(String ipAddr) {
@@ -1451,13 +1458,10 @@ public class ConfigureReader {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param newAccount
-	 *            java.lang.String 要写入的新账户名
-	 * @param newPassword
-	 *            java.lang.String 新账户的密码
+	 * @param newAccount  java.lang.String 要写入的新账户名
+	 * @param newPassword java.lang.String 新账户的密码
 	 * @return boolean 是否写入成功。仅当账户名不存在且写入成功时返回true，否则返回false
-	 * @throws Exception
-	 *             写入时发生的异常
+	 * @throws Exception 写入时发生的异常
 	 */
 	public boolean createNewAccount(String newAccount, String newPassword) throws Exception {
 		if (newAccount != null && newPassword != null) {
@@ -1537,5 +1541,19 @@ public class ConfigureReader {
 	 */
 	public boolean isEnableDownloadByZip() {
 		return enableDownloadByZip;
+	}
+
+	/**
+	 * 
+	 * <h2>判断用户是否启用了WebDAV功能</h2>
+	 * <p>
+	 * 判断用户是否启用了WebDAV功能。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @return boolean 启用则返回true，否则返回false
+	 */
+	public boolean isEnableWebDAV() {
+		return enableWebDAV;
 	}
 }

@@ -66,8 +66,7 @@ public class LogUtil {
 	 * 创建日志文件并写入异常信息，当同日期的日志文件存在时，则在其后面追加该信息
 	 * </p>
 	 * 
-	 * @param e
-	 *            Exception 需要记录的异常对象
+	 * @param e Exception 需要记录的异常对象
 	 */
 	public void writeException(Exception e) {
 		if (ConfigureReader.instance().inspectLogLevel(LogLevel.Runtime_Exception)) {
@@ -91,14 +90,12 @@ public class LogUtil {
 	 * 写入新建文件夹信息，包括操作者、路劲及新文件夹名称
 	 * </p>
 	 */
-	public void writeCreateFolderEvent(HttpServletRequest request, Folder f) {
+	public void writeCreateFolderEvent(String account, String ip, Folder f) {
 		if (ConfigureReader.instance().inspectLogLevel(LogLevel.Event)) {
-			String account = (String) request.getSession().getAttribute("ACCOUNT");
 			if (account == null || account.length() == 0) {
 				account = "Anonymous";
 			}
 			String a = account;// 方便下方使用终态操作
-			String ip = idg.getIpAddr(request);
 			writerThread.execute(() -> {
 				List<Folder> l = fu.getParentList(f.getFolderId());
 				String pl = new String();
@@ -118,23 +115,22 @@ public class LogUtil {
 	 * 写入重命名文件夹信息
 	 * </p>
 	 */
-	public void writeRenameFolderEvent(HttpServletRequest request, Folder f, String newName, String newConstraint) {
+	public void writeRenameFolderEvent(String account, String ip, String folderId, String oldName, String newName,
+			String oldConstraint, String newConstraint) {
 		if (ConfigureReader.instance().inspectLogLevel(LogLevel.Event)) {
-			String account = (String) request.getSession().getAttribute("ACCOUNT");
 			if (account == null || account.length() == 0) {
 				account = "Anonymous";
 			}
 			String a = account;
-			String ip = idg.getIpAddr(request);
 			writerThread.execute(() -> {
-				List<Folder> l = fu.getParentList(f.getFolderId());
+				List<Folder> l = fu.getParentList(folderId);
 				String pl = new String();
 				for (Folder i : l) {
 					pl = pl + i.getFolderName() + "/";
 				}
 				String content = ">IP [" + ip + "]\r\n>ACCOUNT [" + a + "]\r\n>OPERATE [Edit folder]\r\n>PATH [" + pl
-						+ "]\r\n>NAME [" + f.getFolderName() + "]->[" + newName + "],CONSTRAINT ["
-						+ f.getFolderConstraint() + "]->[" + newConstraint + "]";
+						+ "]\r\n>NAME [" + oldName + "]->[" + newName + "],CONSTRAINT [" + oldConstraint + "]->["
+						+ newConstraint + "]";
 				writeToLog("Event", content);
 			});
 		}
@@ -281,8 +277,7 @@ public class LogUtil {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param f
-	 *            kohgylw.kiftd.server.model.Node 下载目标
+	 * @param f kohgylw.kiftd.server.model.Node 下载目标
 	 */
 	public void writeDownloadFileByKeyEvent(HttpServletRequest request, Node f) {
 		if (ConfigureReader.instance().inspectLogLevel(LogLevel.Event)) {
@@ -339,23 +334,21 @@ public class LogUtil {
 	 * 写入重命名文件信息
 	 * </p>
 	 */
-	public void writeRenameFileEvent(HttpServletRequest request, Node f, String newName) {
+	public void writeRenameFileEvent(String account, String ip, String parentFolderId, String oldName, String newName) {
 		if (ConfigureReader.instance().inspectLogLevel(LogLevel.Event)) {
-			String account = (String) request.getSession().getAttribute("ACCOUNT");
 			if (account == null || account.length() == 0) {
 				account = "Anonymous";
 			}
 			String a = account;
-			String ip = idg.getIpAddr(request);
 			writerThread.execute(() -> {
-				Folder folder = fm.queryById(f.getFileParentFolder());
+				Folder folder = fm.queryById(parentFolderId);
 				List<Folder> l = fu.getParentList(folder.getFolderId());
 				String pl = new String();
 				for (Folder i : l) {
 					pl = pl + i.getFolderName() + "/";
 				}
 				String content = ">IP [" + ip + "]\r\n>ACCOUNT [" + a + "]\r\n>OPERATE [Rename file]\r\n>PATH [" + pl
-						+ folder.getFolderName() + "]\r\n>NAME [" + f.getFileName() + "]->[" + newName + "]";
+						+ folder.getFolderName() + "]\r\n>NAME [" + oldName + "]->[" + newName + "]";
 				writeToLog("Event", content);
 			});
 		}
@@ -369,16 +362,11 @@ public class LogUtil {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param account
-	 *            java.lang.String 操作者账户名
-	 * @param ip
-	 *            java.lang.String 操作者IP地址
-	 * @param finalPath
-	 *            java.lang.String 被操作后的节点完整路径
-	 * @param originPath
-	 *            java.lang.String 未操作前的节点完整路径
-	 * @param isCopy
-	 *            boolean 是否为复制模式
+	 * @param account    java.lang.String 操作者账户名
+	 * @param ip         java.lang.String 操作者IP地址
+	 * @param finalPath  java.lang.String 被操作后的节点完整路径
+	 * @param originPath java.lang.String 未操作前的节点完整路径
+	 * @param isCopy     boolean 是否为复制模式
 	 */
 	public void writeMoveFileEvent(String account, String ip, String originPath, String finalPath, boolean isCopy) {
 		if (ConfigureReader.instance().inspectLogLevel(LogLevel.Event)) {
@@ -403,16 +391,11 @@ public class LogUtil {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param account
-	 *            java.lang.String 操作者账户名
-	 * @param ip
-	 *            java.lang.String 操作者IP地址
-	 * @param finalPath
-	 *            java.lang.String 被操作后的文件夹完整路径
-	 * @param originPath
-	 *            java.lang.String 未操作前的文件夹完整路径
-	 * @param isCopy
-	 *            boolean 是否为复制模式
+	 * @param account    java.lang.String 操作者账户名
+	 * @param ip         java.lang.String 操作者IP地址
+	 * @param finalPath  java.lang.String 被操作后的文件夹完整路径
+	 * @param originPath java.lang.String 未操作前的文件夹完整路径
+	 * @param isCopy     boolean 是否为复制模式
 	 */
 	public void writeMoveFolderEvent(String account, String ip, String originPath, String finalPath, boolean isCopy) {
 		if (ConfigureReader.instance().inspectLogLevel(LogLevel.Event)) {
@@ -428,7 +411,7 @@ public class LogUtil {
 			});
 		}
 	}
-	
+
 	// 将文本信息以格式化标准写入日志文件中
 	private void writeToLog(String type, String content) {
 		String t = ServerTimeUtil.accurateToLogName();

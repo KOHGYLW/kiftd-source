@@ -32,7 +32,7 @@ public class FileNodeUtil {
 	private static String url;// 当前链接的节点数据库位置
 
 	/**
-	 * 但文件夹内允许存放的最大文件和文件夹数目
+	 * 单文件夹内允许存放的最大文件和文件夹数目
 	 */
 	public static final int MAXIMUM_NUM_OF_SINGLE_FOLDER = Integer.MAX_VALUE;
 

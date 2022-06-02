@@ -23,10 +23,11 @@ public class MastLoginFilter implements Filter {
 		final HttpServletResponse hsr = (HttpServletResponse) response;
 		final String url = hsq.getServletPath();
 		final HttpSession session = hsq.getSession();
-		if (url.startsWith("/externalLinksController/") || url.startsWith("//externalLinksController/")
+		if (url.startsWith("/externalLinksController") || url.startsWith("//externalLinksController")
 				|| url.startsWith("/homeController/getNewVerCode.do")
-				|| url.startsWith("//homeController/getNewVerCode.do")) {
-			chain.doFilter(request, response);// 对于外部链接控制器和验证码的请求直接放行。
+				|| url.startsWith("//homeController/getNewVerCode.do") || url.startsWith("/dav")
+				|| url.startsWith("//dav")) {
+			chain.doFilter(request, response);// 对于外部链接控制器、验证码和WebDAV的请求直接放行。
 			return;
 		}
 		// 如果是无需登录的请求，那么直接放行（如果访问者已经登录，那么会被后面的过滤器重定向至主页，此处无需处理）

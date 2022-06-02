@@ -12,18 +12,16 @@ import javax.annotation.Resource;
 import org.springframework.stereotype.Component;
 
 import kohgylw.kiftd.printer.Printer;
-import ws.schild.jave.FFMPEGLocator;
+import ws.schild.jave.Version;
+import ws.schild.jave.process.ProcessLocator;
+import ws.schild.jave.process.ProcessWrapper;
+import ws.schild.jave.process.ffmpeg.FFMPEGProcess;
 
 @Component
-public class KiftdFFMPEGLocator extends FFMPEGLocator {
+public class KiftdFFMPEGLocator implements ProcessLocator {
 
 	@Resource
 	private LogUtil lu;
-
-	/**
-	 * 内置的ffmpeg引擎的版本号，应该与jave整合资源本身自带的ffmpeg引擎版本对应
-	 */
-	private static final String MY_EXE_VERSION = "2.5.0";
 
 	private boolean enableFFmpeg;
 
@@ -64,10 +62,9 @@ public class KiftdFFMPEGLocator extends FFMPEGLocator {
 	}
 
 	@Override
-	public String getFFMPEGExecutablePath() {
+	public String getExecutablePath() {
 		// 每次获得路径时再次初始化ffmpeg执行路径
-		return initFFMPEGExecutablePath();// 这里的目的在于避免运行中ffmpeg被删掉从而导致程序找不到它，
-		// 同时更新enableFFmpeg属性。
+		return initFFMPEGExecutablePath();// 这里的目的在于避免运行中ffmpeg被删掉从而导致程序找不到它，同时更新enableFFmpeg属性。
 	}
 
 	// 初始化ffmpeg执行路径并返回，过程包括：
@@ -100,7 +97,7 @@ public class KiftdFFMPEGLocator extends FFMPEGLocator {
 		} else {
 			// 否则，使用内置的ffmpeg文件。
 			// 临时文件中是否已经拷贝好了ffmpeg可执行文件了？
-			ffmpegFile = new File(dirFolder, "ffmpeg-" + arch + "-" + MY_EXE_VERSION + suffix);
+			ffmpegFile = new File(dirFolder, "ffmpeg-" + arch + "-" + Version.getVersion() + suffix);
 			if (!ffmpegFile.exists()) {
 				// 没有？那将自带的、对应操作系统的ffmpeg文件拷贝到临时目录中，如果没有对应自带的ffmpeg，那么会抛出异常
 				// 如果抛出异常，那么直接结束构造
@@ -115,7 +112,6 @@ public class KiftdFFMPEGLocator extends FFMPEGLocator {
 			}
 			// 已经有了？那么它应该准备好了
 		}
-
 		// 对于类Unix系统而言，还要确保临时目录授予可运行权限，以便jave运行时调用ffmpeg
 		if (!isWindows) {
 			if (!ffmpegFile.canExecute()) {
@@ -129,7 +125,6 @@ public class KiftdFFMPEGLocator extends FFMPEGLocator {
 				}
 			}
 		}
-
 		// 上述工作都做好了，就可以将ffmpeg的路径返回给jave调用了。
 		// 如果到不了这里，说明初始化失败，该方法返回null，那么应该禁用jave的在线转码功能
 		enableFFmpeg = true;
@@ -138,13 +133,28 @@ public class KiftdFFMPEGLocator extends FFMPEGLocator {
 
 	// 把文件从自带的jar包中拷贝出来，移入指定文件夹
 	private void copyFile(String path, File dest) {
-		String resourceName = "/ws/schild/jave/native/" + path;
+		String resourceName = "nativebin/" + path;
 		try {
-			if (!copy(getClass().getResourceAsStream(resourceName), dest.getAbsolutePath())) {
-				throw new NullPointerException();
+			InputStream is = getClass().getResourceAsStream(resourceName);
+			if (is == null) {
+				resourceName = "ws/schild/jave/nativebin/" + path;
+				is = ClassLoader.getSystemResourceAsStream(resourceName);
+			}
+			if (is == null) {
+				resourceName = "ws/schild/jave/nativebin/" + path;
+				ClassLoader classloader = Thread.currentThread().getContextClassLoader();
+				is = classloader.getResourceAsStream(resourceName);
+			}
+			if (is != null) {
+				copy(is, dest.getAbsolutePath());
+				try {
+					is.close();
+				} catch (IOException ioex) {
+					lu.writeException(ioex);
+				}
 			}
 		} catch (NullPointerException ex) {
-			throw ex;
+			lu.writeException(ex);
 		}
 	}
 
@@ -163,4 +173,8 @@ public class KiftdFFMPEGLocator extends FFMPEGLocator {
 		return enableFFmpeg;
 	}
 
+	@Override
+	public ProcessWrapper createExecutor() {
+		return new FFMPEGProcess(getExecutablePath());
+	}
 }

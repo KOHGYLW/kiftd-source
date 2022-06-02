@@ -13,9 +13,9 @@ import org.springframework.stereotype.Component;
 import kohgylw.kiftd.server.mapper.NodeMapper;
 import kohgylw.kiftd.server.model.Node;
 import kohgylw.kiftd.server.pojo.VideoTranscodeThread;
-import ws.schild.jave.AudioAttributes;
-import ws.schild.jave.EncodingAttributes;
-import ws.schild.jave.VideoAttributes;
+import ws.schild.jave.encode.AudioAttributes;
+import ws.schild.jave.encode.EncodingAttributes;
+import ws.schild.jave.encode.VideoAttributes;
 
 /**
  * 
@@ -49,7 +49,7 @@ public class VideoTranscodeUtil {
 		VideoAttributes video = new VideoAttributes();
 		video.setCodec("libx264");
 		ea = new EncodingAttributes();
-		ea.setFormat("MP4");
+		ea.setOutputFormat("MP4");
 		ea.setVideoAttributes(video);
 		ea.setAudioAttributes(audio);
 	}

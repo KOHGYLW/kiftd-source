@@ -30,6 +30,8 @@ public class FolderServiceImpl implements FolderService {
 	private LogUtil lu;
 	@Resource
 	private Gson gson;
+	@Resource
+	private IpAddrGetter idg;
 
 	public String newFolder(final HttpServletRequest request) {
 		final String parentId = request.getParameter("parentId");
@@ -91,7 +93,7 @@ public class FolderServiceImpl implements FolderService {
 				final int r = this.fm.insertNewFolder(f);
 				if (r > 0) {
 					if (fu.isValidFolder(f)) {
-						this.lu.writeCreateFolderEvent(request, f);
+						this.lu.writeCreateFolderEvent(account, idg.getIpAddr(request), f);
 						return "createFolderSuccess";
 					} else {
 						return "cannotCreateFolder";
@@ -193,7 +195,8 @@ public class FolderServiceImpl implements FolderService {
 							return "errorParameter";
 						}
 					}
-					this.lu.writeRenameFolderEvent(request, folder, newName, folderConstraint);
+					this.lu.writeRenameFolderEvent(account, idg.getIpAddr(request), folder.getFolderId(),
+							folder.getFolderName(), newName, folder.getFolderConstraint() + "", folderConstraint);
 					return "renameFolderSuccess";
 				}
 			} catch (Exception e) {
@@ -313,7 +316,7 @@ public class FolderServiceImpl implements FolderService {
 				final int r = this.fm.insertNewFolder(f);
 				if (r > 0) {
 					if (fu.isValidFolder(f)) {
-						this.lu.writeCreateFolderEvent(request, f);
+						this.lu.writeCreateFolderEvent(account, idg.getIpAddr(request), f);
 						cnfbnr.setResult("success");
 						cnfbnr.setNewName(f.getFolderName());
 						return gson.toJson(cnfbnr);

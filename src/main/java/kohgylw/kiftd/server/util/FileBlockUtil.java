@@ -11,6 +11,7 @@ import java.io.*;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 import kohgylw.kiftd.server.model.*;
 import kohgylw.kiftd.server.pojo.ExtendStores;
@@ -79,13 +80,143 @@ public class FileBlockUtil {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param f
-	 *            MultipartFile 上传文件对象
+	 * @param f MultipartFile 上传文件对象
 	 * @return java.io.File 生成的文件块，如果保存失败则返回null
 	 */
 	public File saveToFileBlocks(final MultipartFile f) {
-		// 如果存在扩展存储区，则优先在已有文件块数目最少的扩展存储区中存放文件（避免占用主文件系统）
-		List<ExtendStores> ess = ConfigureReader.instance().getExtendStores();// 得到全部扩展存储区
+		// 得到全部扩展存储区
+		List<ExtendStores> ess = getExtendStoresBySort();
+		if (ess.size() > 0) {
+			// 从文件块最少的开始遍历这些扩展存储区
+			for (ExtendStores es : ess) {
+				if (es.getPath().getFreeSpace() > f.getSize()) {
+					// 如果该存储区的空余容量大于待上传文件的体积
+					File file = null;
+					try {
+						// 则尝试在该存储区中生成一个空文件块
+						file = createNewBlock(es.getIndex() + "_", es.getPath());
+						if (file != null) {
+							// 生成成功，尝试存入数据
+							f.transferTo(file);
+							return file;
+						} else {
+							continue;// 如果本处无法生成新文件块，那么在其他路径下继续尝试
+						}
+					} catch (IOException e) {
+						// 出现IO异常，则删除残留文件并继续尝试其他扩展存储区
+						if (file != null) {
+							file.delete();
+						}
+						continue;
+					} catch (Exception e) {
+						// 出现其他异常则记录日志
+						lu.writeException(e);
+						Printer.instance.print(e.getMessage());
+						continue;
+					}
+				}
+			}
+		}
+		// 如果不存在扩展存储区或者最大的扩展存储区的剩余容量依旧小于指定大小，则尝试在主文件系统路径下生成新文件块
+		File file = null;
+		try {
+			file = createNewBlock("file_", new File(ConfigureReader.instance().getFileBlockPath()));
+			if (file != null) {
+				// 生成成功，则尝试存入数据
+				f.transferTo(file);
+				return file;
+			}
+		} catch (Exception e) {
+			// 出现异常则记录日志，则删除残留数据并返回null
+			if (file != null) {
+				file.delete();
+			}
+			lu.writeException(e);
+			Printer.instance.print("错误：文件块生成失败，无法存入新的文件数据。详细信息：" + e.getMessage());
+		}
+		// 因其他原因生成失败也返回null
+		return null;
+	}
+	
+	/**
+	 * 
+	 * <h2>将新上传的文件存入文件系统</h2>
+	 * <p>
+	 * 将一个java.io.File类型的文件对象存入节点，并返回保存的路径名称。其中，路径名称使用“file_{UUID}.block”
+	 * （存放于主文件系统中）或“{存储区编号}_{UUID}.block”（存放在指定编号的扩展存储区中）的形式。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @param f 要存入的文件对象
+	 * @return java.io.File 生成的文件块，如果保存失败则返回null
+	 */
+	public File saveToFileBlocks(final File f) {
+		// 得到全部扩展存储区
+		List<ExtendStores> ess = getExtendStoresBySort();
+		if (ess.size() > 0) {
+			// 从文件块最少的开始遍历这些扩展存储区
+			for (ExtendStores es : ess) {
+				if (es.getPath().getFreeSpace() > f.length()) {
+					// 如果该存储区的空余容量大于待上传文件的体积
+					File file = null;
+					try {
+						// 则尝试在该存储区中生成一个空文件块
+						file = createNewBlock(es.getIndex() + "_", es.getPath());
+						if (file != null) {
+							// 生成成功，尝试存入数据
+							Files.move(f.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING);
+							return file;
+						} else {
+							continue;// 如果本处无法生成新文件块，那么在其他路径下继续尝试
+						}
+					} catch (IOException e) {
+						// 出现IO异常，则删除残留文件并继续尝试其他扩展存储区
+						if (file != null) {
+							file.delete();
+						}
+						continue;
+					} catch (Exception e) {
+						// 出现其他异常则记录日志
+						lu.writeException(e);
+						Printer.instance.print(e.getMessage());
+						continue;
+					}
+				}
+			}
+		}
+		// 如果不存在扩展存储区或者最大的扩展存储区的剩余容量依旧小于指定大小，则尝试在主文件系统路径下生成新文件块
+		File file = null;
+		try {
+			file = createNewBlock("file_", new File(ConfigureReader.instance().getFileBlockPath()));
+			if (file != null) {
+				// 生成成功，则尝试存入数据
+				Files.move(f.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING);
+				return file;
+			}
+		} catch (Exception e) {
+			// 出现异常则记录日志，则删除残留数据并返回null
+			if (file != null) {
+				file.delete();
+			}
+			lu.writeException(e);
+			Printer.instance.print("错误：文件块生成失败，无法存入新的文件数据。详细信息：" + e.getMessage());
+		}
+		// 因其他原因生成失败也返回null
+		return null;
+	}
+
+	/**
+	 * 
+	 * <h2>以剩余容量从小到大排序获取扩展存储区列表</h2>
+	 * <p>
+	 * 该方法用于获取所有扩展存储区的列表，并按照剩余容量从小到大排序。如果没有扩展存储区，则返回一个长度为0的列表。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @return java.util.List&lt;ExtendStores&rt; 排序好的扩展存储区列表。
+	 */
+	private List<ExtendStores> getExtendStoresBySort() {
+		List<ExtendStores> ess = ConfigureReader.instance().getExtendStores();
 		if (ess.size() > 0) {
 			// 将所有扩展存储区按照已存储文件块的数目从小到大进行排序
 			Collections.sort(ess, new Comparator<ExtendStores>() {
@@ -106,41 +237,8 @@ public class FileBlockUtil {
 					}
 				}
 			});
-			// 排序完毕后，从文件块最少的开始遍历这些扩展存储区，并尝试将新文件存入一个容量足够的扩展存储区中
-			for (ExtendStores es : ess) {
-				// 如果该存储区的空余容量大于要存放的文件
-				if (es.getPath().getFreeSpace() > f.getSize()) {
-					try {
-						File file = createNewBlock(es.getIndex() + "_", es.getPath());
-						if (file != null) {
-							f.transferTo(file);// 则执行存放，并将文件命名为“{存储区编号}_{UUID}.block”的形式
-							return file;
-						} else {
-							continue;// 如果本处无法生成新的文件块，那么在其他路径下继续尝试
-						}
-					} catch (IOException e) {
-						// 如果无法存入（由于体积过大或其他问题），那么继续尝试其他扩展存储区
-						continue;
-					} catch (Exception e) {
-						lu.writeException(e);
-						Printer.instance.print(e.getMessage());
-						continue;
-					}
-				}
-			}
 		}
-		// 如果不存在扩展存储区或者最大的扩展存储区无法存放目标文件，则尝试将其存放至主文件系统路径下
-		try {
-			final File file = createNewBlock("file_", new File(ConfigureReader.instance().getFileBlockPath()));
-			if (file != null) {
-				f.transferTo(file);// 执行存放，并肩文件命名为“file_{UUID}.block”的形式
-				return file;
-			}
-		} catch (Exception e) {
-			lu.writeException(e);
-			Printer.instance.print("错误：文件块生成失败，无法存入新的文件数据。详细信息：" + e.getMessage());
-		}
-		return null;
+		return ess;
 	}
 
 	// 生成创建一个在指定路径下名称（编号）绝对不重复的新文件块
@@ -174,12 +272,10 @@ public class FileBlockUtil {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param f
-	 *            org.springframework.web.multipart.MultipartFile 上传文件对象
+	 * @param size 文件的体积，以Byte为单位
 	 * @return java.lang.String 计算出来的体积，以MB为单位
 	 */
-	public String getFileSize(final MultipartFile f) {
-		final long size = f.getSize();
+	public String getFileSize(final long size) {
 		final int mb = (int) (size / 1048576L);
 		return "" + mb;
 	}
@@ -193,8 +289,7 @@ public class FileBlockUtil {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param f
-	 *            kohgylw.kiftd.server.model.Node 要删除的文件节点对象
+	 * @param f kohgylw.kiftd.server.model.Node 要删除的文件节点对象
 	 * @return boolean 删除结果，true为成功
 	 */
 	public boolean deleteFromFileBlocks(Node f) {
@@ -224,8 +319,7 @@ public class FileBlockUtil {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param f
-	 *            kohgylw.kiftd.server.model.Node 要获得的文件节点对象
+	 * @param f kohgylw.kiftd.server.model.Node 要获得的文件节点对象
 	 * @return java.io.File 对应的文件块抽象路径，获取失败则返回null
 	 */
 	public File getFileFromBlocks(Node f) {
@@ -314,12 +408,9 @@ public class FileBlockUtil {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param idList
-	 *            java.util.List<String> 要压缩的文件节点目标ID列表
-	 * @param fidList
-	 *            java.util.List<String> 要压缩的文件夹目标ID列表，迭代压缩
-	 * @param account
-	 *            java.lang.String 用户ID，用于判断压缩文件夹是否有效
+	 * @param idList  java.util.List<String> 要压缩的文件节点目标ID列表
+	 * @param fidList java.util.List<String> 要压缩的文件夹目标ID列表，迭代压缩
+	 * @param account java.lang.String 用户ID，用于判断压缩文件夹是否有效
 	 * @return java.lang.String
 	 *         压缩后产生的文件名称，命名规则为“tf_{UUID}.zip”，存放于文件系统中的temporaryfiles目录下
 	 */
@@ -465,21 +556,20 @@ public class FileBlockUtil {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param block
-	 *            java.io.File 需要生成的文件块对象，应为文件，但也支持文件夹，或者是null
+	 * @param block java.io.File 需要生成的文件块对象，应为文件，但也支持文件夹，或者是null
 	 * @return java.lang.String 生成的ETag值。当传入的block是null或其不存在时，返回空字符串
 	 */
 	public String getETag(File block) {
 		if (block != null && block.exists()) {
 			StringBuffer sb = new StringBuffer();
-			sb.append("\"");
+			sb.append("W\"");
+			sb.append(block.length());
+			sb.append("-");
 			sb.append(block.lastModified());
-			sb.append("_");
-			sb.append(block.hashCode());
 			sb.append("\"");
-			return sb.toString().trim();
+			return sb.toString();
 		}
-		return "\"0\"";
+		return "W\"0-0\"";
 	}
 
 	/**
@@ -490,16 +580,11 @@ public class FileBlockUtil {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param fileName
-	 *            java.lang.String 文件名称
-	 * @param account
-	 *            java.lang.String 创建者账户，若传入null则按匿名创建者处理
-	 * @param filePath
-	 *            java.lang.String 文件节点对应的文件块索引
-	 * @param fileSize
-	 *            java.lang.String 文件体积
-	 * @param fileParentFolder
-	 *            java.lang.String 文件的父文件夹ID
+	 * @param fileName         java.lang.String 文件名称
+	 * @param account          java.lang.String 创建者账户，若传入null则按匿名创建者处理
+	 * @param filePath         java.lang.String 文件节点对应的文件块索引
+	 * @param fileSize         java.lang.String 文件体积
+	 * @param fileParentFolder java.lang.String 文件的父文件夹ID
 	 * @return kohgylw.kiftd.server.model.Node 操作成功则返回节点对象，否则返回null
 	 */
 	public Node insertNewNode(String fileName, String account, String filePath, String fileSize,
@@ -547,8 +632,7 @@ public class FileBlockUtil {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param n
-	 *            kohgylw.kiftd.server.model.Node 待检查的节点
+	 * @param n kohgylw.kiftd.server.model.Node 待检查的节点
 	 * @return boolean 通过检查则返回true，否则返回false并删除此节点
 	 */
 	public boolean isValidNode(Node n) {
@@ -575,8 +659,7 @@ public class FileBlockUtil {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param n
-	 *            kohgylw.kiftd.server.model.Node 要获取路径的节点
+	 * @param n kohgylw.kiftd.server.model.Node 要获取路径的节点
 	 * @return java.lang.String 指定节点的逻辑路径，包含其完整的上级文件夹路径和自身的文件名，各级之间以“/”分割。
 	 */
 	public String getNodePath(Node n) {
