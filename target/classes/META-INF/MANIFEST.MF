@@ -1,49 +1,44 @@
 Manifest-Version: 1.0
-Built-By: kohgylw
-Build-Jdk: 15.0.2
-Class-Path: libs/spring-boot-starter-web-2.0.2.RELEASE.jar libs/spring-b
- oot-starter-2.0.2.RELEASE.jar libs/spring-boot-2.0.2.RELEASE.jar libs/s
- pring-boot-autoconfigure-2.0.2.RELEASE.jar libs/spring-boot-starter-log
- ging-2.0.2.RELEASE.jar libs/logback-classic-1.2.3.jar libs/logback-core
- -1.2.3.jar libs/log4j-to-slf4j-2.10.0.jar libs/log4j-api-2.10.0.jar lib
- s/jul-to-slf4j-1.7.25.jar libs/javax.annotation-api-1.3.2.jar libs/snak
- eyaml-1.19.jar libs/spring-boot-starter-json-2.0.2.RELEASE.jar libs/jac
- kson-databind-2.9.5.jar libs/jackson-annotations-2.9.0.jar libs/jackson
- -core-2.9.5.jar libs/jackson-datatype-jdk8-2.9.5.jar libs/jackson-datat
- ype-jsr310-2.9.5.jar libs/jackson-module-parameter-names-2.9.5.jar libs
- /spring-boot-starter-tomcat-2.0.2.RELEASE.jar libs/tomcat-embed-core-8.
- 5.31.jar libs/tomcat-embed-el-8.5.31.jar libs/tomcat-embed-websocket-8.
- 5.31.jar libs/hibernate-validator-6.0.9.Final.jar libs/spring-web-5.0.6
- .RELEASE.jar libs/spring-webmvc-5.0.6.RELEASE.jar libs/spring-aop-5.0.6
- .RELEASE.jar libs/spring-context-5.0.6.RELEASE.jar libs/spring-expressi
- on-5.0.6.RELEASE.jar libs/gson-2.8.4.jar libs/commons-fileupload-1.3.3.
- jar libs/commons-io-2.4.jar libs/mybatis-3.4.1.jar libs/mybatis-spring-
- 1.3.1.jar libs/h2-1.4.197.jar libs/spring-jdbc-5.0.6.RELEASE.jar libs/s
- pring-beans-5.0.6.RELEASE.jar libs/spring-core-5.0.6.RELEASE.jar libs/s
- pring-jcl-5.0.6.RELEASE.jar libs/spring-tx-5.0.6.RELEASE.jar libs/mysql
- -connector-java-8.0.16.jar libs/protobuf-java-3.6.1.jar libs/zt-zip-1.1
- 3.jar libs/slf4j-api-1.7.25.jar libs/thumbnailator-0.4.8.jar libs/image
- io-jpeg-3.3.2.jar libs/imageio-core-3.3.2.jar libs/imageio-metadata-3.3
- .2.jar libs/common-lang-3.3.2.jar libs/common-io-3.3.2.jar libs/common-
- image-3.3.2.jar libs/imageio-tiff-3.3.2.jar libs/freemarker-2.3.28.jar 
- libs/itext-2.1.7.jar libs/bcmail-jdk14-138.jar libs/bcprov-jdk14-138.ja
- r libs/bctsp-jdk14-1.38.jar libs/bcprov-jdk14-1.38.jar libs/bcmail-jdk1
- 4-1.38.jar libs/org.apache.poi.xwpf.converter.pdf-1.0.6.jar libs/org.ap
- ache.poi.xwpf.converter.core-1.0.6.jar libs/poi-ooxml-3.10-FINAL.jar li
- bs/dom4j-1.6.1.jar libs/xml-apis-1.4.01.jar libs/ooxml-schemas-1.1.jar 
- libs/xmlbeans-2.3.0.jar libs/stax-api-1.0.1.jar libs/fr.opensagres.xdoc
- report.itext.extension-1.0.6.jar libs/jchardet-1.0.jar libs/poi-scratch
- pad-3.10-FINAL.jar libs/poi-3.10-FINAL.jar libs/jave-all-deps-3.3.1.jar
-  libs/jave-core-3.3.1.jar libs/jave-nativebin-win32-3.3.1.jar libs/jave
- -nativebin-win64-3.3.1.jar libs/jave-nativebin-linux32-3.3.1.jar libs/j
- ave-nativebin-linux64-3.3.1.jar libs/jave-nativebin-osx64-3.3.1.jar lib
- s/jave-nativebin-osxm1-3.3.1.jar libs/jave-nativebin-linux-arm32-3.3.1.
- jar libs/jave-nativebin-linux-arm64-3.3.1.jar libs/commons-codec-1.11.j
- ar libs/flexmark-0.50.44.jar libs/flexmark-util-0.50.44.jar
+Build-Jdk-Spec: 15
+Class-Path: libs/spring-boot-starter-web-2.7.0.jar libs/spring-boot-star
+ ter-2.7.0.jar libs/spring-boot-2.7.0.jar libs/spring-boot-autoconfigure
+ -2.7.0.jar libs/spring-boot-starter-logging-2.7.0.jar libs/logback-clas
+ sic-1.2.11.jar libs/logback-core-1.2.11.jar libs/log4j-to-slf4j-2.17.2.
+ jar libs/log4j-api-2.17.2.jar libs/jul-to-slf4j-1.7.36.jar libs/jakarta
+ .annotation-api-1.3.5.jar libs/snakeyaml-1.30.jar libs/spring-boot-star
+ ter-json-2.7.0.jar libs/jackson-databind-2.13.3.jar libs/jackson-annota
+ tions-2.13.3.jar libs/jackson-core-2.13.3.jar libs/jackson-datatype-jdk
+ 8-2.13.3.jar libs/jackson-datatype-jsr310-2.13.3.jar libs/jackson-modul
+ e-parameter-names-2.13.3.jar libs/spring-boot-starter-tomcat-2.7.0.jar 
+ libs/tomcat-embed-core-9.0.63.jar libs/tomcat-embed-el-9.0.63.jar libs/
+ tomcat-embed-websocket-9.0.63.jar libs/spring-web-5.3.20.jar libs/sprin
+ g-webmvc-5.3.20.jar libs/spring-aop-5.3.20.jar libs/spring-context-5.3.
+ 20.jar libs/spring-expression-5.3.20.jar libs/gson-2.9.0.jar libs/commo
+ ns-fileupload-1.3.3.jar libs/commons-io-2.4.jar libs/mybatis-3.4.1.jar 
+ libs/mybatis-spring-1.3.1.jar libs/h2-2.1.212.jar libs/spring-jdbc-5.3.
+ 20.jar libs/spring-beans-5.3.20.jar libs/spring-core-5.3.20.jar libs/sp
+ ring-jcl-5.3.20.jar libs/spring-tx-5.3.20.jar libs/mysql-connector-java
+ -8.0.16.jar libs/zt-zip-1.13.jar libs/slf4j-api-1.7.36.jar libs/thumbna
+ ilator-0.4.8.jar libs/imageio-jpeg-3.3.2.jar libs/imageio-core-3.3.2.ja
+ r libs/imageio-metadata-3.3.2.jar libs/common-lang-3.3.2.jar libs/commo
+ n-io-3.3.2.jar libs/common-image-3.3.2.jar libs/imageio-tiff-3.3.2.jar 
+ libs/freemarker-2.3.31.jar libs/itext-2.1.7.jar libs/bcmail-jdk14-138.j
+ ar libs/bcprov-jdk14-138.jar libs/bctsp-jdk14-1.38.jar libs/bcprov-jdk1
+ 4-1.38.jar libs/bcmail-jdk14-1.38.jar libs/org.apache.poi.xwpf.converte
+ r.pdf-1.0.6.jar libs/org.apache.poi.xwpf.converter.core-1.0.6.jar libs/
+ poi-ooxml-3.10-FINAL.jar libs/dom4j-1.6.1.jar libs/xml-apis-1.0.b2.jar 
+ libs/ooxml-schemas-1.1.jar libs/xmlbeans-2.3.0.jar libs/stax-api-1.0.1.
+ jar libs/fr.opensagres.xdocreport.itext.extension-1.0.6.jar libs/jchard
+ et-1.0.jar libs/poi-scratchpad-3.10-FINAL.jar libs/poi-3.10-FINAL.jar l
+ ibs/jave-all-deps-3.3.1.jar libs/jave-core-3.3.1.jar libs/jave-nativebi
+ n-win32-3.3.1.jar libs/jave-nativebin-win64-3.3.1.jar libs/jave-nativeb
+ in-linux32-3.3.1.jar libs/jave-nativebin-linux64-3.3.1.jar libs/jave-na
+ tivebin-osx64-3.3.1.jar libs/jave-nativebin-osxm1-3.3.1.jar libs/jave-n
+ ativebin-linux-arm32-3.3.1.jar libs/jave-nativebin-linux-arm64-3.3.1.ja
+ r libs/commons-codec-1.15.jar libs/flexmark-0.50.44.jar libs/flexmark-u
+ til-0.50.44.jar
 Implementation-Title: kiftd
 Implementation-Version: 1.0.36-SNAPSHOT
-Implementation-Vendor-Id: kohgylw
-Implementation-URL: https://kohgylw.gitee.io
 Main-Class: kohgylw.kiftd.mc.MC
 Created-By: Maven Integration for Eclipse
 

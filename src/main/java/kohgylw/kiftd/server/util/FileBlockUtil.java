@@ -1,5 +1,6 @@
 package kohgylw.kiftd.server.util;
 
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.*;
 
 import kohgylw.kiftd.printer.Printer;
@@ -38,8 +39,10 @@ public class FileBlockUtil {
 	@Resource
 	private FolderMapper flm;// 文件夹映射，同样用于遍历
 	@Resource
+	@Lazy
 	private LogUtil lu;// 日志工具
 	@Resource
+	@Lazy
 	private FolderUtil fu;// 文件夹操作工具
 
 	/**
