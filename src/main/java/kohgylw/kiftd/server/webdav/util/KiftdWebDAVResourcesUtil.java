@@ -3,27 +3,21 @@ package kohgylw.kiftd.server.webdav.util;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.UUID;
 
 import javax.annotation.Resource;
 
 import org.springframework.stereotype.Component;
 
-import kohgylw.kiftd.server.enumeration.AccountAuth;
+import kohgylw.kiftd.server.exception.FoldersTotalOutOfLimitException;
 import kohgylw.kiftd.server.mapper.FolderMapper;
 import kohgylw.kiftd.server.mapper.NodeMapper;
 import kohgylw.kiftd.server.model.Folder;
 import kohgylw.kiftd.server.model.Node;
 import kohgylw.kiftd.server.util.ConfigureReader;
 import kohgylw.kiftd.server.util.FileBlockUtil;
-import kohgylw.kiftd.server.util.FileNodeUtil;
 import kohgylw.kiftd.server.util.FolderUtil;
 import kohgylw.kiftd.server.util.LogUtil;
-import kohgylw.kiftd.server.util.ServerTimeUtil;
-import kohgylw.kiftd.server.util.TextFormateUtil;
-import kohgylw.kiftd.server.webdav.exception.UnAuthorizedException;
 import kohgylw.kiftd.server.webdav.pojo.KiftdWebDAVResource;
-import kohgylw.kiftd.server.webdav.url.HttpPathUtil;
 
 /**
  * 
@@ -131,7 +125,8 @@ public class KiftdWebDAVResourcesUtil {
 	 * 
 	 * @author 青阳龙野(kohgylw)
 	 * @param path 逻辑路径，必须以“/”起始。例如“/foo”或“/foo/bar/”均合法。
-	 * @return kohgylw.kiftd.server.webdav.pojo.KiftdWebDAVResource 资源对象，封装了kiftd虚拟文件系统中文件或文件夹。
+	 * @return kohgylw.kiftd.server.webdav.pojo.KiftdWebDAVResource
+	 *         资源对象，封装了kiftd虚拟文件系统中文件或文件夹。
 	 *         该方法永远不会返回null，当路径不正确时，将会返回一个不存在的WebDAVResource对象。
 	 */
 	public KiftdWebDAVResource getResource(String path) {
@@ -190,74 +185,17 @@ public class KiftdWebDAVResourcesUtil {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param path    逻辑路径，必须以“/”起始，例如“/foo”或“/bar/”均合法。
-	 * @param account 操作账户，可以传入null（匿名访问者）或合法的账户名称。
-	 * @return kohgylw.kiftd.server.model.Folder 如果创建成功则返回文件夹对象，否则返回null。
-	 * @throws UnAuthorizedException 操作未被授权。
+	 * @param folderName 要创建的文件夹的名称。
+	 * @param parentFolder 要在哪个文件夹内创建此文件夹。
+	 * @param account 进行该操作的账户，可以传入null（匿名访问者）或合法的账户名称。
+	 * @return kohgylw.kiftd.server.model.Folder 如果创建成功则返回文件夹对象，否则返回null（包括未授权的情况）。
 	 */
-	public Folder mkdir(String path, String account) throws UnAuthorizedException {
-		final String folderName = HttpPathUtil.getResourceName(path);// 逻辑路径中文件夹的预期名称
-		// 检查逻辑路径是否合法
-		if (folderName == null || folderName.isEmpty()) {
-			return null;
-		}
-		// 检查名称是否合法
-		if (!TextFormateUtil.instance().matcherFolderName(folderName) || folderName.indexOf(".") == 0) {
-			return null;
-		}
-		// 判断父文件夹是否存在
-		final Folder parentFolder = getFolderByPath(HttpPathUtil.getParentPath(path));
-		if (parentFolder == null) {
-			return null;
-		}
-		// 检查父文件夹否能被账户访问
-		if (!ConfigureReader.instance().accessFolder(parentFolder, account)) {
-			throw new UnAuthorizedException();
-		}
-		final String parentId = parentFolder.getFolderId();
-		// 判断账户在父文件夹内是否有创建文件夹权限
-		if (!ConfigureReader.instance().authorized(account, AccountAuth.CREATE_NEW_FOLDER,
-				fu.getAllFoldersId(parentId))) {
-			throw new UnAuthorizedException();
-		}
-		// 判断父文件夹中的文件数量是否超限
-		if (fm.countByParentId(parentFolder.getFolderId()) >= FileNodeUtil.MAXIMUM_NUM_OF_SINGLE_FOLDER) {
-			return null;
-		}
-		// 尝试创建新文件夹
-		Folder f = new Folder();
-		if (fm.queryByParentId(parentId).parallelStream().anyMatch((e) -> e.getFolderName().equals(folderName))) {
-			return null;// 若有重名文件夹，则无法继续创建
-		} else {
-			f.setFolderName(folderName);
-		}
-		f.setFolderConstraint(parentFolder.getFolderConstraint());
-		f.setFolderId(UUID.randomUUID().toString());
-		f.setFolderCreationDate(ServerTimeUtil.accurateToDay());
-		if (account != null) {
-			f.setFolderCreator(account);
-		} else {
-			f.setFolderCreator("匿名用户");
-		}
-		f.setFolderParent(parentId);
-		int i = 0;
-		while (true) {
+	public Folder mkdir(String folderName, Folder parentFolder, String account) {
+		if (parentFolder != null) {
 			try {
-				final int r = this.fm.insertNewFolder(f);
-				if (r > 0) {
-					if (fu.isValidFolder(f)) {
-						return f;
-					} else {
-						return null;
-					}
-				}
-				break;
-			} catch (Exception e) {
-				f.setFolderId(UUID.randomUUID().toString());
-				i++;
-			}
-			if (i >= 10) {
-				break;
+				return fu.createNewFolder(parentFolder.getFolderId(), account, folderName,
+						"" + parentFolder.getFolderConstraint());
+			} catch (FoldersTotalOutOfLimitException e) {
 			}
 		}
 		return null;

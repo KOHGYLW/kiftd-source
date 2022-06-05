@@ -57,6 +57,7 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import kohgylw.kiftd.server.enumeration.AccountAuth;
+import kohgylw.kiftd.server.exception.FoldersTotalOutOfLimitException;
 import kohgylw.kiftd.server.listener.ServerInitListener;
 import kohgylw.kiftd.server.mapper.FolderMapper;
 import kohgylw.kiftd.server.mapper.NodeMapper;
@@ -88,7 +89,8 @@ import kohgylw.kiftd.server.webdav.util.KiftdWebDAVResourcesUtil;
  * HttpServletResponse resp) 方法。
  * </p>
  * <p>
- * 本类主要参考了Apache Tomcat内置的org.apache.catalina.servlets.WebdavServlet类，部分代码直接拷贝自该类。
+ * 本类主要参考了Apache
+ * Tomcat内置的org.apache.catalina.servlets.WebdavServlet类，部分代码直接拷贝自该类。
  * </p>
  * <p>
  * 注意：由于本类提供的服务面向WebDAV客户端，因此所有为响应对象设置响应码的方法均应使用 void
@@ -111,6 +113,11 @@ import kohgylw.kiftd.server.webdav.util.KiftdWebDAVResourcesUtil;
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  * License for the specific language governing permissions and limitations under
  * the License.
+ * </p>
+ * <p>
+ * 其中对于WebDAV协议的实现规范参考了Microsoft提供的说明文档： <a href=
+ * "https://docs.microsoft.com/en-us/previous-versions/office/developer/exchange-server-2003/aa486282(v=exchg.65)">
+ * WebDAV Reference | Microsoft Docs</a>
  * </p>
  * 
  * @author 青阳龙野(kohgylw)
@@ -248,7 +255,7 @@ public class KiftdWebDAVServlet extends HttpServlet {
 			doMkcol(req, resp); // 创建文件夹
 			break;
 		case METHOD_COPY:
-			doCopy(req, resp);// TODO 复制文件或文件夹至指定路径
+			doCopy(req, resp);// 复制文件或文件夹至指定路径
 			break;
 		case METHOD_MOVE:
 			doMove(req, resp);// 移动文件或文件夹至指定路径
@@ -1034,24 +1041,26 @@ public class KiftdWebDAVServlet extends HttpServlet {
 			needAuthorizationByBasic(resp);
 			return;
 		}
-		// 一切检查完毕，尝试创建文件夹。
-		try {
-			Folder newFolder = resources.mkdir(path, account);
-			if (newFolder != null) {
-				// 创建成功后，记录日志
-				lu.writeCreateFolderEvent(account, idg.getIpAddr(req), newFolder);
-				// 设置成功代码201
-				resp.setStatus(WebdavStatus.SC_CREATED);
-				// 将此路径从已锁定的不存在资源列表中移除
-				lockNullResources.remove(path);
-			} else {
-				// 创建失败的话，则返回错误代码409
-				resp.setStatus(WebdavStatus.SC_CONFLICT);
-			}
-		} catch (UnAuthorizedException e) {
-			// 如果授权信息指定的账户无法创建文件夹，则告知客户端授权无效
+		Folder parentFolder = resources.getFolderByPath(HttpPathUtil.getParentPath(path));
+		if (!ConfigureReader.instance().accessFolder(parentFolder, account) || !ConfigureReader.instance()
+				.authorized(account, AccountAuth.CREATE_NEW_FOLDER, fu.getAllFoldersId(parentFolder.getFolderId()))) {
+			// 如果无权访问父文件夹或在父文件夹内无创建文件夹权限
 			needAuthorizationByBasic(resp);
 			return;
+		}
+		String folderName = HttpPathUtil.getResourceName(path);
+		// 一切检查完毕，尝试创建文件夹。
+		Folder newFolder = resources.mkdir(folderName, parentFolder, account);
+		if (newFolder != null) {
+			// 创建成功后，记录日志
+			lu.writeCreateFolderEvent(account, idg.getIpAddr(req), newFolder);
+			// 设置成功代码201
+			resp.setStatus(WebdavStatus.SC_CREATED);
+			// 将此路径从已锁定的不存在资源列表中移除
+			lockNullResources.remove(path);
+		} else {
+			// 创建失败的话，则返回错误代码409
+			resp.setStatus(WebdavStatus.SC_CONFLICT);
 		}
 	}
 
@@ -1499,9 +1508,13 @@ public class KiftdWebDAVServlet extends HttpServlet {
 	 * @param resp 响应对象。
 	 */
 	protected void doCopy(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-		// TODO 实现拷贝功能
-		resp.setStatus(WebdavStatus.SC_NOT_IMPLEMENTED);
-		return;
+		// 例行的资源锁定检查
+		if (isLocked(req)) {
+			resp.setStatus(WebdavStatus.SC_LOCKED);
+			return;
+		}
+		// 执行复制操作
+		doMoveOrCopy(req, resp, true);
 	}
 
 	/**
@@ -1521,11 +1534,46 @@ public class KiftdWebDAVServlet extends HttpServlet {
 			resp.setStatus(WebdavStatus.SC_LOCKED);
 			return;
 		}
-		// 检查深度标签是否正确，理论上只接受“Depth”请求头为“infinity”，若无此请求头，默认为“infinity”
+		// 执行移动操作
+		doMoveOrCopy(req, resp, false);
+	}
+
+	/**
+	 * 
+	 * <h2>执行移动或复制逻辑</h2>
+	 * <p>
+	 * 该方法实现了移动或复制逻辑，当设定为复制模式时，会在指定逻辑路径上创建一个原资源的副本； 当设定为移动模式时，则会将原资源移动到指定逻辑路径上。
+	 * 其中，指定逻辑路径由“Destination”请求头声明。
+	 * 当“Overwrite”请求头存在且为“T”时，会覆盖指定逻辑路径上冲突的资源，否则资源冲突会导致操作失败。
+	 * 当“Depth”请求头存在时，若为拷贝模式，则当其值为“0”时，拷贝文件夹只会在指定逻辑路径上创建一个与原资源同名的空文件夹；
+	 * 当其值为“infinity”时，拷贝文件夹会在指定逻辑路径上生成原资源的完整副本（包括其内容）。移动模式仅允许该值为“infinity”。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @param req    请求对象
+	 * @param resp   响应对象
+	 * @param isCopy 是否为拷贝模式，当传入true时执行拷贝，否则执行移动
+	 */
+	private void doMoveOrCopy(HttpServletRequest req, HttpServletResponse resp, boolean isCopy) throws IOException {
+		// 检查深度标签是否正确，移动模式理只接受“Depth”请求头为“infinity”，若无此请求头，默认为“infinity”
 		String depthStr = req.getHeader("Depth");
+		boolean copyAll = true;// 标识是否为全部拷贝模式，若是，则拷贝完整的文件夹，否则仅创建空文件夹
 		if (depthStr != null && !depthStr.equals("infinity")) {
-			resp.setStatus(WebdavStatus.SC_BAD_REQUEST);
-			return;
+			if (depthStr.equals("infinity")) {
+				copyAll = true;
+			} else if (depthStr.equals("0")) {
+				if (isCopy) {
+					copyAll = false;
+				} else {
+					// 移动模式不支持除“infinity”以外的值
+					resp.setStatus(WebdavStatus.SC_BAD_REQUEST);
+					return;
+				}
+			} else {
+				// 两种模式均不支持除“infinity”或“0”以外的值
+				resp.setStatus(WebdavStatus.SC_BAD_REQUEST);
+				return;
+			}
 		}
 		// 例行的授权检查
 		String account;
@@ -1539,7 +1587,7 @@ public class KiftdWebDAVServlet extends HttpServlet {
 			needAuthorizationByBasic(resp);
 			return;
 		}
-		// 执行移动逻辑，先获取资源路径
+		// 获取资源路径
 		String path = getRelativePath(req);
 		// 此资源存在？
 		KiftdWebDAVResource resource = resources.getResource(path);
@@ -1555,7 +1603,7 @@ public class KiftdWebDAVServlet extends HttpServlet {
 			return;
 		}
 		if (destinationPath.equals(path)) {
-			// 如果目标逻辑路径和当前路径是一样的，那么该操作无效
+			// 如果目标逻辑路径和当前路径是一样的，那么该操作必然导致冲突，如果覆盖，则操作无意义，如果不覆盖，则无法执行
 			resp.sendError(WebdavStatus.SC_FORBIDDEN);
 			return;
 		}
@@ -1605,9 +1653,9 @@ public class KiftdWebDAVServlet extends HttpServlet {
 			needAuthorizationByBasic(resp);
 			return;
 		}
-		// 前置检查完毕，接下来判断是移动文件还是文件夹？
+		// 前置检查完毕，接下来判断原资源是文件还是文件夹？
 		if (resource.isFile()) {
-			// 如果是移动文件，先检查目标文件夹内是否有重名文件？
+			// 如果是文件，先检查目标文件夹内是否有重名文件？
 			kohgylw.kiftd.server.model.Node originNode = resource.getNode();
 			String originPath = fbu.getNodePath(originNode);
 			if (nm.queryByParentFolderId(targetFolder.getFolderId()).parallelStream()
@@ -1616,76 +1664,116 @@ public class KiftdWebDAVServlet extends HttpServlet {
 				if (overwrite) {
 					// 执行覆盖，获得冲突节点
 					kohgylw.kiftd.server.model.Node conflictNode = nm.queryByParentFolderId(targetFolder.getFolderId())
-							.parallelStream().filter((e) -> e.getFileName().equals(resource.getName())).findFirst()
-							.get();
+							.parallelStream().filter((e) -> e.getFileName().equals(newName)).findFirst().get();
 					// 删除冲突节点
 					if (nm.deleteById(conflictNode.getFileId()) > 0) {
-						// 将原节点的名称改为新名称，同时将其父文件夹改为目标文件夹
-						originNode.setFileName(newName);
-						originNode.setFileParentFolder(targetFolder.getFolderId());
-						if (nm.update(originNode) > 0) {
-							// 移动成功
-							if (!parentFolder.getFolderId().equals(targetFolder.getFolderId())) {
+						if (isCopy) {
+							// 如果是拷贝模式，新建一个与原资源使用相同文件块的节点添加到目标路径下
+							kohgylw.kiftd.server.model.Node copyNode = fbu.insertNewNode(newName, account,
+									originNode.getFilePath(), originNode.getFileSize(), targetFolder.getFolderId());
+							if (copyNode != null) {
+								// 拷贝成功，记录日志
 								lu.writeMoveFileEvent(account, idg.getIpAddr(req), originPath,
-										fbu.getNodePath(originNode), false);
+										fbu.getNodePath(copyNode), true);
+								// 返回状态码204
+								resp.setStatus(WebdavStatus.SC_NO_CONTENT);
+								// 删除冲突节点的文件块
+								fbu.deleteFromFileBlocks(conflictNode);
+								// 成功
+								return;
 							}
-							if (!resource.getName().equals(newName)) {
-								lu.writeRenameFileEvent(account, idg.getIpAddr(req), parentFolder.getFolderId(),
-										resource.getName(), newName);
+						} else {
+							// 如果是移动模式，将原节点的名称改为新名称，同时将其父文件夹改为目标文件夹
+							originNode.setFileName(newName);
+							originNode.setFileParentFolder(targetFolder.getFolderId());
+							if (nm.update(originNode) > 0) {
+								// 移动成功，记录日志
+								if (targetFolder.getFolderId().equals(parentFolder.getFolderId())) {
+									// 如果未更改父路径（仅有名称变化），则记录为“重命名”日志
+									lu.writeRenameFileEvent(account, idg.getIpAddr(req), targetFolder.getFolderId(),
+											resource.getName(), newName);
+								} else {
+									// 如果更改了父路径，则记录为“移动”日志（名称变化也会体现出来）
+									lu.writeMoveFileEvent(account, idg.getIpAddr(req), originPath,
+											fbu.getNodePath(originNode), false);
+								}
+								// 返回状态码204
+								resp.setStatus(WebdavStatus.SC_NO_CONTENT);
+								// 删除冲突节点的文件块
+								fbu.deleteFromFileBlocks(conflictNode);
+								// 成功
+								return;
 							}
-							resp.setStatus(WebdavStatus.SC_NO_CONTENT);
-							// 删除冲突节点的文件块
-							fbu.deleteFromFileBlocks(conflictNode);
-							lockNullResources.remove(destinationPath);
-							return;
 						}
 					}
-					// 移动失败
-					nm.insert(conflictNode);// 尝试还原冲突节点
+					// 移动或复制操作失败
+					nm.insert(conflictNode);// 尝试还原冲突节点（冲突节点的文件块仅在操作成功时才会删除）
+					// 返回状态码500
 					resp.setStatus(WebdavStatus.SC_INTERNAL_SERVER_ERROR);
 					return;
 				} else {
-					// 资源冲突，返回状态码412
+					// 资源冲突又不覆盖，则返回状态码412
 					resp.setStatus(WebdavStatus.SC_PRECONDITION_FAILED);
 					return;
 				}
 			} else {
-				// 若无，直接将原节点的父文件夹改为目标文件夹即可
+				// 若无，直接执行复制或移动操作
 				if (!parentFolder.getFolderId().equals(targetFolder.getFolderId()) && nm.countByParentFolderId(
 						targetFolder.getFolderId()) >= FileNodeUtil.MAXIMUM_NUM_OF_SINGLE_FOLDER) {
-					// 如果移动后会导致目标文件夹超限，则拒绝执行此操作，返回状态码403
+					// 如果移动或复制后会导致目标文件夹超限，则拒绝执行此操作，返回状态码403
 					resp.setStatus(WebdavStatus.SC_FORBIDDEN);
 					return;
 				}
-				originNode.setFileName(newName);
-				originNode.setFileParentFolder(targetFolder.getFolderId());
-				if (nm.update(originNode) > 0) {
-					// 移动成功
-					if (!parentFolder.getFolderId().equals(targetFolder.getFolderId())) {
-						lu.writeMoveFileEvent(account, idg.getIpAddr(req), originPath, fbu.getNodePath(originNode),
-								false);
+				// 判断是移动模式还是复制模式
+				if (isCopy) {
+					// 如果是拷贝模式，则创建一个新节点并与原节点引用相同的文件块
+					kohgylw.kiftd.server.model.Node newNode = fbu.insertNewNode(newName, account,
+							originNode.getFilePath(), originNode.getFileSize(), targetFolder.getFolderId());
+					if (newNode != null) {
+						// 拷贝成功，记录日志
+						lu.writeMoveFileEvent(account, idg.getIpAddr(req), originPath, fbu.getNodePath(newNode), true);
+						// 返回状态码201
+						resp.setStatus(WebdavStatus.SC_CREATED);
+						lockNullResources.remove(destinationPath);
+						// 成功
+						return;
 					}
-					if (!resource.getName().equals(newName)) {
-						lu.writeRenameFileEvent(account, idg.getIpAddr(req), parentFolder.getFolderId(),
-								resource.getName(), newName);
+				} else {
+					// 如果是移动模式，将原节点的名称改为新名称，同时将其父文件夹改为目标文件夹
+					originNode.setFileName(newName);
+					originNode.setFileParentFolder(targetFolder.getFolderId());
+					if (nm.update(originNode) > 0) {
+						// 移动成功，记录日志
+						if (targetFolder.getFolderId().equals(parentFolder.getFolderId())) {
+							lu.writeRenameFileEvent(account, idg.getIpAddr(req), targetFolder.getFolderId(),
+									resource.getName(), newName);
+						} else {
+							lu.writeMoveFileEvent(account, idg.getIpAddr(req), originPath, fbu.getNodePath(originNode),
+									false);
+						}
+						// 返回状态码201
+						resp.setStatus(WebdavStatus.SC_CREATED);
+						lockNullResources.remove(destinationPath);
+						// 成功
+						return;
 					}
-					resp.setStatus(WebdavStatus.SC_CREATED);
-					lockNullResources.remove(destinationPath);
-					return;
 				}
-				// 移动失败
+				// 操作失败，返回状态码500
 				resp.setStatus(WebdavStatus.SC_INTERNAL_SERVER_ERROR);
 				return;
 			}
 		} else {
-			// 如果是移动文件夹，先检查是否把文件夹移动到自己内部？
+			// 如果是文件夹，判断是否为移动模式
 			Folder originFolder = resource.getFolder();
 			String originPath = fu.getFolderPath(originFolder);
-			if (originFolder.getFolderId().equals(targetFolder.getFolderId())
-					|| fu.getParentList(targetFolder.getFolderId()).parallelStream()
-							.anyMatch((e) -> e.getFolderId().equals(originFolder.getFolderId()))) {
-				resp.setStatus(WebdavStatus.SC_FORBIDDEN);
-				return;
+			if (!isCopy) {
+				// 对于移动模式，还需要检查是否把文件夹移动到自己内部
+				if (originFolder.getFolderId().equals(targetFolder.getFolderId())
+						|| fu.getParentList(targetFolder.getFolderId()).parallelStream()
+								.anyMatch((e) -> e.getFolderId().equals(originFolder.getFolderId()))) {
+					resp.setStatus(WebdavStatus.SC_FORBIDDEN);
+					return;
+				}
 			}
 			// 再检查目标文件夹内是否有重名文件夹？
 			if (fm.queryByParentId(targetFolder.getFolderId()).parallelStream()
@@ -1694,11 +1782,106 @@ public class KiftdWebDAVServlet extends HttpServlet {
 				if (overwrite) {
 					// 与移动文件的规则类似
 					Folder conflictFolder = fm.queryByParentId(targetFolder.getFolderId()).parallelStream()
-							.filter((e) -> e.getFolderName().equals(resource.getName())).findFirst().get();
-					fu.deleteAllChildFolder(conflictFolder.getFolderId());
+							.filter((e) -> e.getFolderName().equals(newName)).findFirst().get();
+					if (fm.deleteById(conflictFolder.getFolderId()) > 0) {
+						if (isCopy) {
+							// 拷贝模式，判断是否拷贝完整文件夹？
+							if (copyAll) {
+								// 如果是完整拷贝文件夹……
+								Folder newFolder = fu.copyFolderByNewNameToPath(conflictFolder, account, targetFolder,
+										newName);
+								if (newFolder != null) {
+									// 拷贝成功，记录日志
+									lu.writeMoveFolderEvent(account, idg.getIpAddr(req), originPath,
+											fu.getFolderPath(newFolder), true);
+									resp.setStatus(WebdavStatus.SC_NO_CONTENT);
+									lockNullResources.remove(destinationPath);
+									return;
+								}
+							} else {
+								// 如果仅创建一个同名的空文件夹……
+								int constraint = originFolder.getFolderConstraint();
+								if (originFolder.getFolderConstraint() < targetFolder.getFolderConstraint()) {
+									constraint = targetFolder.getFolderConstraint();
+								}
+								try {
+									Folder newFolder = fu.createNewFolder(targetFolder.getFolderId(), account, newName,
+											"" + constraint);
+									if (newFolder != null && fu.isValidFolder(newFolder)) {
+										// 创建成功，记录日志
+										lu.writeCreateFolderEvent(account, idg.getIpAddr(req), newFolder);
+										resp.setStatus(WebdavStatus.SC_NO_CONTENT);
+										lockNullResources.remove(destinationPath);
+										// 成功
+										return;
+									}
+								} catch (FoldersTotalOutOfLimitException e1) {
+									// 理论上不会引起此异常，无需单独处理
+								}
+							}
+						} else {
+							// 移动模式
+							originFolder.setFolderParent(targetFolder.getFolderId());
+							originFolder.setFolderName(newName);
+							// 额外的，如果原文件夹的访问级别比目标文件夹小，则还需要将访问级别升高至与目标文件夹一致
+							int originConstraint = originFolder.getFolderConstraint();
+							boolean needChangeChildsConstranint = false;
+							if (originFolder.getFolderConstraint() < targetFolder.getFolderConstraint()) {
+								originFolder.setFolderConstraint(targetFolder.getFolderConstraint());
+								needChangeChildsConstranint = true;
+							}
+							if (fm.update(originFolder) > 0) {
+								// 如果升高了文件夹的访问级别，那么子文件夹的访问级别也要一起升高
+								if (needChangeChildsConstranint) {
+									fu.changeChildFolderConstraint(originFolder.getFolderId(),
+											targetFolder.getFolderConstraint());
+								}
+								// 成功后，记录日志
+								if (parentFolder.getFolderId().equals(targetFolder.getFolderId())) {
+									lu.writeRenameFolderEvent(account, idg.getIpAddr(req), originFolder.getFolderId(),
+											resource.getName(), newName, "" + originConstraint,
+											"" + originFolder.getFolderConstraint());
+								} else {
+									lu.writeMoveFolderEvent(account, idg.getIpAddr(req), originPath,
+											fu.getFolderPath(originFolder), false);
+								}
+								resp.setStatus(WebdavStatus.SC_NO_CONTENT);
+								lockNullResources.remove(destinationPath);
+								return;
+							}
+						}
+						ServerInitListener.needCheck = true;// 删除冲突文件夹可能导致特定文件夹权限设置失效，需重新检查
+						// 清理冲突文件夹内的所有资源
+						fu.deleteAllChildFolder(conflictFolder.getFolderId());
+					}
+					// 操作失败（冲突文件夹已无法还原，因此无需尝试再插入冲突文件夹）
+					resp.setStatus(WebdavStatus.SC_INTERNAL_SERVER_ERROR);
+					return;
+				} else {
+					// 资源冲突且不覆盖，返回状态码412
+					resp.setStatus(WebdavStatus.SC_PRECONDITION_FAILED);
+					return;
+				}
+			} else {
+				// 若无，则直接执行移动或拷贝，与文件的规则类似
+				if (!parentFolder.getFolderId().equals(targetFolder.getFolderId()) && fm
+						.countByParentId(targetFolder.getFolderId()) >= FileNodeUtil.MAXIMUM_NUM_OF_SINGLE_FOLDER) {
+					resp.setStatus(WebdavStatus.SC_FORBIDDEN);
+					return;
+				}
+				if (isCopy) {
+					Folder newFolder = fu.copyFolderByNewNameToPath(originFolder, account, parentFolder, newName);
+					if (newFolder != null) {
+						lu.writeMoveFolderEvent(account, idg.getIpAddr(req), originPath, fu.getFolderPath(newFolder),
+								true);
+						resp.setStatus(WebdavStatus.SC_NO_CONTENT);
+						lockNullResources.remove(destinationPath);
+						return;
+					}
+				} else {
 					originFolder.setFolderParent(targetFolder.getFolderId());
 					originFolder.setFolderName(newName);
-					// 额外的，如果原文件夹的访问级别比目标文件夹小，则还需要将访问级别升高至与目标文件夹一致
+					// 确保移入后访问级别不越界
 					int originConstraint = originFolder.getFolderConstraint();
 					boolean needChangeChildsConstranint = false;
 					if (originFolder.getFolderConstraint() < targetFolder.getFolderConstraint()) {
@@ -1706,69 +1889,23 @@ public class KiftdWebDAVServlet extends HttpServlet {
 						needChangeChildsConstranint = true;
 					}
 					if (fm.update(originFolder) > 0) {
-						// 如果升高了文件夹的访问级别，那么子文件夹的访问级别也要一起升高
+						// 操作成功
 						if (needChangeChildsConstranint) {
 							fu.changeChildFolderConstraint(originFolder.getFolderId(),
 									targetFolder.getFolderConstraint());
 						}
-						// 成功后，记录日志
-						if (!parentFolder.getFolderId().equals(targetFolder.getFolderId())) {
+						if (parentFolder.getFolderId().equals(targetFolder.getFolderId())) {
+							lu.writeRenameFolderEvent(account, idg.getIpAddr(req), originFolder.getFolderId(),
+									resource.getName(), newName, "" + originConstraint,
+									"" + originFolder.getFolderConstraint());
+						} else {
 							lu.writeMoveFolderEvent(account, idg.getIpAddr(req), originPath,
 									fu.getFolderPath(originFolder), false);
 						}
-						if (!resource.getName().equals(newName)) {
-							if (!resource.getName().equals(newName)) {
-								lu.writeRenameFolderEvent(account, idg.getIpAddr(req), originFolder.getFolderId(),
-										resource.getName(), newName, "" + originConstraint,
-										"" + originFolder.getFolderConstraint());
-							}
-						}
-						resp.setStatus(WebdavStatus.SC_NO_CONTENT);
-						ServerInitListener.needCheck = true;// 删除冲突文件夹可能导致特定文件夹权限设置失效，需重新检查
+						resp.setStatus(WebdavStatus.SC_CREATED);
 						lockNullResources.remove(destinationPath);
 						return;
 					}
-					// 移动失败（冲突文件夹已无法还原）
-					resp.setStatus(WebdavStatus.SC_INTERNAL_SERVER_ERROR);
-					return;
-				} else {
-					// 资源冲突，返回状态码412
-					resp.setStatus(WebdavStatus.SC_PRECONDITION_FAILED);
-					return;
-				}
-			} else {
-				// 若无，则直接修改原文件夹的父文件夹，与移动文件的规则类似
-				if (!parentFolder.getFolderId().equals(targetFolder.getFolderId()) && fm
-						.countByParentId(targetFolder.getFolderId()) >= FileNodeUtil.MAXIMUM_NUM_OF_SINGLE_FOLDER) {
-					resp.setStatus(WebdavStatus.SC_FORBIDDEN);
-					return;
-				}
-				originFolder.setFolderParent(targetFolder.getFolderId());
-				originFolder.setFolderName(newName);
-				// 确保移入后访问级别不越界
-				int originConstraint = originFolder.getFolderConstraint();
-				boolean needChangeChildsConstranint = false;
-				if (originFolder.getFolderConstraint() < targetFolder.getFolderConstraint()) {
-					originFolder.setFolderConstraint(targetFolder.getFolderConstraint());
-					needChangeChildsConstranint = true;
-				}
-				if (fm.update(originFolder) > 0) {
-					// 操作成功
-					if (needChangeChildsConstranint) {
-						fu.changeChildFolderConstraint(originFolder.getFolderId(), targetFolder.getFolderConstraint());
-					}
-					if (!parentFolder.getFolderId().equals(targetFolder.getFolderId())) {
-						lu.writeMoveFolderEvent(account, idg.getIpAddr(req), originPath, fu.getFolderPath(originFolder),
-								false);
-					}
-					if (!resource.getName().equals(newName)) {
-						lu.writeRenameFolderEvent(account, idg.getIpAddr(req), originFolder.getFolderId(),
-								resource.getName(), newName, "" + originConstraint,
-								"" + originFolder.getFolderConstraint());
-					}
-					resp.setStatus(WebdavStatus.SC_CREATED);
-					lockNullResources.remove(destinationPath);
-					return;
 				}
 				// 操作失败
 				resp.setStatus(WebdavStatus.SC_INTERNAL_SERVER_ERROR);
@@ -2917,25 +3054,25 @@ public class KiftdWebDAVServlet extends HttpServlet {
 	protected String generateETag(WebResource resource) {
 		return resource.getETag();
 	}
-	
+
 	protected static class Range {
 
-        public long start;
-        public long end;
-        public long length;
+		public long start;
+		public long end;
+		public long length;
 
-        /**
-         * Validate range.
-         *
-         * @return true if the range is valid, otherwise false
-         */
-        public boolean validate() {
-            if (end >= length) {
-                end = length - 1;
-            }
-            return (start >= 0) && (end >= 0) && (start <= end) && (length > 0);
-        }
-    }
+		/**
+		 * Validate range.
+		 *
+		 * @return true if the range is valid, otherwise false
+		 */
+		public boolean validate() {
+			if (end >= length) {
+				end = length - 1;
+			}
+			return (start >= 0) && (end >= 0) && (start <= end) && (length > 0);
+		}
+	}
 }
 
 // --------------------------------------------------------  WebdavStatus Class
