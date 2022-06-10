@@ -29,8 +29,7 @@ public class FolderUtil {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param fid
-	 *            java.lang.String 要获取的目标文件夹ID
+	 * @param fid java.lang.String 要获取的目标文件夹ID
 	 * @return java.util.List
 	 *         指定文件夹的所有父级文件夹列表，以kohgylw.kiftd.server.model.Folder形式封装。
 	 */
@@ -62,8 +61,7 @@ public class FolderUtil {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param folderId
-	 *            java.lang.String 要删除的文件夹树的ID，不能为null。
+	 * @param folderId java.lang.String 要删除的文件夹树的ID，不能为null。
 	 */
 	public void deleteAllChildFolder(final String folderId) {
 		final Thread deleteChildFolderThread = new Thread(() -> this.iterationDeleteFolder(folderId));
@@ -72,17 +70,12 @@ public class FolderUtil {
 
 	private void iterationDeleteFolder(final String folderId) {
 		final List<Folder> cf = (List<Folder>) this.fm.queryByParentId(folderId);
-		if (cf.size() > 0) {
-			for (final Folder f : cf) {
-				this.iterationDeleteFolder(f.getFolderId());
-			}
+		for (final Folder f : cf) {
+			this.iterationDeleteFolder(f.getFolderId());
 		}
 		final List<Node> files = (List<Node>) this.fim.queryByParentFolderId(folderId);
-		if (files.size() > 0) {
-			this.fim.deleteByParentFolderId(folderId);
-			for (final Node f2 : files) {
-				this.fbu.deleteFromFileBlocks(f2);
-			}
+		for (final Node f2 : files) {
+			this.fbu.deleteNode(f2);
 		}
 		this.fm.deleteById(folderId);
 	}
@@ -167,8 +160,7 @@ public class FolderUtil {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param f
-	 *            kohgylw.kiftd.server.model.Folder 要检查的文件夹对象
+	 * @param f kohgylw.kiftd.server.model.Folder 要检查的文件夹对象
 	 * @return boolean 是否有效，若返回false则进行了数据回滚
 	 */
 	public boolean isValidFolder(Folder f) {
@@ -195,14 +187,11 @@ public class FolderUtil {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param prototype
-	 *            kohgylw.kiftd.server.model.Folder 要复制的目标文件夹，即复制的样板
-	 * @param parentFolder
-	 *            kohgylw.kiftd.server.model.Folder 复制文件夹的父文件夹，指定在哪个路径下创建目标文件夹的副本
-	 * @param newName
-	 *            java.lang.String 副本文件夹的新名称，以覆盖原本的名称，如果传入null则仍使用原名
-	 * @param excludeFolderId
-	 *            java.lang.String 这个参数是方便后续迭代时避免循环拷贝的，首次调用必须传入null！
+	 * @param prototype       kohgylw.kiftd.server.model.Folder 要复制的目标文件夹，即复制的样板
+	 * @param parentFolder    kohgylw.kiftd.server.model.Folder
+	 *                        复制文件夹的父文件夹，指定在哪个路径下创建目标文件夹的副本
+	 * @param newName         java.lang.String 副本文件夹的新名称，以覆盖原本的名称，如果传入null则仍使用原名
+	 * @param excludeFolderId java.lang.String 这个参数是方便后续迭代时避免循环拷贝的，首次调用必须传入null！
 	 * @return kohgylw.kiftd.server.model.Folder 完整复制成功则返回复制好的文件夹对象，
 	 *         否则返回null（包括传入目标文件夹或父文件夹参数错误的情况）
 	 */
@@ -265,12 +254,10 @@ public class FolderUtil {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param prototype
-	 *            kohgylw.kiftd.server.model.Folder 要复制的目标文件夹，即复制的样板
-	 * @param parentFolder
-	 *            kohgylw.kiftd.server.model.Folder 复制文件夹的父文件夹，指定在哪个路径下创建目标文件夹的副本
-	 * @param newName
-	 *            java.lang.String 副本文件夹的新名称，以覆盖原本的名称，如果传入null则仍使用原名
+	 * @param prototype    kohgylw.kiftd.server.model.Folder 要复制的目标文件夹，即复制的样板
+	 * @param parentFolder kohgylw.kiftd.server.model.Folder
+	 *                     复制文件夹的父文件夹，指定在哪个路径下创建目标文件夹的副本
+	 * @param newName      java.lang.String 副本文件夹的新名称，以覆盖原本的名称，如果传入null则仍使用原名
 	 * @return kohgylw.kiftd.server.model.Folder 完整复制成功则返回复制好的文件夹对象，
 	 *         否则返回null（包括传入目标文件夹或父文件夹参数错误的情况）
 	 */
@@ -286,8 +273,7 @@ public class FolderUtil {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param f
-	 *            kohgylw.kiftd.server.model.Folder 要获取路径的文件夹
+	 * @param f kohgylw.kiftd.server.model.Folder 要获取路径的文件夹
 	 * @return java.lang.String 指定节点的逻辑路径，包含其自身完整的文件夹路径名，各级之间以“/”分割。
 	 */
 	public String getFolderPath(Folder f) {
@@ -309,10 +295,8 @@ public class FolderUtil {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param folderId
-	 *            要修改的文件夹ID
-	 * @param c
-	 *            约束等级
+	 * @param folderId 要修改的文件夹ID
+	 * @param c        约束等级
 	 */
 	public void changeChildFolderConstraint(String folderId, int c) {
 		List<Folder> cfs = fm.queryByParentId(folderId);

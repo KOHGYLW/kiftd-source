@@ -300,13 +300,10 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 				|| !ConfigureReader.instance().accessFolder(f, account)) {
 			return NO_AUTHORIZED;
 		}
-		// 从节点删除
-		if (this.fm.deleteById(fileId) >= 0) {
-			// 从文件块删除
-			if (this.fbu.deleteFromFileBlocks(node)) {
-				this.lu.writeDeleteFileEvent(request, node);
-				return "deleteFileSuccess";
-			}
+		// 删除文件节点
+		if (this.fbu.deleteNode(node)) {
+			this.lu.writeDeleteFileEvent(request, node);
+			return "deleteFileSuccess";
 		}
 		return "cannotDeleteFile";
 	}
@@ -420,11 +417,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 					return NO_AUTHORIZED;
 				}
 				// 删除文件节点
-				if (this.fm.deleteById(fileId) <= 0) {
-					return "cannotDeleteFile";
-				}
-				// 删除文件块
-				if (!this.fbu.deleteFromFileBlocks(file)) {
+				if (!this.fbu.deleteNode(file)) {
 					return "cannotDeleteFile";
 				}
 				// 日志记录
@@ -672,7 +665,16 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 								this.lu.writeMoveFileEvent(account, ip, originPath, fbu.getNodePath(node), isCopy);
 							}
 							// 最后，尝试删除冲突节点的文件块。注意：该操作必须在复制节点插入后再执行！
-							fbu.deleteFromFileBlocks(n);
+							Map<String, String> map = new HashMap<>();
+							map.put("path", n.getFilePath());
+							map.put("fileId", n.getFileId());
+							List<Node> nodes = fm.queryByPathExcludeById(map);
+							if (nodes == null || nodes.isEmpty()) {
+								File file = fbu.getFileFromBlocks(n);
+								if (file != null) {
+									file.delete();// 此处无需再判断是否成功
+								}
+							}
 						} else {
 							// 如果原节点删除失败，则操作失败
 							return "cannotMoveFiles";

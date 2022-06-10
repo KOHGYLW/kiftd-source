@@ -140,7 +140,7 @@ public class FileBlockUtil {
 		// 因其他原因生成失败也返回null
 		return null;
 	}
-	
+
 	/**
 	 * 
 	 * <h2>将新上传的文件存入文件系统</h2>
@@ -285,33 +285,42 @@ public class FileBlockUtil {
 
 	/**
 	 * 
-	 * <h2>删除文件系统中的一个文件块</h2>
+	 * <h2>删除文件系统中的一个文件节点，同时清理文件块</h2>
 	 * <p>
-	 * 根据传入的文件节点对象，删除其在文件系统中保存的对应文件块。仅当传入文件节点所对应的文件块不再有其他节点引用时
-	 * 才会真的进行删除操作，否则直接返回true。
+	 * 删除传入的文件节点，之后判断是否需要删除其在文件系统中保存的对应文件块，若该文件节点所对应的文件块不再有其他节点引用，
+	 * 则进行删除操作，否则直接返回true。
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
 	 * @param f kohgylw.kiftd.server.model.Node 要删除的文件节点对象
-	 * @return boolean 删除结果，true为成功
+	 * @return boolean 删除结果，true为成功，否则返回false。若传入节点为null，也会返回false
 	 */
-	public boolean deleteFromFileBlocks(Node f) {
-		// 检查是否还有其他节点引用相同的文件块
-		Map<String, String> map = new HashMap<>();
-		map.put("path", f.getFilePath());
-		map.put("fileId", f.getFileId());
-		List<Node> nodes = fm.queryByPathExcludeById(map);
-		if (nodes == null || nodes.isEmpty()) {
-			// 如果已经无任何节点再引用此文件块，则删除它
-			File file = getFileFromBlocks(f);// 获取对应的文件块对象
-			if (file != null) {
-				return file.delete();// 执行删除操作
+	public boolean deleteNode(Node f) {
+		if (f != null) {
+			if (fm.deleteById(f.getFileId()) > 0) {
+				// 检查是否还有其他节点引用相同的文件块
+				Map<String, String> map = new HashMap<>();
+				map.put("path", f.getFilePath());
+				map.put("fileId", f.getFileId());
+				List<Node> nodes = fm.queryByPathExcludeById(map);
+				if (nodes == null || nodes.isEmpty()) {
+					// 如果已经无任何节点再引用此文件块，则删除它
+					File file = getFileFromBlocks(f);// 获取对应的文件块对象
+					if (file != null) {
+						if (file.delete()) {
+							return true;// 文件块被删除，认为删除成功
+						} else {
+							// 文件块无法删除，尝试回滚节点数据
+							if (file.exists() && fm.insert(f) > 0) {
+								return false;// 回滚成功，认为删除失败
+							}
+						}
+					}
+				}
+				return true;// 如果文件块仍被其他节点引用，或是已无此文件块，或是文件块无法删除且节点回滚失败，则认为删除成功
 			}
-			return false;
-		} else {
-			// 如果还有，那么直接返回true即可，认为此节点的文件块已经删除了（其他的引用是属于其他节点的）
-			return true;
 		}
+		return false;// 若节点删除失败，或是节点为null，则返回false
 	}
 
 	/**

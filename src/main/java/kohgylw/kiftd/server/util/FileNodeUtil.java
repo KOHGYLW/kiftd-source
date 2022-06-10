@@ -73,13 +73,6 @@ public class FileNodeUtil {
 				state2.execute(
 						"CREATE TABLE IF NOT EXISTS FILE(file_id VARCHAR(128) PRIMARY KEY,file_name VARCHAR(128) NOT NULL,file_size VARCHAR(128) NOT NULL,file_parent_folder varchar(128) NOT NULL,file_creation_date varchar(128) NOT NULL,file_creator varchar(128) NOT NULL,file_path varchar(128) NOT NULL)");
 				state2.close();
-				// 为了匹配之前的版本而设计的兼容性字段设置，后续可能会删除
-				if (!ConfigureReader.instance().useMySQL()) {
-					final Statement state3 = conn.createStatement();
-					state3.execute(
-							"ALTER TABLE FOLDER ADD COLUMN IF NOT EXISTS folder_constraint INT NOT NULL DEFAULT 0");
-					state3.close();
-				}
 				// 为数据库生成索引，此处分为MySQL和H2两种操作
 				if (ConfigureReader.instance().useMySQL()) {
 					final Statement state4 = conn.createStatement();

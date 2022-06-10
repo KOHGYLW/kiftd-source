@@ -1454,14 +1454,11 @@ public class KiftdWebDAVServlet extends HttpServlet {
 					return;
 				}
 				// 删除文件节点
-				if (this.nm.deleteById(node.getFileId()) >= 0) {
-					// 删除文件块
-					if (this.fbu.deleteFromFileBlocks(node)) {
-						// 删除成功，记录日志并返回状态码204
-						this.lu.writeDeleteFileEvent(req, node);
-						resp.setStatus(WebdavStatus.SC_NO_CONTENT);
-						return;
-					}
+				if (this.fbu.deleteNode(node)) {
+					// 删除成功，记录日志并返回状态码204
+					this.lu.writeDeleteFileEvent(req, node);
+					resp.setStatus(WebdavStatus.SC_NO_CONTENT);
+					return;
 				}
 			}
 			// 删除失败，返回状态码500
@@ -1678,7 +1675,16 @@ public class KiftdWebDAVServlet extends HttpServlet {
 								// 返回状态码204
 								resp.setStatus(WebdavStatus.SC_NO_CONTENT);
 								// 删除冲突节点的文件块
-								fbu.deleteFromFileBlocks(conflictNode);
+								Map<String, String> map = new HashMap<>();
+								map.put("path", conflictNode.getFilePath());
+								map.put("fileId", conflictNode.getFileId());
+								List<kohgylw.kiftd.server.model.Node> nodes = nm.queryByPathExcludeById(map);
+								if (nodes == null || nodes.isEmpty()) {
+									File file = fbu.getFileFromBlocks(conflictNode);
+									if (file != null) {
+										file.delete();// 此处无需再判断是否成功
+									}
+								}
 								// 成功
 								return;
 							}
@@ -1700,7 +1706,16 @@ public class KiftdWebDAVServlet extends HttpServlet {
 								// 返回状态码204
 								resp.setStatus(WebdavStatus.SC_NO_CONTENT);
 								// 删除冲突节点的文件块
-								fbu.deleteFromFileBlocks(conflictNode);
+								Map<String, String> map = new HashMap<>();
+								map.put("path", conflictNode.getFilePath());
+								map.put("fileId", conflictNode.getFileId());
+								List<kohgylw.kiftd.server.model.Node> nodes = nm.queryByPathExcludeById(map);
+								if (nodes == null || nodes.isEmpty()) {
+									File file = fbu.getFileFromBlocks(conflictNode);
+									if (file != null) {
+										file.delete();// 此处无需再判断是否成功
+									}
+								}
 								// 成功
 								return;
 							}

@@ -50,8 +50,6 @@ public interface NodeMapper {
 
 	int update(final Node f);
 
-	int deleteByParentFolderId(final String pfid);
-
 	int deleteById(final String fileId);
 
 	Node queryById(final String fileId);
