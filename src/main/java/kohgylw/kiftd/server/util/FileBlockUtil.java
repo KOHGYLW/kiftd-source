@@ -298,29 +298,49 @@ public class FileBlockUtil {
 	public boolean deleteNode(Node f) {
 		if (f != null) {
 			if (fm.deleteById(f.getFileId()) > 0) {
-				// 检查是否还有其他节点引用相同的文件块
-				Map<String, String> map = new HashMap<>();
-				map.put("path", f.getFilePath());
-				map.put("fileId", f.getFileId());
-				List<Node> nodes = fm.queryByPathExcludeById(map);
-				if (nodes == null || nodes.isEmpty()) {
-					// 如果已经无任何节点再引用此文件块，则删除它
-					File file = getFileFromBlocks(f);// 获取对应的文件块对象
-					if (file != null) {
-						if (file.delete()) {
-							return true;// 文件块被删除，认为删除成功
-						} else {
-							// 文件块无法删除，尝试回滚节点数据
-							if (file.exists() && fm.insert(f) > 0) {
-								return false;// 回滚成功，认为删除失败
-							}
-						}
+				// 尝试清理该节点对应的文件块
+				if (!clearFileBlock(f)) {
+					// 如果清理节点失败，尝试回滚节点
+					if (fm.insert(f) > 0) {
+						// 回滚失败，则认为删除失败
+						return false;
 					}
 				}
-				return true;// 如果文件块仍被其他节点引用，或是已无此文件块，或是文件块无法删除且节点回滚失败，则认为删除成功
+				return true;// 文件清理成功，或者回滚失败，都认为删除成功
 			}
 		}
 		return false;// 若节点删除失败，或是节点为null，则返回false
+	}
+
+	/**
+	 * 
+	 * <h2>清理文件块</h2>
+	 * <p>
+	 * 该方法将清理指定节点的文件块，清理成功则返回true，否则返回false。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @param n 要清理文件块的节点
+	 * @return 清理结果。如果该节点对应的文件块仍被其他节点引用，则直接返回true，否则尝试清理此文件块。 清理成功则返回true，否则返回false。
+	 */
+	public boolean clearFileBlock(Node n) {
+		Map<String, String> map = new HashMap<>();
+		map.put("path", n.getFilePath());
+		map.put("fileId", n.getFileId());
+		List<Node> nodes = fm.queryByPathExcludeById(map);
+		if (nodes == null || nodes.isEmpty()) {
+			// 如果已经无任何节点再引用此文件块，则删除它
+			File file = getFileFromBlocks(n);// 获取对应的文件块对象
+			if (file != null) {
+				if (!file.delete()) {
+					// 文件块无法删除
+					if (file.exists()) {
+						return false;// 如果文件块仍存在，返回false
+					}
+				}
+			}
+		}
+		return true;
 	}
 
 	/**

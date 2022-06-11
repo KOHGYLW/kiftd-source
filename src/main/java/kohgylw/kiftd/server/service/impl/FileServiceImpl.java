@@ -665,16 +665,7 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 								this.lu.writeMoveFileEvent(account, ip, originPath, fbu.getNodePath(node), isCopy);
 							}
 							// 最后，尝试删除冲突节点的文件块。注意：该操作必须在复制节点插入后再执行！
-							Map<String, String> map = new HashMap<>();
-							map.put("path", n.getFilePath());
-							map.put("fileId", n.getFileId());
-							List<Node> nodes = fm.queryByPathExcludeById(map);
-							if (nodes == null || nodes.isEmpty()) {
-								File file = fbu.getFileFromBlocks(n);
-								if (file != null) {
-									file.delete();// 此处无需再判断是否成功
-								}
-							}
+							fbu.clearFileBlock(n);
 						} else {
 							// 如果原节点删除失败，则操作失败
 							return "cannotMoveFiles";
