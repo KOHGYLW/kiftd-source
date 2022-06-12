@@ -232,10 +232,9 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 										if (fbu.isValidNode(f)) {
 											this.lu.writeUploadFileEvent(request, f, account);
 											return UPLOADSUCCESS;
-										} else {
-											block.delete();
 										}
 									}
+									block.delete();
 								}
 								return UPLOADERROR;
 							} catch (Exception e) {
@@ -643,8 +642,12 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 						// 得到冲突节点
 						Node n = fm.queryByParentFolderId(locationpath).parallelStream()
 								.filter((e) -> e.getFileName().equals(node.getFileName())).findFirst().get();
-						// 先将冲突节点删除
-						if (fm.deleteById(n.getFileId()) > 0) {
+						if (n.getFileId().equals(node.getFileId())) {
+							// 如果冲突节点就是原节点自身，则直接跳过，且无需记录日志（因为操作无效）
+							continue;
+						}
+						// 否则，先将冲突节点删除
+						if (fbu.deleteNode(n)) {
 							// 判断是否是复制模式
 							if (isCopy) {
 								// 若是，则新建一个与操作节点使用相同文件块的新节点添加到目标文件夹下
@@ -664,8 +667,6 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 								// 成功，记录日志
 								this.lu.writeMoveFileEvent(account, ip, originPath, fbu.getNodePath(node), isCopy);
 							}
-							// 最后，尝试删除冲突节点的文件块。注意：该操作必须在复制节点插入后再执行！
-							fbu.clearFileBlock(n);
 						} else {
 							// 如果原节点删除失败，则操作失败
 							return "cannotMoveFiles";

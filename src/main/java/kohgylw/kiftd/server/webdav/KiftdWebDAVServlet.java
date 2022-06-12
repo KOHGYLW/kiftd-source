@@ -1662,8 +1662,13 @@ public class KiftdWebDAVServlet extends HttpServlet {
 					// 执行覆盖，获得冲突节点
 					kohgylw.kiftd.server.model.Node conflictNode = nm.queryByParentFolderId(targetFolder.getFolderId())
 							.parallelStream().filter((e) -> e.getFileName().equals(newName)).findFirst().get();
-					// 删除冲突节点
-					if (nm.deleteById(conflictNode.getFileId()) > 0) {
+					if (conflictNode.getFileId().equals(originNode.getFileId())) {
+						// 如果要覆盖的节点就是原节点本身，则直接认为操作成功，也无需记录日志（因为操作无效）
+						resp.setStatus(WebdavStatus.SC_NO_CONTENT);
+						return;
+					}
+					// 否则，删除冲突节点
+					if (fbu.deleteNode(conflictNode)) {
 						if (isCopy) {
 							// 如果是拷贝模式，新建一个与原资源使用相同文件块的节点添加到目标路径下
 							kohgylw.kiftd.server.model.Node copyNode = fbu.insertNewNode(newName, account,
@@ -1674,8 +1679,6 @@ public class KiftdWebDAVServlet extends HttpServlet {
 										fbu.getNodePath(copyNode), true);
 								// 返回状态码204
 								resp.setStatus(WebdavStatus.SC_NO_CONTENT);
-								// 删除冲突节点的文件块
-								fbu.clearFileBlock(conflictNode);
 								// 成功
 								return;
 							}
@@ -1696,16 +1699,12 @@ public class KiftdWebDAVServlet extends HttpServlet {
 								}
 								// 返回状态码204
 								resp.setStatus(WebdavStatus.SC_NO_CONTENT);
-								// 删除冲突节点的文件块
-								fbu.clearFileBlock(conflictNode);
 								// 成功
 								return;
 							}
 						}
 					}
-					// 移动或复制操作失败
-					nm.insert(conflictNode);// 尝试还原冲突节点（冲突节点的文件块仅在操作成功时才会删除）
-					// 返回状态码500
+					// 移动或复制操作失败，返回状态码500
 					resp.setStatus(WebdavStatus.SC_INTERNAL_SERVER_ERROR);
 					return;
 				} else {
