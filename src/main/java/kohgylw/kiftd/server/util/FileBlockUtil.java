@@ -320,8 +320,7 @@ public class FileBlockUtil {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param n          要清理文件块的节点
-	 * @param originPath 节点的原始存放路径，当启用了“删除留档”功能时，将以此路径在“回收站”文件夹中进行归档。
+	 * @param n 要清理文件块的节点
 	 * @return 清理结果。如果该节点对应的文件块仍被其他节点引用，则直接返回true，否则尝试清理此文件块。 清理成功则返回true，否则返回false。
 	 */
 	private boolean clearFileBlock(Node n) {
