@@ -754,7 +754,7 @@ public class ConfigureReader {
 			}
 		} else {
 			dbDriver = "org.h2.Driver";
-			dbURL = "jdbc:h2:file:" + fileNodePath + File.separator + "kift";
+			dbURL = "jdbc:h2:file:" + fileNodePath + "kift";
 			dbUser = "root";
 			dbPwd = "301537gY";
 		}
