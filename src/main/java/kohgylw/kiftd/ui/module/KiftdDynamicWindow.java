@@ -85,7 +85,7 @@ public class KiftdDynamicWindow {
 		if (proportion < 1.0) {
 			proportion = 1.0; // 设置其最小限界，防止界面显示不全
 		}
-		fileChooerSize = new Dimension((int) (570 * proportion), (int) (370 * proportion));
+		fileChooerSize = new Dimension((int) (570 * proportion), (int) (300 * proportion));
 	}
 
 	/**
