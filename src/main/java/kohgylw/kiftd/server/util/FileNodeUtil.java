@@ -1,6 +1,7 @@
 package kohgylw.kiftd.server.util;
 
 import java.io.File;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -65,7 +66,7 @@ public class FileNodeUtil {
 					state0.execute("RUNSCRIPT FROM '" + upgradeFile.getAbsolutePath() + "' FROM_1X");
 					state0.close();
 					if (!upgradeFile.delete()) {
-						Printer.instance.print("警告：无法清理旧版本数据的归档文件，您可以手动删除[" + upgradeFile.getAbsolutePath() + "]文件。");
+						throw new IOException("错误：旧归档文件删除失败：" + upgradeFile.getAbsolutePath());
 					}
 				}
 				// 生成数据库表并初始化数据内容
