@@ -57,6 +57,15 @@ public class FileNodeUtil {
 				conn = DriverManager.getConnection(newUrl, ConfigureReader.instance().getFileNodePathUserName(),
 						ConfigureReader.instance().getFileNodePathPassWord());
 				url = newUrl;
+				// 检查是否存在旧版本的归档数据，若有，则尝试将其导入。
+				File upgradeFile = new File(ConfigureReader.instance().getFileNodePath() + "upgrade.sql");
+				if (upgradeFile.isFile()) {
+					Printer.instance.print("正在从旧版本导入数据...");
+					final Statement state0 = conn.createStatement();
+					state0.execute("RUNSCRIPT FROM '" + upgradeFile.getAbsolutePath() + "' FROM_1X");
+					state0.close();
+				}
+				// 生成数据库表并初始化数据内容
 				final Statement state1 = conn.createStatement();
 				state1.execute(
 						"CREATE TABLE IF NOT EXISTS FOLDER(folder_id VARCHAR(128) PRIMARY KEY,  folder_name VARCHAR(128) NOT NULL,folder_creation_date VARCHAR(128) NOT NULL,  folder_creator VARCHAR(128) NOT NULL,folder_parent VARCHAR(128) NOT NULL,folder_constraint INT NOT NULL)");
@@ -125,10 +134,8 @@ public class FileNodeUtil {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param originalName
-	 *            java.lang.String 原始文件名
-	 * @param nodes
-	 *            java.util.List Node 要检查的文件节点列表
+	 * @param originalName java.lang.String 原始文件名
+	 * @param nodes        java.util.List Node 要检查的文件节点列表
 	 * @return java.lang.String 新文件名
 	 */
 	public static String getNewNodeName(String originalName, List<Node> nodes) {
@@ -156,10 +163,8 @@ public class FileNodeUtil {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param originalName
-	 *            java.lang.String 原始文件夹名
-	 * @param folders
-	 *            java.util.List Folder 要检查的文件夹列表
+	 * @param originalName java.lang.String 原始文件夹名
+	 * @param folders      java.util.List Folder 要检查的文件夹列表
 	 * @return java.lang.String 新文件夹名
 	 */
 	public static String getNewFolderName(String originalName, List<? extends Folder> folders) {
@@ -182,10 +187,8 @@ public class FileNodeUtil {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param folder
-	 *            kohgylw.kiftd.server.model.Folder 原始文件夹
-	 * @param parentfolder
-	 *            java.io.File 要检查的文件夹
+	 * @param folder       kohgylw.kiftd.server.model.Folder 原始文件夹
+	 * @param parentfolder java.io.File 要检查的文件夹
 	 * @return java.lang.String 新文件夹名
 	 */
 	public static String getNewFolderName(Folder folder, File parentfolder) {
@@ -210,10 +213,8 @@ public class FileNodeUtil {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param n
-	 *            kohgylw.kiftd.server.model.Node 要重命名的文件节点
-	 * @param folder
-	 *            java.io.File 要检查的本地文件夹
+	 * @param n      kohgylw.kiftd.server.model.Node 要重命名的文件节点
+	 * @param folder java.io.File 要检查的本地文件夹
 	 * @return java.lang.String 新文件名
 	 */
 	public static String getNewNodeName(Node n, File folder) {
