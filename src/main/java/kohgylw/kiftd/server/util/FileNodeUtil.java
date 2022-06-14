@@ -64,6 +64,9 @@ public class FileNodeUtil {
 					final Statement state0 = conn.createStatement();
 					state0.execute("RUNSCRIPT FROM '" + upgradeFile.getAbsolutePath() + "' FROM_1X");
 					state0.close();
+					if (!upgradeFile.delete()) {
+						Printer.instance.print("警告：无法清理旧版本数据的归档文件，您可以手动删除[" + upgradeFile.getAbsolutePath() + "]文件。");
+					}
 				}
 				// 生成数据库表并初始化数据内容
 				final Statement state1 = conn.createStatement();
