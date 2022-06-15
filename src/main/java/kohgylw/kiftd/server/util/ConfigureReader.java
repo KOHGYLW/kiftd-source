@@ -86,6 +86,7 @@ public class ConfigureReader {
 	public static final int INVALID_FFMPEG_SETTING = 14;
 	public static final int INVALID_MUST_LOGIN_SETTING = 15;
 	public static final int INVALID_WEBDAV_SETTING = 16;
+	public static final int INVALID_RECYCLE_BIN_PATH = 17;
 	public static final int LEGAL_PROPERTIES = 0;
 	private static Thread accountPropertiesUpdateDaemonThread;
 	private String timeZone;
@@ -101,6 +102,7 @@ public class ConfigureReader {
 	private boolean enableFFMPEG = true;// 是否启用视频播放的在线解码功能
 	private boolean enableDownloadByZip = true;// 是否启用“打包下载”功能
 	private boolean enableWebDAV = false;// 是否启用WebDAV功能
+	private String recycleBinPath;// 删除留档路径
 
 	private static final int MAX_EXTENDSTORES_NUM = 255;// 扩展存储区最大数目
 	private static final String[] SYS_ACCOUNTS = { "SYS_IN", "Anonymous", "匿名用户" };// 一些系统的特殊账户
@@ -867,6 +869,23 @@ public class ConfigureReader {
 		} else {
 			enableWebDAV = false;
 		}
+		// 检查是否设置了删除留档的路径
+		String recycleBinPathProp = this.serverp.getProperty("recyclebin");
+		if (recycleBinPathProp != null && !recycleBinPathProp.isEmpty()) {
+			// 如果有，认为启用了“删除留档”功能
+			recycleBinPathProp = recycleBinPathProp.replaceAll("\\\\:", ":").replaceAll("\\\\\\\\", "\\\\");
+			if (!recycleBinPathProp.endsWith(File.separator)) {
+				recycleBinPathProp = recycleBinPathProp + File.separator;
+			}
+			// 检查该路径是否指向一个可读写的文件夹
+			File recycleBin = new File(recycleBinPathProp);
+			if (!recycleBin.isDirectory() || !recycleBin.canWrite() || !recycleBin.canRead()) {
+				Printer.instance.print("错误：删除留档功能的配置不正确，必须是一个可读写的文件夹。");
+				return INVALID_RECYCLE_BIN_PATH;
+			}
+			// 检查完毕，将其规范为绝对路径
+			this.recycleBinPath = recycleBin.getAbsolutePath();
+		}
 		Printer.instance.print("检查完毕。");
 		return LEGAL_PROPERTIES;
 	}
@@ -1555,5 +1574,16 @@ public class ConfigureReader {
 	 */
 	public boolean isEnableWebDAV() {
 		return enableWebDAV;
+	}
+	
+	/**
+	 * 
+	 * <h2>获取删除留档路径</h2>
+	 * <p>该方法返回删除留档路径（绝对路径），用以将删除的文件归档至该文件夹内。</p>
+	 * @author 青阳龙野(kohgylw)
+	 * @return java.lang.String 归档文件夹的绝对路径。如果未启用此功能则返回null
+	 */
+	public String getRecycleBinPath() {
+		return recycleBinPath;
 	}
 }

@@ -316,31 +316,92 @@ public class FileBlockUtil {
 	 * 
 	 * <h2>清理文件块</h2>
 	 * <p>
-	 * 该方法将清理指定节点的文件块，清理成功则返回true，否则返回false。
+	 * 该方法将清理指定节点的文件块，如果开启了“删除留档”功能，则会在清理的同时尝试留档。
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
 	 * @param n 要清理文件块的节点
-	 * @return 清理结果。如果该节点对应的文件块仍被其他节点引用，则直接返回true，否则尝试清理此文件块。 清理成功则返回true，否则返回false。
+	 * @return 清理或留档结果。清理或留档成功则返回true，否则返回false。
 	 */
 	private boolean clearFileBlock(Node n) {
+		// 获取“删除留档”功能的设置路径。
+		String recycleBinPath = ConfigureReader.instance().getRecycleBinPath();
+		// 获取节点对应的文件块
+		File file = getFileFromBlocks(n);
+		// 检查该节点引用的文件块是否被其他节点引用
 		Map<String, String> map = new HashMap<>();
 		map.put("path", n.getFilePath());
 		map.put("fileId", n.getFileId());
 		List<Node> nodes = fm.queryByPathExcludeById(map);
 		if (nodes == null || nodes.isEmpty()) {
-			// 如果已经无任何节点再引用此文件块，则删除它
-			File file = getFileFromBlocks(n);// 获取对应的文件块对象
+			// 若已经无任何节点再引用此文件块
 			if (file != null) {
-				if (!file.delete()) {
-					// 文件块无法删除
-					if (file.exists()) {
-						return false;// 如果文件块仍存在，返回false
+				if (recycleBinPath != null && !saveToRecycleBin(file, recycleBinPath, n.getFileName(), false)) {
+					// 若开启了“删除留档”功能且留档失败，则认为清理失败
+					return false;
+				} else {
+					// 否则直接删除此文件块
+					if (!file.delete()) {
+						// 如果文件块删除失败
+						if (file.exists()) {
+							return false;// 如果如果文件块仍存在，返回false
+						}
 					}
+				}
+			} else {
+				// 如果文件块获取失败，则检查是否开启了“删除留档”功能
+				if (recycleBinPath != null) {
+					// 如果开启了，那么由于无法留档，因此认为清理失败
+					return false;
+				}
+				// 否则认为清理成功
+			}
+		} else {
+			// 若仍有其他节点引用此文件块
+			if (recycleBinPath != null && !saveToRecycleBin(file, recycleBinPath, n.getFileName(), true)) {
+				// 若开启了“删除留档”功能且留档失败，则认为清理失败
+				return false;
+			}
+			// 否则认为清理成功
+		}
+		return true;
+	}
+
+	private boolean saveToRecycleBin(File block, String recycleBinPath, String originalName, boolean isCopy) {
+		File recycleBinDir = new File(recycleBinPath);
+		if (recycleBinDir.isDirectory()) {
+			// 当留档路径合法时，查找其中是否有当前日期的留档子文件夹
+			File dateDir = new File(recycleBinDir, ServerTimeUtil.accurateToLogName());
+			if (dateDir.isDirectory() || dateDir.mkdir()) {
+				// 如果有，则直接使用，否则创建当前日期的留档子文件夹，之后检查此文件夹内是否有重名留档文件
+				int i = 0;
+				List<String> fileNames = Arrays.asList(dateDir.list());
+				String newName = originalName;
+				while (fileNames.contains(newName)) {
+					i++;
+					if (originalName.indexOf(".") >= 0) {
+						newName = originalName.substring(0, originalName.lastIndexOf(".")) + " (" + i + ")"
+								+ originalName.substring(originalName.lastIndexOf("."));
+					} else {
+						newName = originalName + " (" + i + ")";
+					}
+				}
+				// 在确保不会产生重名文件的前提下，按照移动或拷贝两种方式留档
+				File saveFile = new File(dateDir, newName);
+				try {
+					if (isCopy) {
+						Files.copy(block.toPath(), saveFile.toPath());
+					} else {
+						Files.move(block.toPath(), saveFile.toPath());
+					}
+					// 如果不抛出任何异常，则操作成功
+					return true;
+				} catch (Exception e) {
+					lu.writeException(e);
 				}
 			}
 		}
-		return true;
+		return false;
 	}
 
 	/**
