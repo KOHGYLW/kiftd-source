@@ -19,11 +19,9 @@ import java.util.Base64;
 import java.util.Base64.Decoder;
 import java.util.Date;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Stack;
 import java.util.TimeZone;
 import java.util.UUID;
@@ -69,7 +67,6 @@ import kohgylw.kiftd.server.util.FolderUtil;
 import kohgylw.kiftd.server.util.IpAddrGetter;
 import kohgylw.kiftd.server.util.LogUtil;
 import kohgylw.kiftd.server.util.RangeFileStreamWriter;
-import kohgylw.kiftd.server.util.ServerTimeUtil;
 import kohgylw.kiftd.server.webdav.date.ConcurrentDateFormat;
 import kohgylw.kiftd.server.webdav.date.FastHttpDateFormat;
 import kohgylw.kiftd.server.webdav.dom.DOMWriter;
@@ -1192,85 +1189,34 @@ public class KiftdWebDAVServlet extends HttpServlet {
 			return;
 		}
 		// 至此，上传的数据已经保存为一个临时文件，接下来进行处理
-		if (originNode == null) {
-			// 若是没有原件，则生成一个新的文件节点，并将数据存入对应的文件块
-			final File block = this.fbu.saveToFileBlocks(tempFile);
-			if (block == null) {
-				// 如果存入失败，终止操作并告知客户端
-				tempFile.delete();
+		if (originNode != null) {
+			// 若是有原件，则先删除原件
+			if (!fbu.deleteNode(originNode)) {
+				// 若是原件删除失败，则终止上传并返回状态码409
 				resp.setStatus(WebdavStatus.SC_CONFLICT);
 				return;
 			}
-			kohgylw.kiftd.server.model.Node node = fbu.insertNewNode(pathFileName, account, block.getName(),
-					fbu.getFileSize(block.length()), parentFolder.getFolderId());
-			if (node == null) {
-				// 如果节点插入失败，终止操作并告知客户端
-				block.delete();
-				resp.setStatus(WebdavStatus.SC_CONFLICT);
-				return;
-			} else {
-				// 全部操作成功，返回代码201，并记录日志
-				resp.setStatus(WebdavStatus.SC_CREATED);
-				lu.writeUploadFileEvent(req, node, account);
-				return;
-			}
+		}
+		// 一切准备就绪，将上传的文件存入文件系统中
+		final File block = this.fbu.saveToFileBlocks(tempFile);
+		if (block == null) {
+			// 如果存入失败，终止操作并告知客户端
+			tempFile.delete();
+			resp.setStatus(WebdavStatus.SC_CONFLICT);
+			return;
+		}
+		kohgylw.kiftd.server.model.Node node = fbu.insertNewNode(pathFileName, account, block.getName(),
+				fbu.getFileSize(block.length()), parentFolder.getFolderId());
+		if (node == null) {
+			// 如果节点插入失败，终止操作并告知客户端
+			block.delete();
+			resp.setStatus(WebdavStatus.SC_CONFLICT);
+			return;
 		} else {
-			/*
-			 * 若是有原件，则直接替换原文件节点对应的文件块， 操作逻辑应保持与
-			 * kohgylw.kiftd.server.service.impl.FileServiceImpl.doUploadFile(
-			 * HttpServletRequest, HttpServletResponse, MultipartFile) 方法中的“Cover”流程相同。
-			 */
-			originNode.setFileSize(fbu.getFileSize(tempFile.length()));
-			originNode.setFileCreationDate(ServerTimeUtil.accurateToDay());
-			if (account != null) {
-				originNode.setFileCreator(account);
-			} else {
-				originNode.setFileCreator("\u533f\u540d\u7528\u6237");
-			}
-			// 该节点对应的文件块是否独享？
-			Map<String, String> map = new HashMap<>();
-			map.put("path", originNode.getFilePath());
-			map.put("fileId", originNode.getFileId());
-			List<kohgylw.kiftd.server.model.Node> nodesHasSomeBlock = nm.queryByPathExcludeById(map);
-			if (nodesHasSomeBlock == null || nodesHasSomeBlock.isEmpty()) {
-				// 如果该节点的文件块仅由该节点引用，那么直接重写此文件块
-				if (nm.update(originNode) > 0) {
-					if (fbu.isValidNode(originNode)) {
-						File block = fbu.getFileFromBlocks(originNode);
-						if (block != null) {
-							Files.move(tempFile.toPath(), block.toPath(), StandardCopyOption.REPLACE_EXISTING);
-							this.lu.writeUploadFileEvent(req, originNode, account);
-							resp.setStatus(WebdavStatus.SC_NO_CONTENT);
-							return;
-						}
-					}
-				}
-				// 如果重写失败，终止操作并告知客户端
-				tempFile.delete();
-				resp.setStatus(WebdavStatus.SC_CONFLICT);
-				return;
-			} else {
-				// 如果此文件块还被其他节点引用，那么为此节点新建一个文件块
-				File block = fbu.saveToFileBlocks(tempFile);
-				// 并将该节点的文件块索引更新为新的文件块
-				if (block != null) {
-					originNode.setFilePath(block.getName());
-					if (nm.update(originNode) > 0) {
-						if (fbu.isValidNode(originNode)) {
-							// 成功……
-							resp.setStatus(WebdavStatus.SC_NO_CONTENT);
-							this.lu.writeUploadFileEvent(req, originNode, account);
-							return;
-						}
-					}
-					// 如果在更新节点时失败，则清理新存入的文件块（因为它必定无效）
-					block.delete();
-				}
-				// 失败……
-				tempFile.delete();
-				resp.setStatus(WebdavStatus.SC_CONFLICT);
-				return;
-			}
+			// 全部操作成功，返回代码201，并记录日志
+			resp.setStatus(WebdavStatus.SC_CREATED);
+			lu.writeUploadFileEvent(req, node, account);
+			return;
 		}
 	}
 

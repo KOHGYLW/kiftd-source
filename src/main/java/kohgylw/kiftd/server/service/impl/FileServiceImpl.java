@@ -197,52 +197,15 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 						return UPLOADERROR;
 					}
 					for (Node f : nodes) {
-						// 找到要覆盖的节点
+						// 找到要覆盖的节点，尝试将其删除
 						if (f.getFileName().equals(originalFileName)) {
-							try {
-								// 首先先将该节点中必须覆盖的信息更新
-								f.setFileSize(fbu.getFileSize(file.getSize()));
-								f.setFileCreationDate(ServerTimeUtil.accurateToDay());
-								if (account != null) {
-									f.setFileCreator(account);
-								} else {
-									f.setFileCreator("\u533f\u540d\u7528\u6237");
-								}
-								// 该节点对应的文件块是否独享？
-								Map<String, String> map = new HashMap<>();
-								map.put("path", f.getFilePath());
-								map.put("fileId", f.getFileId());
-								List<Node> nodesHasSomeBlock = fm.queryByPathExcludeById(map);
-								if (nodesHasSomeBlock == null || nodesHasSomeBlock.isEmpty()) {
-									// 如果该节点的文件块仅由该节点引用，那么直接重写此文件块
-									if (fm.update(f) > 0) {
-										if (fbu.isValidNode(f)) {
-											File block = fbu.getFileFromBlocks(f);
-											file.transferTo(block);
-											this.lu.writeUploadFileEvent(request, f, account);
-											return UPLOADSUCCESS;
-										}
-									}
-								} else {
-									// 如果此文件块还被其他节点引用，那么为此节点新建一个文件块
-									File block = fbu.saveToFileBlocks(file);
-									// 并将该节点的文件块索引更新为新的文件块
-									f.setFilePath(block.getName());
-									if (fm.update(f) > 0) {
-										if (fbu.isValidNode(f)) {
-											this.lu.writeUploadFileEvent(request, f, account);
-											return UPLOADSUCCESS;
-										}
-									}
-									block.delete();
-								}
-								return UPLOADERROR;
-							} catch (Exception e) {
+							if (!fbu.deleteNode(f)) {
+								// 如果删除失败，则终止上传
 								return UPLOADERROR;
 							}
 						}
 					}
-					return UPLOADERROR;
+					break;
 				// 保留两者，使用型如“xxxxx (n).xx”的形式命名新文件。其中n为计数，例如已经存在2个文件，则新文件的n记为2
 				case "both":
 					// 设置新文件名为标号形式
