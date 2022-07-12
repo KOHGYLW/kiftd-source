@@ -534,7 +534,6 @@ public class FSViewer extends KiftdDynamicWindow {
 		}
 	}
 
-	@SuppressWarnings("deprecation")
 	@Override
 	protected void finalize() throws Throwable {
 		super.finalize();

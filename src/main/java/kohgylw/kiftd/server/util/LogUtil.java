@@ -509,7 +509,6 @@ public class LogUtil {
 		}
 	}
 
-	@SuppressWarnings("deprecation")
 	@Override
 	protected void finalize() throws Throwable {
 		super.finalize();
