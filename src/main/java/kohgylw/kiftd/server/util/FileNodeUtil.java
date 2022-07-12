@@ -46,6 +46,7 @@ public class FileNodeUtil {
 	 * 
 	 * @author 青阳龙野(kohgylw)
 	 */
+	@SuppressWarnings("deprecation")
 	public static void initNodeTableToDataBase() {
 		Printer.instance.print("初始化文件节点...");
 		try {

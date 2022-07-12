@@ -560,6 +560,7 @@ public class ConfigureReader {
 	 * @author 青阳龙野(kohgylw)
 	 * @return int 验证结果代码
 	 */
+	@SuppressWarnings("deprecation")
 	private int testServerPropertiesAndEffect() {
 		Printer.instance.print("正在检查服务器配置...");
 		final String pMustLogin = this.serverp.getProperty("mustLogin");
