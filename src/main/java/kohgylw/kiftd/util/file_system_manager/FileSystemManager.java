@@ -75,7 +75,6 @@ public class FileSystemManager {
 	private PreparedStatement insertFolder;
 	private PreparedStatement deleteNodeById;
 	private PreparedStatement deleteFolderById;
-	private PreparedStatement updateNodeById;
 	private PreparedStatement updateFolderById;
 	private PreparedStatement countNodesByFolderId;
 	private PreparedStatement countFoldersByParentFolderId;
@@ -97,8 +96,6 @@ public class FileSystemManager {
 			insertFolder = c.prepareStatement("INSERT INTO FOLDER VALUES(?,?,?,?,?,?)");
 			deleteNodeById = c.prepareStatement("DELETE FROM FILE WHERE file_id = ?");
 			deleteFolderById = c.prepareStatement("DELETE FROM FOLDER WHERE folder_id = ?");
-			updateNodeById = c.prepareStatement(
-					"UPDATE FILE SET file_name = ? , file_size = ? , file_parent_folder = ? , file_creation_date = ? , file_creator = ? , file_path = ? WHERE file_id = ?");
 			updateFolderById = c.prepareStatement(
 					"UPDATE FOLDER SET folder_name= ? , folder_creation_date = ? , folder_creator = ? , folder_parent = ? , folder_constraint = ? WHERE folder_id = ?");
 			countNodesByFolderId = c.prepareStatement("SELECT count(file_id) FROM FILE WHERE file_parent_folder = ?");
@@ -135,11 +132,9 @@ public class FileSystemManager {
 	 * 
 	 * @see kohgylw.kiftd.util.file_system_manager.pojo.FolderView
 	 * @author 青阳龙野(kohgylw)
-	 * @param folderId
-	 *            java.lang.String 文件夹ID
+	 * @param folderId java.lang.String 文件夹ID
 	 * @return kohgylw.kiftd.util.file_system_manager.pojo.FolderView 指定的文件夹视图
-	 * @throws SQLException
-	 *             获取失败
+	 * @throws SQLException 获取失败
 	 */
 	public FolderView getFolderView(String folderId) throws SQLException {
 		Folder target = selectFolderById(folderId);
@@ -162,14 +157,12 @@ public class FileSystemManager {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param foldersId
-	 *            java.lang.String[] 要删除的文件夹ID
-	 * @param filesId
-	 *            java.lang.String[] 要删除的文件ID
+	 * @param foldersId java.lang.String[] 要删除的文件夹ID
+	 * @param filesId   java.lang.String[] 要删除的文件ID
 	 * @return boolean 删除结果
 	 * @throws SQLException
 	 */
-	public boolean delete(String[] foldersId, String[] filesId) throws SQLException {
+	public boolean delete(String[] foldersId, String[] filesId) throws Exception {
 		gono = true;
 		for (int i = 0; i < filesId.length && gono; i++) {
 			deleteFile(filesId[i]);
@@ -188,14 +181,10 @@ public class FileSystemManager {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param foldersId
-	 *            java.lang.String[] 要导出的文件夹ID
-	 * @param filesId
-	 *            java.lang.String[] 要导出的文件ID
-	 * @param path
-	 *            java.io.File 要导出的目标路径，必须是个文件夹
-	 * @param type
-	 *            java.lang.String 导出操作类型：“COVER”覆盖或“BOTH”保留两者，其他情况默认为“COVER”
+	 * @param foldersId java.lang.String[] 要导出的文件夹ID
+	 * @param filesId   java.lang.String[] 要导出的文件ID
+	 * @param path      java.io.File 要导出的目标路径，必须是个文件夹
+	 * @param type      java.lang.String 导出操作类型：“COVER”覆盖或“BOTH”保留两者，其他情况默认为“COVER”
 	 * @return boolean 是否全部导出成功
 	 * @throws Exception
 	 */
@@ -219,10 +208,8 @@ public class FileSystemManager {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param files
-	 *            java.io.File[] 要检查的文件对象
-	 * @param folderId
-	 *            java.lang.String 要检查的目标文件夹ID
+	 * @param files    java.io.File[] 要检查的文件对象
+	 * @param folderId java.lang.String 要检查的目标文件夹ID
 	 * @return int 存在同名文件（或文件夹）的数量，当被检查的路径下不存在同名文件（或文件夹）时返回0
 	 * @throws SQLException
 	 */
@@ -251,12 +238,9 @@ public class FileSystemManager {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param foldersId
-	 *            java.lang.String[] 要导出的文件夹ID
-	 * @param filesId
-	 *            java.lang.String[] 要导出的文件ID
-	 * @param java.io.File
-	 *            path 要检查的目标路径
+	 * @param foldersId    java.lang.String[] 要导出的文件夹ID
+	 * @param filesId      java.lang.String[] 要导出的文件ID
+	 * @param java.io.File path 要检查的目标路径
 	 * @return int 存在同名文件（或文件夹）的数量，当被检查的路径下不存在同名文件（或文件夹）时返回0
 	 * @throws SQLException
 	 */
@@ -294,12 +278,9 @@ public class FileSystemManager {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param files
-	 *            java.io.File[] 要导入的文件对象
-	 * @param folderId
-	 *            java.lang.String 目标文件夹ID
-	 * @param type
-	 *            java.lang.String 导入操作类型：“COVER”覆盖或“BOTH”保留两者，其他情况默认为“COVER”
+	 * @param files    java.io.File[] 要导入的文件对象
+	 * @param folderId java.lang.String 目标文件夹ID
+	 * @param type     java.lang.String 导入操作类型：“COVER”覆盖或“BOTH”保留两者，其他情况默认为“COVER”
 	 * @return boolean 是否全部导入成功
 	 * @throws Exception
 	 */
@@ -323,11 +304,9 @@ public class FileSystemManager {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param folderId
-	 *            java.lang.String 需要查询的父文件夹ID
+	 * @param folderId java.lang.String 需要查询的父文件夹ID
 	 * @return java.util.List<kohgylw.kiftd.server.model.Folder> 文件夹对象列表，如果没有结果则长度为0
-	 * @throws SQLException
-	 *             查询失败
+	 * @throws SQLException 查询失败
 	 */
 	public List<Folder> getFoldersByParentId(String folderId) throws SQLException {
 		selectFoldersByParentFolderId.setString(1, folderId);
@@ -448,48 +427,13 @@ public class FileSystemManager {
 				case COVER:
 					// 覆盖
 					Node node = nodes.parallelStream().filter((e) -> e.getFileName().equals(f.getName())).findFirst()
-							.get();// 得到重名节点，覆盖它
-					// 首先，将必须要更新的信息刷入目标节点
-					node.setFileCreationDate(ServerTimeUtil.accurateToDay());
-					node.setFileCreator("SYS_IN");
-					int mb = (int) (size / 1024L / 1024L);
-					node.setFileSize(mb + "");
-					// 之后，判断该节点所用的Block是否仅归其自己所用？
-					List<Node> nodesHasSomePath = selectNodesByPathExcludeById(node.getFilePath(), node.getFileId());
-					if (nodesHasSomePath == null || nodesHasSomePath.isEmpty()) {
-						// 如果是，那就直接更新文件节点的信息，再将新文件数据刷入原文件块实现覆盖
-						if (updateNode(node) > 0) {
-							final File block = getFileFormBlocks(node);
-							transferFile(f, block);
-							if (selectFolderById(folderId) != null && selectNodeById(node.getFileId()) != null) {
-								return;// 如果该节点的父节点有效，并且过程中本节点也未丢失，则执行完毕
-							} else {
-								deleteNodeById(node.getFileId());
-								block.delete();
-								throw new SQLException();// 否则覆盖失败，清理此节点和残留的文件块，并抛出异常
-							}
-						} else {
-							throw new SQLException();// 如果更新失败，则原节点不会有任何变化，直接抛出异常
-						}
-					} else {
-						// 如果该节点对应的文件块是与其他节点共享的，则要为其独立创建一个文件块，再更新节点的文件块信息
-						final File block = saveToFileBlocks(f);
-						if (block == null) {
-							throw new IOException();
-						}
-						node.setFilePath(block.getName());// 更新该节点的文件块为新的文件块
-						if (updateNode(node) > 0) {
-							if (selectFolderById(folderId) != null && selectNodeById(node.getFileId()) != null) {
-								return;// 如果检查没问题，则覆盖完成
-							} else {
-								deleteNodeById(node.getFileId());
-								block.delete();
-								throw new SQLException();// 否则，也要删除此节点和残留文件块，并抛出异常
-							}
-						} else {
-							throw new SQLException();// 更新失败的话，则原节点不会有任何变化，直接抛出异常
-						}
+							.get();// 得到重名节点，删除它
+					deleteFile(node.getFileId());
+					if(selectNodeById(node.getFileId()) != null) {
+						// 测试是否删除成功
+						throw new IOException();
 					}
+					break;
 				case BOTH:
 					// 保留两者（计数命名法 foo.bar -> foo (1).bar）
 					newName = FileNodeUtil.getNewNodeName(name, nodes);
@@ -640,19 +584,6 @@ public class FileSystemManager {
 		return deleteFolderById.getUpdateCount();
 	}
 
-	// 修改节点
-	private int updateNode(Node n) throws SQLException {
-		updateNodeById.setString(1, n.getFileName());
-		updateNodeById.setString(2, n.getFileSize());
-		updateNodeById.setString(3, n.getFileParentFolder());
-		updateNodeById.setString(4, n.getFileCreationDate());
-		updateNodeById.setString(5, n.getFileCreator());
-		updateNodeById.setString(6, n.getFilePath());
-		updateNodeById.setString(7, n.getFileId());
-		updateNodeById.execute();
-		return updateNodeById.getUpdateCount();
-	}
-
 	// 修改文件夹
 	private int updateFolder(Folder f) throws SQLException {
 		updateFolderById.setString(1, f.getFolderName());
@@ -666,7 +597,7 @@ public class FileSystemManager {
 	}
 
 	// 删除一个文件夹
-	private void deleteFolder(String folderId) throws SQLException {
+	private void deleteFolder(String folderId) throws Exception {
 		Folder f = selectFolderById(folderId);
 		List<Node> nodes = selectNodesByFolderId(folderId);
 		int size = nodes.size();
@@ -695,29 +626,83 @@ public class FileSystemManager {
 	}
 
 	// 删除一个文件
-	private void deleteFile(String nodeId) throws SQLException {
+	private void deleteFile(String nodeId) throws SQLException, IOException {
 		Node n = selectNodeById(nodeId);
 		per = 50;
 		message = "正在删除文件：" + n.getFileName();
 		if (n != null) {
-			if (deleteNodeById(nodeId) >= 0) {
+			if (deleteNodeById(nodeId) > 0) {
 				per = 80;
 				List<Node> nodes = selectNodesByPathExcludeById(n.getFilePath(), n.getFileId());
+				String recycleBinPath = ConfigureReader.instance().getRecycleBinPath();
+				File block = getFileFormBlocks(n);
 				if (nodes == null || nodes.isEmpty()) {
 					// 删除文件节点对应的数据块
-					File block = getFileFormBlocks(n);
-					if (block == null || block.delete()) {
-						// 删除节点信息
-						per = 100;
-						return;
+					if (block != null) {
+						if (recycleBinPath != null) {
+							if (saveToRecycleBin(block, recycleBinPath, n.getFileName(), false)) {
+								per = 100;
+								return;
+							}
+						} else {
+							if (block.delete()) {
+								per = 100;
+								return;
+							}
+						}
 					}
 				} else {
-					per = 100;
-					return;
+					if (block != null) {
+						if (recycleBinPath != null) {
+							if (saveToRecycleBin(block, recycleBinPath, n.getFileName(), true)) {
+								per = 100;
+								return;
+							}
+						} else {
+							per = 100;
+							return;
+						}
+					}
 				}
 			}
 			throw new SQLException();
 		}
+	}
+
+	// 留档功能，应与kohgylw.kiftd.server.util.FileBlockUtil.saveToRecycleBin(File, String,
+	// String, boolean)相同
+	private boolean saveToRecycleBin(File block, String recycleBinPath, String originalName, boolean isCopy)
+			throws IOException {
+		File recycleBinDir = new File(recycleBinPath);
+		if (recycleBinDir.isDirectory()) {
+			// 当留档路径合法时，查找其中是否有当前日期的留档子文件夹
+			File dateDir = new File(recycleBinDir, ServerTimeUtil.accurateToLogName());
+			if (dateDir.isDirectory() || dateDir.mkdir()) {
+				// 如果有，则直接使用，否则创建当前日期的留档子文件夹，之后检查此文件夹内是否有重名留档文件
+				int i = 0;
+				List<String> fileNames = Arrays.asList(dateDir.list());
+				String newName = originalName;
+				while (fileNames.contains(newName)) {
+					i++;
+					if (originalName.indexOf(".") >= 0) {
+						newName = originalName.substring(0, originalName.lastIndexOf(".")) + " (" + i + ")"
+								+ originalName.substring(originalName.lastIndexOf("."));
+					} else {
+						newName = originalName + " (" + i + ")";
+					}
+				}
+				// 在确保不会产生重名文件的前提下，按照移动或拷贝两种方式留档
+				File saveFile = new File(dateDir, newName);
+				if (isCopy) {
+					Files.copy(block.toPath(), saveFile.toPath());
+				} else {
+					Files.move(block.toPath(), saveFile.toPath());
+				}
+				// 如果不抛出任何异常，则操作成功
+				return true;
+			}
+		}
+		return false;
 	}
 
 	// 导出一个文件节点
@@ -968,11 +953,9 @@ public class FileSystemManager {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param pfId
-	 *            java.lang.String 需要统计的文件夹ID
+	 * @param pfId java.lang.String 需要统计的文件夹ID
 	 * @return long 统计数目
-	 * @throws SQLException
-	 *             各种统计失败的原因
+	 * @throws SQLException 各种统计失败的原因
 	 */
 	public long getFilesTotalNumByFoldersId(String pfId) throws SQLException {
 		if (pfId != null) {
@@ -993,11 +976,9 @@ public class FileSystemManager {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param pfId
-	 *            java.lang.String 需要统计的文件夹ID
+	 * @param pfId java.lang.String 需要统计的文件夹ID
 	 * @return long 统计数目
-	 * @throws SQLException
-	 *             各种统计失败的原因
+	 * @throws SQLException 各种统计失败的原因
 	 */
 	public long getFoldersTotalNumByFoldersId(String pfId) throws SQLException {
 		if (pfId != null) {
