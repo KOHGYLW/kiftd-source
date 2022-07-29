@@ -52,8 +52,8 @@ _提示：源代码路径下包含了一些程序运行所需的非源代码资�
 + maven配置文件：/pom.xml
 
 ### 常见问题&解决方案
-+ 更换更高版本的Spring Boot后无法启动项目
-> 如果您需要将kiftd所用的Spring Boot版本替换至更高（尤其是Spring Boot 2.0.4及以上版本），请重写源代码`kohgylw.kiftd.server.configation.MVC`类中的`afterPropertiesSet()`方法，并将其方法体留空。否则可能导致项目启动错误（特别鸣谢：用户 songdragon）。
++ 使用IDEA导入项目后无法以图形界面方式运行
+> 在默认情况下，IDEA可能会自动忽略位于项目源代码路径内的所有非源代码文件，从而导致图形界面需要的某些图标文件无法被识别和打包。如遇此问题，请修改IDEA设置以确保项目源代码路径下的所有文件均能被识别和打包。
 
 + 启动源代码项目时出现“Error creating bean with name org.mybatis.spring.mapper.MapperScannerConfigurer”
 > 如遇该问题，请尝试将pom.xml文件中引入的`mybatis`资源和`mybatis-spring`资源移除并重新添加`mybatis-spring-boot-starter`资源，从而避免默认整合方式可能导致的Spring Boot框架插件兼容性问题（特别鸣谢：用户 michael）。
