@@ -101,7 +101,7 @@ public class ConfigureReader {
 	private boolean ipXFFAnalysis = true;// 是否启用XFF解析
 	private boolean enableFFMPEG = true;// 是否启用视频播放的在线解码功能
 	private boolean enableDownloadByZip = true;// 是否启用“打包下载”功能
-	private boolean enableWebDAV = false;// 是否启用WebDAV功能
+	private boolean enableWebDAV = true;// 是否启用WebDAV功能
 	private String recycleBinPath;// 删除留档路径
 
 	private static final int MAX_EXTENDSTORES_NUM = 255;// 扩展存储区最大数目
@@ -867,7 +867,7 @@ public class ConfigureReader {
 				return INVALID_WEBDAV_SETTING;
 			}
 		} else {
-			enableWebDAV = false;
+			enableWebDAV = true;
 		}
 		// 检查是否设置了删除留档的路径
 		String recycleBinPathProp = this.serverp.getProperty("recyclebin");
