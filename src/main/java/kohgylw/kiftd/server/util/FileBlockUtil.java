@@ -61,7 +61,10 @@ public class FileBlockUtil {
 			try {
 				Iterator<Path> listFiles = Files.newDirectoryStream(f.toPath()).iterator();
 				while (listFiles.hasNext()) {
-					listFiles.next().toFile().delete();
+					File tempFile = listFiles.next().toFile();
+					if(!tempFile.getName().startsWith(".")) {
+						tempFile.delete();
+					}
 				}
 			} catch (IOException e) {
 				lu.writeException(e);
@@ -462,7 +465,7 @@ public class FileBlockUtil {
 					Iterator<Path> blocks = ds.iterator();
 					while (blocks.hasNext()) {
 						File testBlock = blocks.next().toFile();
-						if (testBlock.isFile()) {
+						if (testBlock.isFile() && !testBlock.getName().startsWith(".")) {
 							List<Node> nodes = fm.queryByPath(testBlock.getName());
 							if (nodes == null || nodes.isEmpty()) {
 								testBlock.delete();
