@@ -7,7 +7,7 @@ _当前版本：v1.1.0-RELEASE_
 _kiftd——一款便捷、开源、功能完善的个人&团队&小型团队网盘服务器系统。_
 
 ------
-![主界面展示](https://github.com/KOHGYLW/kiftd-showPicture/blob/master/kiftd-mainpage.png?raw=true)
+[![kiftd-mainpage.png](https://i.postimg.cc/gjyQRFVZ/kiftd-mainpage.png)](https://postimg.cc/dZ15PfSs)
 ------
 
 kiftd能够帮助您快速搭建起一个面向家庭、团队或组织的网盘系统，它操作简单、高效且功能多样。这里是kiftd的源代码资源库，您可以在这里获得kiftd的源代码，并对其进行下载、阅读与重构。
@@ -72,5 +72,5 @@ _提示：源代码路径下包含了一些程序运行所需的非源代码资�
 ### 联系作者？
 如有任何需要（例如对该资源有疑问、意见或建议），请发件联系作者： kohgylw@163.com （青阳龙野），随时恭候您的来信！
 
-青阳龙野@kohgylw by 2022年08月09日
+青阳龙野@kohgylw by 2022年08月22日
 
