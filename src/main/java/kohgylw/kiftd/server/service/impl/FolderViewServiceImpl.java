@@ -151,7 +151,7 @@ public class FolderViewServiceImpl implements FolderViewService {
 		// 设置所有搜索到的文件夹和文件，该方法迭查找：
 		List<Node> ns = new LinkedList<>();
 		List<Folder> fs = new LinkedList<>();
-		sreachFilesAndFolders(fid, keyWorld, account, ns, fs);
+		sreachFilesAndFolders(fid, keyWorld.toUpperCase(), account, ns, fs);
 		sv.setFileList(ns);
 		sv.setFolderList(fs);
 		// 搜索不支持分段加载，所以统计数据直接写入实际查询到的列表大小
@@ -192,10 +192,11 @@ public class FolderViewServiceImpl implements FolderViewService {
 	}
 
 	// 迭代查找所有匹配项，参数分别是：从哪找、找啥、谁要找、添加的前缀是啥（便于分辨不同路径下的同名文件）、找到的文件放哪、找到的文件夹放哪
+	// 注：为了模糊大小写，该方法均按照“大写”匹配关键字。因此应先将关键字转为大写再传入
 	private void sreachFilesAndFolders(String fid, String key, String account, List<Node> ns, List<Folder> fs) {
 		for (Folder f : this.fm.queryByParentId(fid)) {
 			if (ConfigureReader.instance().accessFolder(f, account)) {
-				if (f.getFolderName().indexOf(key) >= 0) {
+				if (f.getFolderName().toUpperCase().indexOf(key) >= 0) {
 					f.setFolderName(f.getFolderName());
 					fs.add(f);
 				}
@@ -203,7 +204,7 @@ public class FolderViewServiceImpl implements FolderViewService {
 			}
 		}
 		for (Node n : this.flm.queryByParentFolderId(fid)) {
-			if (n.getFileName().indexOf(key) >= 0) {
+			if (n.getFileName().toUpperCase().indexOf(key) >= 0) {
 				n.setFileName(n.getFileName());
 				ns.add(n);
 			}
