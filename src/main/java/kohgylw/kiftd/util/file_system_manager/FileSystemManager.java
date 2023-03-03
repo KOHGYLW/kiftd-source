@@ -1,5 +1,7 @@
 package kohgylw.kiftd.util.file_system_manager;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -429,7 +431,7 @@ public class FileSystemManager {
 					Node node = nodes.parallelStream().filter((e) -> e.getFileName().equals(f.getName())).findFirst()
 							.get();// 得到重名节点，删除它
 					deleteFile(node.getFileId());
-					if(selectNodeById(node.getFileId()) != null) {
+					if (selectNodeById(node.getFileId()) != null) {
 						// 测试是否删除成功
 						throw new IOException();
 					}
@@ -924,24 +926,21 @@ public class FileSystemManager {
 
 	private void transferFile(File f, File target) throws Exception {
 		long size = f.length();
-		FileOutputStream fileOutputStream = new FileOutputStream(target);
 		FileInputStream fileInputStream = new FileInputStream(f);
-		FileChannel out = fileOutputStream.getChannel();
-		FileChannel in = fileInputStream.getChannel();
-		ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
+		FileOutputStream fileOutputStream = new FileOutputStream(target);
+		BufferedInputStream in = new BufferedInputStream(fileInputStream);
+		BufferedOutputStream out = new BufferedOutputStream(fileOutputStream);
+		byte[] buffer = new byte[BUFFER_SIZE];
 		int length = 0;
 		long finishLength = 0;
 		while ((length = in.read(buffer)) != -1 && gono) {
-			buffer.flip();
-			out.write(buffer);
-			buffer.clear();
+			out.write(buffer, 0, length);
 			finishLength += length;
 			per = (int) (((double) finishLength / (double) size) * 100);
 		}
 		in.close();
+		out.flush();
 		out.close();
-		fileInputStream.close();
-		fileOutputStream.close();
 		return;
 	}
 
