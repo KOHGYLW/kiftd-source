@@ -889,10 +889,6 @@ function showAccountView(folderView) {
 				} else {
 					$("#stickFilesCount").text("（99+）");
 				}
-				$("#copyFileButtonLi").removeClass("show");
-				$("#copyFileButtonLi").addClass("hidden");
-				$("#cutFileButtonLi").removeClass("show");
-				$("#cutFileButtonLi").addClass("hidden");
 				$("#stickFileButtonLi").removeClass("hidden");
 				$("#stickFileButtonLi").addClass("show");
 			} else {
@@ -999,15 +995,15 @@ function createFileRow(fi, aL, aD, aR, aO) {
 	if (fileSizeToInt == 0) {
 		// 文件体积小于1MB时
 		fileRow = fileRow + "<td>&lt;1MB</td>";
-	} else if(fileSizeToInt < 1000){
+	} else if (fileSizeToInt < 1000) {
 		// 文件体积大于1MB但小于1000MB时
 		fileRow = fileRow + "<td>" + fileSizeToInt + "MB</td>";
-	} else if(fileSizeToInt < 1024000){
+	} else if (fileSizeToInt < 1024000) {
 		// 文件体积大于1000MB但小于1000GB时
-		fileRow = fileRow + "<td>" + (fileSizeToInt/1024).toFixed(2) + "GB</td>";
+		fileRow = fileRow + "<td>" + (fileSizeToInt / 1024).toFixed(2) + "GB</td>";
 	} else {
 		// 文件体积大于1000GB
-		fileRow = fileRow + "<td>" + (fileSizeToInt/1048576).toFixed(2) + "TB</td>";
+		fileRow = fileRow + "<td>" + (fileSizeToInt / 1048576).toFixed(2) + "TB</td>";
 	}
 	fileRow = fileRow + "<td class='hidden-xs'>" + fi.fileCreator + "</td><td>";
 	if (aL) {
@@ -2583,24 +2579,21 @@ function showOriginFolderView() {
 
 // 执行“剪切”操作
 function cutFile() {
-	checkedMovefiles = getCheckedFilesAndFolders();
-	if (checkedMovefiles == undefined || checkedMovefiles.size == 0) {
+	var checkedfiles = getCheckedFilesAndFolders();
+	if (checkedfiles == undefined || checkedfiles.size == 0) {
 		// 如果未选中任何文件，则提示用户要先选
 		$('#moveFilesMessage').html(checkFilesTip);
 		$("#selectFileMoveModelAsAll").removeAttr("checked");
 		$("#selectFileMoveModelAlert").hide();
 		$('#moveFilesModal').modal('show');
 	} else {
-		// 否则，隐藏“剪切”和“复制”按钮，显示“粘贴”按钮
+		// 否则，显示“粘贴”按钮
+		checkedMovefiles = checkedfiles;
 		if (checkedMovefiles.size < 100) {
 			$("#stickFilesCount").text("（" + checkedMovefiles.size + "）");
 		} else {
 			$("#stickFilesCount").text("（99+）");
 		}
-		$("#copyFileButtonLi").removeClass("show");
-		$("#copyFileButtonLi").addClass("hidden");
-		$("#cutFileButtonLi").removeClass("show");
-		$("#cutFileButtonLi").addClass("hidden");
 		$("#stickFileButtonLi").removeClass("hidden");
 		$("#stickFileButtonLi").addClass("show");
 		isCopy = false;
@@ -2609,24 +2602,21 @@ function cutFile() {
 
 // 执行“复制”操作
 function copyFile() {
-	checkedMovefiles = getCheckedFilesAndFolders();
-	if (checkedMovefiles == undefined || checkedMovefiles.size == 0) {
+	var checkedfiles = getCheckedFilesAndFolders();
+	if (checkedfiles == undefined || checkedfiles.size == 0) {
 		// 如果未选中任何文件，则提示用户要先选
 		$('#moveFilesMessage').html(checkFilesTip);
 		$("#selectFileMoveModelAsAll").removeAttr("checked");
 		$("#selectFileMoveModelAlert").hide();
 		$('#moveFilesModal').modal('show');
 	} else {
-		// 否则，隐藏“剪切”和“复制”按钮，显示“粘贴”按钮
+		// 否则，显示“粘贴”按钮
+		checkedMovefiles = checkedfiles;
 		if (checkedMovefiles.size < 100) {
 			$("#stickFilesCount").text("（" + checkedMovefiles.size + "）");
 		} else {
 			$("#stickFilesCount").text("（99+）");
 		}
-		$("#copyFileButtonLi").removeClass("show");
-		$("#copyFileButtonLi").addClass("hidden");
-		$("#cutFileButtonLi").removeClass("show");
-		$("#cutFileButtonLi").addClass("hidden");
 		$("#stickFileButtonLi").removeClass("hidden");
 		$("#stickFileButtonLi").addClass("show");
 		isCopy = true;
