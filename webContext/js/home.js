@@ -333,15 +333,17 @@ $(function() {
 		});
 	// 关闭移动提示框自动取消移动
 	$('#moveFilesModal').on('hidden.bs.modal', function(e) {
-		checkedMovefiles = undefined;
-		$("#copyFileButtonLi").removeClass("hidden");
-		$("#copyFileButtonLi").addClass("show");
-		$("#cutFileButtonLi").removeClass("hidden");
-		$("#cutFileButtonLi").addClass("show");
-		$("#stickFileButtonLi").removeClass("show");
-		$("#stickFileButtonLi").addClass("hidden");
-		$("#stickFilesCount").text("");
-		$('#moveFilesBox').html("");
+		if (checkedMovefiles == undefined || checkedMovefiles.size == 0) {
+			checkedMovefiles = undefined;
+			$("#copyFileButtonLi").removeClass("hidden");
+			$("#copyFileButtonLi").addClass("show");
+			$("#cutFileButtonLi").removeClass("hidden");
+			$("#cutFileButtonLi").addClass("show");
+			$("#stickFileButtonLi").removeClass("show");
+			$("#stickFileButtonLi").addClass("hidden");
+			$("#stickFilesCount").text("");
+			$('#moveFilesBox').html("");
+		}
 	});
 	// IE内核浏览器内的startsWith方法的自实现
 	if (typeof String.prototype.startsWith != 'function') {
@@ -2585,6 +2587,7 @@ function cutFile() {
 		$('#moveFilesMessage').html(checkFilesTip);
 		$("#selectFileMoveModelAsAll").removeAttr("checked");
 		$("#selectFileMoveModelAlert").hide();
+		$("#dmvfbutton").remove();
 		$('#moveFilesModal').modal('show');
 	} else {
 		// 否则，显示“粘贴”按钮
@@ -2608,6 +2611,7 @@ function copyFile() {
 		$('#moveFilesMessage').html(checkFilesTip);
 		$("#selectFileMoveModelAsAll").removeAttr("checked");
 		$("#selectFileMoveModelAlert").hide();
+		$("#dmvfbutton").remove();
 		$('#moveFilesModal').modal('show');
 	} else {
 		// 否则，显示“粘贴”按钮
@@ -2846,7 +2850,9 @@ function sendMoveFilesReq() {
 							$("#cancelMoveFilesBtn").attr('disabled', false);
 							break;
 						case "moveFilesSuccess":
+							checkedMovefiles = undefined;
 							$('#moveFilesModal').modal('hide');
+							$("#cancelMoveFilesBtn").attr('disabled', false);
 							showFolderView(locationpath);
 							break;
 						default:
