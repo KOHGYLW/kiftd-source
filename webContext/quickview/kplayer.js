@@ -97,8 +97,8 @@ function playVideo() {
 			children: ['backwardButton', 'playToggle', 'FastForwardButton', 'volumePanel'
 				, 'currentTimeDisplay', 'timeDivider', 'durationDisplay', 'progressControl'
 				, 'liveDisplay', 'seekToLive', 'remainingTimeDisplay'
-				, 'customControlSpacer', 'playbackRateMenuButton', 'chaptersButton', 'descriptionsButton'
-				, 'subsCapsButton', 'audioTrackButton', 'fullscreenToggle']
+				, 'customControlSpacer', 'chaptersButton', 'descriptionsButton'
+				, 'subsCapsButton', 'audioTrackButton', 'fullscreenToggle', 'playbackRateMenuButton']
 		}
 	});
 
