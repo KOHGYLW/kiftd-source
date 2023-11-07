@@ -76,9 +76,23 @@ function playVideo() {
 			+ f.fileId + "' type='video/mp4'></video>");
 
 	createComponent();//创建快进快退组件
-
+	document.body.addEventListener('keydown',function(e){
+		if (e.keyCode==39){//键盘-> 快进
+			play_fast_next();
+		}else if(e.keyCode==37){//键盘<- 快退
+			play_fast_back();
+		}else if(e.keyCode==32){//键盘 空格
+			var text = document.getElementsByClassName("vjs-play-control")[0].innerText;
+			if(text=='Play'){
+				videoPlayer.play();
+			}else if(text=='Pause'){
+				videoPlayer.pause();
+			}
+		}
+	});
 	var player = videojs('kiftplayer', {
 		preload: 'auto',
+		playbackRates: [0.5, 1, 1.25, 1.5, 2],
 		controlBar: {//控制按钮顺序
 			children: ['backwardButton', 'playToggle', 'FastForwardButton', 'volumePanel'
 				, 'currentTimeDisplay', 'timeDivider', 'durationDisplay', 'progressControl'
@@ -96,6 +110,7 @@ function playVideo() {
 }
 
 //================================增加快进快退按钮相关
+
 function createComponent(){
 	var baseComponent = videojs.getComponent('Component')
 	var FastForwardButton = videojs.extend(baseComponent, {
