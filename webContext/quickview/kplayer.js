@@ -74,13 +74,86 @@ function playVideo() {
 			"<video id='kiftplayer' class='video-js col-md-12' controls preload='auto' height='500'>"
 			+ "<source src='resourceController/getResource/"
 			+ f.fileId + "' type='video/mp4'></video>");
+
+	createComponent();//创建快进快退组件
+
 	var player = videojs('kiftplayer', {
-		preload: 'auto'
+		preload: 'auto',
+		controlBar: {//控制按钮顺序
+			children: ['backwardButton', 'playToggle', 'FastForwardButton', 'volumePanel'
+				, 'currentTimeDisplay', 'timeDivider', 'durationDisplay', 'progressControl'
+				, 'liveDisplay', 'seekToLive', 'remainingTimeDisplay'
+				, 'customControlSpacer', 'playbackRateMenuButton', 'chaptersButton', 'descriptionsButton'
+				, 'subsCapsButton', 'audioTrackButton', 'fullscreenToggle']
+		}
 	});
+
+	videoPlayer = player;
+
 	player.ready(function() {
 		this.play();
 	});
 }
+
+//================================增加快进快退按钮相关
+function createComponent(){
+	var baseComponent = videojs.getComponent('Component')
+	var FastForwardButton = videojs.extend(baseComponent, {
+		constructor: function(player, options) {
+			baseComponent.apply(this, arguments)
+			this.on('click', this.clickfastForward)
+		},
+		createEl: function() {
+			var divObj = videojs.dom.createEl('button', {
+				title: '快进十秒',
+				style:'font-size:2em;width: 2em;',
+				// className: 'vjs-fast-forward-button vjs-control vjs-button',
+				className: 'vjs-icon-next-item vjs-fast-forward-button vjs-control vjs-button',
+				innerHTML: '<span aria-hidden="true" class="vjs-icon-placeholder"></span><span class="vjs-control-text" aria-live="polite">快进</span>'
+			})
+			return divObj
+		},
+		clickfastForward: function() {
+			play_fast_next();
+		}
+	})
+	videojs.registerComponent('FastForwardButton', FastForwardButton);
+
+	var backwardButton = videojs.extend(baseComponent, {
+		constructor: function(player, options) {
+			baseComponent.apply(this, arguments)
+			this.on('click', this.clickBackward)
+		},
+		createEl: function() {
+			var divObj = videojs.dom.createEl('button', {
+				title: '快退十秒',
+				style:'font-size:2em;width: 2em;',
+				className: 'vjs-icon-previous-item vjs-fast-replay-button vjs-control vjs-button',
+				innerHTML: '<span aria-hidden="true" class="vjs-icon-placeholder"></span><span class="vjs-control-text" aria-live="polite">快退</span>'
+			})
+			return divObj
+		},
+		clickBackward: function() {
+			play_fast_back();
+		}
+	})
+	videojs.registerComponent('backwardButton', backwardButton);
+}
+
+// 快进快退触发事件
+/* 控制播放器快进10秒 */
+var videoPlayer;
+function play_fast_next() {
+	videoPlayer.currentTime(videoPlayer.currentTime()+10);
+}
+
+
+/* 控制播放器后退10秒 */
+
+function play_fast_back() {
+	videoPlayer.currentTime(videoPlayer.currentTime()-10);
+}
+//================================
 
 // 关闭当前窗口并释放播放器
 function reMainPage() {
