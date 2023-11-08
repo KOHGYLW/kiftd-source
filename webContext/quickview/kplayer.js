@@ -98,7 +98,7 @@ function playVideo() {
 				, 'currentTimeDisplay', 'timeDivider', 'durationDisplay', 'progressControl'
 				, 'liveDisplay', 'seekToLive', 'remainingTimeDisplay'
 				, 'customControlSpacer', 'chaptersButton', 'descriptionsButton'
-				, 'subsCapsButton', 'audioTrackButton', 'fullscreenToggle', 'playbackRateMenuButton']
+				, 'subsCapsButton', 'audioTrackButton', 'fullscreenToggle', 'theaterModeButton', 'playbackRateMenuButton']
 		}
 	});
 	player.landscapeFullscreen();//手机端全屏时自动横屏
@@ -153,6 +153,26 @@ function createComponent(){
 		}
 	})
 	videojs.registerComponent('backwardButton', backwardButton);
+
+	var theaterModeButton = videojs.extend(baseComponent, {
+		constructor: function(player, options) {
+			baseComponent.apply(this, arguments)
+			this.on('click', this.clickTheaterMode)
+		},
+		createEl: function() {
+			var divObj = videojs.dom.createEl('button', {
+				title: '网页全屏',
+				style:'font-size:1.63em;width: 1em;',
+				className: 'vjs-icon-square vjs-control vjs-button theater-mode',
+				innerHTML: '<span aria-hidden="true" class="vjs-icon-placeholder"></span><span class="vjs-control-text" aria-live="polite">网页全屏</span>'
+			})
+			return divObj
+		},
+		clickTheaterMode: function() {
+			play_theaterMode();
+		}
+	})
+	videojs.registerComponent('theaterModeButton', theaterModeButton);
 }
 
 // 快进快退触发事件
@@ -167,6 +187,36 @@ function play_fast_next() {
 
 function play_fast_back() {
 	videoPlayer.currentTime(videoPlayer.currentTime()-5);
+}
+var isTheaterMode = false;
+function play_theaterMode() {
+	var videoWidth = videoPlayer.videoWidth();
+	var videoHeight = videoPlayer.videoHeight();
+	var bodyH = document.body.clientHeight;
+	var bodyW = document.body.clientWidth;
+	if(isTheaterMode){//退出网页全屏
+		document.getElementById("kiftplayer").style.width = 1110+"px"
+		document.getElementById("kiftplayer").style.height = 500+"px";
+		document.getElementsByClassName("container")[0].style.marginLeft = "auto";
+		document.getElementsByClassName("container")[0].style.marginRight = "auto";
+		document.getElementsByClassName("container")[0].style.paddingLeft = "15px";
+		document.getElementsByClassName("container")[0].style.paddingRight = "15px";
+		document.body.style.backgroundColor = "#FFFFFF";
+		document.body.style.overflowX = "auto";
+		window.scrollTo(0,0);
+		isTheaterMode = false;
+	}else{
+		document.getElementById("kiftplayer").style.width = (bodyW-35)+"px";
+		document.getElementById("kiftplayer").style.height = (bodyH-5)+"px";
+		document.getElementsByClassName("container")[0].style.marginLeft = "0px";
+		document.getElementsByClassName("container")[0].style.marginRight = "0px";
+		document.getElementsByClassName("container")[0].style.paddingLeft = "0px";
+		document.getElementsByClassName("container")[0].style.paddingRight = "0px";
+		document.body.style.backgroundColor = "#000";
+		document.body.style.overflowX = "hidden";
+		window.scrollTo(document.body.scrollWidth,document.body.scrollHeight);
+		isTheaterMode = true;
+	}
 }
 //================================
 
