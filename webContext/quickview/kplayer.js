@@ -159,14 +159,14 @@ function createComponent(){
 /* 控制播放器快进10秒 */
 var videoPlayer;
 function play_fast_next() {
-	videoPlayer.currentTime(videoPlayer.currentTime()+10);
+	videoPlayer.currentTime(videoPlayer.currentTime()+5);
 }
 
 
 /* 控制播放器后退10秒 */
 
 function play_fast_back() {
-	videoPlayer.currentTime(videoPlayer.currentTime()-10);
+	videoPlayer.currentTime(videoPlayer.currentTime()-5);
 }
 //================================
 
