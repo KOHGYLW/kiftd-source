@@ -101,7 +101,7 @@ function playVideo() {
 				, 'subsCapsButton', 'audioTrackButton', 'fullscreenToggle', 'playbackRateMenuButton']
 		}
 	});
-
+	player.landscapeFullscreen();//手机端全屏时自动横屏
 	videoPlayer = player;
 
 	player.ready(function() {
