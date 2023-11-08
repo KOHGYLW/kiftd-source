@@ -106,6 +106,9 @@ function playVideo() {
 
 	player.ready(function() {
 		this.play();
+		this.on('fullscreenchange', function () {//点击全屏按钮则自动退出网页全屏
+			play_theaterMode(false);
+		});
 	});
 }
 
@@ -189,12 +192,15 @@ function play_fast_back() {
 	videoPlayer.currentTime(videoPlayer.currentTime()-5);
 }
 var isTheaterMode = false;
-function play_theaterMode() {
+function play_theaterMode(flag) {
 	var videoWidth = videoPlayer.videoWidth();
 	var videoHeight = videoPlayer.videoHeight();
 	var bodyH = document.body.clientHeight;
 	var bodyW = document.body.clientWidth;
-	if(isTheaterMode){//退出网页全屏
+	if(flag === undefined){
+		flag = !isTheaterMode;
+	}
+	if(isTheaterMode||(!flag)){//退出网页全屏
 		document.getElementById("kiftplayer").style.width = 1110+"px"
 		document.getElementById("kiftplayer").style.height = 500+"px";
 		document.getElementsByClassName("container")[0].style.marginLeft = "auto";
@@ -202,7 +208,7 @@ function play_theaterMode() {
 		document.getElementsByClassName("container")[0].style.paddingLeft = "15px";
 		document.getElementsByClassName("container")[0].style.paddingRight = "15px";
 		document.body.style.backgroundColor = "#FFFFFF";
-		document.body.style.overflowX = "auto";
+		document.body.style.overflow = "auto";
 		window.scrollTo(0,0);
 		isTheaterMode = false;
 	}else{
@@ -213,7 +219,7 @@ function play_theaterMode() {
 		document.getElementsByClassName("container")[0].style.paddingLeft = "0px";
 		document.getElementsByClassName("container")[0].style.paddingRight = "0px";
 		document.body.style.backgroundColor = "#000";
-		document.body.style.overflowX = "hidden";
+		document.body.style.overflow = "hidden";
 		window.scrollTo(document.body.scrollWidth,document.body.scrollHeight);
 		isTheaterMode = true;
 	}
