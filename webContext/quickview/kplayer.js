@@ -74,13 +74,157 @@ function playVideo() {
 			"<video id='kiftplayer' class='video-js col-md-12' controls preload='auto' height='500'>"
 			+ "<source src='resourceController/getResource/"
 			+ f.fileId + "' type='video/mp4'></video>");
-	var player = videojs('kiftplayer', {
-		preload: 'auto'
+
+	createComponent();//创建快进快退组件
+	document.body.addEventListener('keydown',function(e){
+		if (e.keyCode==39){//键盘-> 快进
+			play_fast_next();
+		}else if(e.keyCode==37){//键盘<- 快退
+			play_fast_back();
+		}else if(e.keyCode==32){//键盘 空格
+			var text = document.getElementsByClassName("vjs-play-control")[0].innerText;
+			if(text=='Play'){
+				videoPlayer.play();
+			}else if(text=='Pause'){
+				videoPlayer.pause();
+			}
+		}
 	});
+	var player = videojs('kiftplayer', {
+		preload: 'auto',
+		playbackRates: [0.5, 1, 1.25, 1.5, 2],
+		controlBar: {//控制按钮顺序
+			children: ['backwardButton', 'playToggle', 'FastForwardButton', 'volumePanel'
+				, 'currentTimeDisplay', 'timeDivider', 'durationDisplay', 'progressControl'
+				, 'liveDisplay', 'seekToLive', 'remainingTimeDisplay'
+				, 'customControlSpacer', 'chaptersButton', 'descriptionsButton'
+				, 'subsCapsButton', 'audioTrackButton', 'fullscreenToggle', 'theaterModeButton', 'playbackRateMenuButton']
+		}
+	});
+	// player.landscapeFullscreen();//手机端全屏时自动横屏
+	videoPlayer = player;
+
 	player.ready(function() {
 		this.play();
+		this.on('fullscreenchange', function () {//点击全屏按钮则自动退出网页全屏
+			play_theaterMode(false);
+		});
 	});
 }
+
+//================================增加快进快退按钮相关
+
+function createComponent(){
+	var baseComponent = videojs.getComponent('Component')
+	var FastForwardButton = videojs.extend(baseComponent, {
+		constructor: function(player, options) {
+			baseComponent.apply(this, arguments)
+			this.on('click', this.clickfastForward)
+		},
+		createEl: function() {
+			var divObj = videojs.dom.createEl('button', {
+				title: '快进十秒',
+				style:'font-size:2em;width: 2em;',
+				// className: 'vjs-fast-forward-button vjs-control vjs-button',
+				className: 'vjs-icon-next-item vjs-fast-forward-button vjs-control vjs-button',
+				innerHTML: '<span aria-hidden="true" class="vjs-icon-placeholder"></span><span class="vjs-control-text" aria-live="polite">快进</span>'
+			})
+			return divObj
+		},
+		clickfastForward: function() {
+			play_fast_next();
+		}
+	})
+	videojs.registerComponent('FastForwardButton', FastForwardButton);
+
+	var backwardButton = videojs.extend(baseComponent, {
+		constructor: function(player, options) {
+			baseComponent.apply(this, arguments)
+			this.on('click', this.clickBackward)
+		},
+		createEl: function() {
+			var divObj = videojs.dom.createEl('button', {
+				title: '快退十秒',
+				style:'font-size:2em;width: 2em;',
+				className: 'vjs-icon-previous-item vjs-fast-replay-button vjs-control vjs-button',
+				innerHTML: '<span aria-hidden="true" class="vjs-icon-placeholder"></span><span class="vjs-control-text" aria-live="polite">快退</span>'
+			})
+			return divObj
+		},
+		clickBackward: function() {
+			play_fast_back();
+		}
+	})
+	videojs.registerComponent('backwardButton', backwardButton);
+
+	var theaterModeButton = videojs.extend(baseComponent, {
+		constructor: function(player, options) {
+			baseComponent.apply(this, arguments)
+			this.on('click', this.clickTheaterMode)
+		},
+		createEl: function() {
+			var divObj = videojs.dom.createEl('button', {
+				title: '网页全屏',
+				style:'font-size:1.63em;width: 1em;',
+				className: 'vjs-icon-square vjs-control vjs-button theater-mode',
+				innerHTML: '<span aria-hidden="true" class="vjs-icon-placeholder"></span><span class="vjs-control-text" aria-live="polite">网页全屏</span>'
+			})
+			return divObj
+		},
+		clickTheaterMode: function() {
+			play_theaterMode();
+		}
+	})
+	videojs.registerComponent('theaterModeButton', theaterModeButton);
+}
+
+// 快进快退触发事件
+/* 控制播放器快进10秒 */
+var videoPlayer;
+function play_fast_next() {
+	videoPlayer.currentTime(videoPlayer.currentTime()+5);
+}
+
+
+/* 控制播放器后退10秒 */
+
+function play_fast_back() {
+	videoPlayer.currentTime(videoPlayer.currentTime()-5);
+}
+var isTheaterMode = false;
+function play_theaterMode(flag) {
+	var videoWidth = videoPlayer.videoWidth();
+	var videoHeight = videoPlayer.videoHeight();
+	var bodyH = document.body.clientHeight;
+	var bodyW = document.body.clientWidth;
+	if(flag === undefined){
+		flag = !isTheaterMode;
+	}
+	if(isTheaterMode||(!flag)){//退出网页全屏
+		document.getElementById("kiftplayer").style.width = 1110+"px"
+		document.getElementById("kiftplayer").style.height = 500+"px";
+		document.getElementsByClassName("container")[0].style.marginLeft = "auto";
+		document.getElementsByClassName("container")[0].style.marginRight = "auto";
+		document.getElementsByClassName("container")[0].style.paddingLeft = "15px";
+		document.getElementsByClassName("container")[0].style.paddingRight = "15px";
+		document.body.style.backgroundColor = "#FFFFFF";
+		document.body.style.overflow = "auto";
+		window.scrollTo(0,0);
+		isTheaterMode = false;
+	}else{
+		document.getElementById("kiftplayer").style.width = (bodyW-35)+"px";
+		document.getElementById("kiftplayer").style.height = (bodyH-5)+"px";
+		document.getElementsByClassName("container")[0].style.marginLeft = "0px";
+		document.getElementsByClassName("container")[0].style.marginRight = "0px";
+		document.getElementsByClassName("container")[0].style.paddingLeft = "0px";
+		document.getElementsByClassName("container")[0].style.paddingRight = "0px";
+		document.body.style.backgroundColor = "#000";
+		document.body.style.overflow = "hidden";
+		window.scrollTo(document.body.scrollWidth,document.body.scrollHeight);
+		isTheaterMode = true;
+	}
+}
+//================================
 
 // 关闭当前窗口并释放播放器
 function reMainPage() {
