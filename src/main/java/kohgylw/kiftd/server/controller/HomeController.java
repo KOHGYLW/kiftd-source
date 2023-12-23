@@ -2,9 +2,11 @@ package kohgylw.kiftd.server.controller;
 
 import org.springframework.stereotype.*;
 import javax.annotation.*;
+
 import kohgylw.kiftd.server.service.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.*;
+
 import javax.servlet.http.*;
 
 /**
@@ -77,7 +79,7 @@ public class HomeController {
 	public String getFolderView(final String fid, final HttpSession session, final HttpServletRequest request) {
 		return fvs.getFolderViewToJson(fid, session, request);
 	}
-	
+
 	@RequestMapping(value = { "/getRemainingFolderView.ajax" }, produces = { CHARSET_BY_AJAX })
 	@ResponseBody
 	public String getRemainingFolderView(final HttpServletRequest request) {
@@ -180,8 +182,7 @@ public class HomeController {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param request
-	 *            HttpServletRequest 请求对象
+	 * @param request HttpServletRequest 请求对象
 	 * @return String 预览图片的JSON信息
 	 */
 	@RequestMapping(value = { "/getPrePicture.ajax" }, produces = { CHARSET_BY_AJAX })
@@ -198,10 +199,8 @@ public class HomeController {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param request
-	 *            HttpServletRequest 请求对象，其中应包含fileId指定预览图片的文件块ID。
-	 * @param response
-	 *            HttpServletResponse 响应对象，用于写出压缩后的数据流。
+	 * @param request  HttpServletRequest 请求对象，其中应包含fileId指定预览图片的文件块ID。
+	 * @param response HttpServletResponse 响应对象，用于写出压缩后的数据流。
 	 */
 	@RequestMapping({ "/showCondensedPicture.do" })
 	public void showCondensedPicture(final HttpServletRequest request, final HttpServletResponse response) {
@@ -237,11 +236,14 @@ public class HomeController {
 	public String playAudios(final HttpServletRequest request) {
 		return this.pas.getAudioInfoListByJson(request);
 	}
-	
+
 	/**
 	 * 
 	 * <h2>移动文件操作前置确认</h2>
-	 * <p>该逻辑用于在执行移动或复制前确认目标文件夹是否合法以及是否会产生文件名冲突。</p>
+	 * <p>
+	 * 该逻辑用于在执行移动或复制前确认目标文件夹是否合法以及是否会产生文件名冲突。
+	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
 	 * @param request javax.servlet.http.HttpServletRequest 请求对象
 	 * @return java.lang.String 判断结果，详情请见具体实现
@@ -251,11 +253,14 @@ public class HomeController {
 	public String confirmMoveFiles(final HttpServletRequest request) {
 		return fis.confirmMoveFiles(request);
 	}
-	
+
 	/**
 	 * 
 	 * <h2>执行移动文件操作</h2>
-	 * <p>该逻辑用于正式执行移动或复制操作，在调用之前应先执行判断操作。</p>
+	 * <p>
+	 * 该逻辑用于正式执行移动或复制操作，在调用之前应先执行判断操作。
+	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
 	 * @param request javax.servlet.http.HttpServletRequest 请求对象
 	 * @return java.lang.String 执行结果，详情请见具体实现
@@ -265,11 +270,14 @@ public class HomeController {
 	public String moveCheckedFiles(final HttpServletRequest request) {
 		return fis.doMoveFiles(request);
 	}
-	
+
 	/**
 	 * 
 	 * <h2>执行全局查询</h2>
-	 * <p>该逻辑用于进行全局搜索，将会迭代搜索目标文件夹及其全部子文件夹以查找符合关键字的结果，并返回单独的搜索结果视图。</p>
+	 * <p>
+	 * 该逻辑用于进行全局搜索，将会迭代搜索目标文件夹及其全部子文件夹以查找符合关键字的结果，并返回单独的搜索结果视图。
+	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
 	 * @param request javax.servlet.http.HttpServletRequest 请求对象
 	 * @return java.lang.String 搜索结果，详情请见具体实现
@@ -315,5 +323,12 @@ public class HomeController {
 	@ResponseBody
 	public String getFileChainKey(final HttpServletRequest request) {
 		return fcs.getChainKeyByFid(request);
+	}
+
+	// 对指定文件夹的内容进行统计
+	@RequestMapping(value = { "/countFolderContent.ajax" }, produces = { CHARSET_BY_AJAX })
+	@ResponseBody
+	public String countFolderContent(final HttpServletRequest request) {
+		return fs.getFolderCountResult(request);
 	}
 }

@@ -457,8 +457,7 @@ public class FileSystemManager {
 			node.setFileParentFolder(folderId);
 			node.setFileCreationDate(ServerTimeUtil.accurateToDay());
 			node.setFileCreator("SYS_IN");
-			int mb = (int) (size / 1024L / 1024L);
-			node.setFileSize(mb + "");
+			node.setFileSize(Long.toString(size));
 			// 保存文件块并写入新节点
 			File block = saveToFileBlocks(f);
 			if (block == null) {

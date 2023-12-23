@@ -66,6 +66,8 @@ public class KiftdCtl {
 					Printer.instance.print("服务器引擎已启动。");
 					return KiftdCtl.run;
 				} catch (Exception e) {
+					Printer.instance.print(e.toString());
+					Printer.instance.print("出现错误，服务器引擎启动失败。");
 					return false;
 				}
 			}

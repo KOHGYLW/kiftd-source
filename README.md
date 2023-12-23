@@ -1,7 +1,7 @@
 ## 欢迎访问kiftd源代码资源库！
 ### Welcome to visit source of kiftd!
 
-_当前版本：v1.1.1-RELEASE_
+_当前版本：v1.2.0-SNAPSHOT_
 
 ### 简介
 _kiftd——一款便捷、开源、功能完善的个人&团队&小型团队网盘服务器系统。_
@@ -18,7 +18,7 @@ kiftd能够帮助您快速搭建起一个面向家庭、团队或组织的网盘
 
 ### 构建说明
 _下列条目为kiftd开发环境的基本信息，如需对源代码进行查看及编译，推荐使用所列配置。_
-+ JDK版本：1.8.0_131
++ JDK版本：1.8.0
 + 项目管理框架：Maven（m2e 1.8.0 for Eclipse）,Archetype：mavem-archetype-quickstart 1.1。
 + 编码格式：UTF-8
 + 项目资源及配置：Spring Boot+MyBatis+H2 DB，详见pom.xml文档。
@@ -72,5 +72,5 @@ _提示：源代码路径下包含了一些程序运行所需的非源代码资�
 ### 联系作者？
 如有任何需要（例如对该资源有疑问、意见或建议），请发件联系作者： kohgylw@163.com （青阳龙野），随时恭候您的来信！
 
-青阳龙野@kohgylw by 2023年09月13日
+青阳龙野@kohgylw by 2023年12月23日
 

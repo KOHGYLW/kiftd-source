@@ -47,43 +47,36 @@ public class UIRunner {
 
 			@Override
 			public int getPropertiesStatus() {
-				// TODO 自动生成的方法存根
 				return ConfigureReader.instance().getPropertiesStatus();
 			}
 
 			@Override
 			public int getPort() {
-				// TODO 自动生成的方法存根
 				return ConfigureReader.instance().getPort();
 			}
 
 			@Override
 			public boolean getMustLogin() {
-				// TODO 自动生成的方法存根
 				return ConfigureReader.instance().mustLogin();
 			}
 
 			@Override
 			public LogLevel getLogLevel() {
-				// TODO 自动生成的方法存根
 				return ConfigureReader.instance().getLogLevel();
 			}
 
 			@Override
 			public String getFileSystemPath() {
-				// TODO 自动生成的方法存根
 				return ConfigureReader.instance().getFileSystemPath();
 			}
 
 			@Override
 			public int getBufferSize() {
-				// TODO 自动生成的方法存根
 				return ConfigureReader.instance().getBuffSize();
 			}
 
 			@Override
 			public VCLevel getVCLevel() {
-				// TODO 自动生成的方法存根
 				return ConfigureReader.instance().getVCLevel();
 			}
 
@@ -103,49 +96,41 @@ public class UIRunner {
 
 			@Override
 			public LogLevel getInitLogLevel() {
-				// TODO 自动生成的方法存根
 				return ConfigureReader.instance().getInitLogLevel();
 			}
 
 			@Override
 			public VCLevel getInitVCLevel() {
-				// TODO 自动生成的方法存根
 				return ConfigureReader.instance().getInitVCLevel();
 			}
 
 			@Override
 			public String getInitFileSystemPath() {
-				// TODO 自动生成的方法存根
 				return ConfigureReader.instance().getInitFileSystemPath();
 			}
 
 			@Override
 			public String getInitProt() {
-				// TODO 自动生成的方法存根
 				return ConfigureReader.instance().getInitPort();
 			}
 
 			@Override
 			public String getInitBufferSize() {
-				// TODO 自动生成的方法存根
 				return ConfigureReader.instance().getInitBuffSize();
 			}
 
 			@Override
 			public boolean isAllowChangePassword() {
-				// TODO 自动生成的方法存根
 				return ConfigureReader.instance().isAllowChangePassword();
 			}
 
 			@Override
 			public boolean isOpenFileChain() {
-				// TODO 自动生成的方法存根
 				return ConfigureReader.instance().isOpenFileChain();
 			}
 
 			@Override
 			public int getMaxExtendStoresNum() {
-				// TODO 自动生成的方法存根
 				return ConfigureReader.instance().getMaxExtendstoresNum();
 			}
 		});
@@ -153,7 +138,6 @@ public class UIRunner {
 
 			@Override
 			public boolean update(ServerSetting s) {
-				// TODO 自动生成的方法存根
 				return ConfigureReader.instance().doUpdate(s);
 			}
 		});

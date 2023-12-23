@@ -12,6 +12,7 @@ import kohgylw.kiftd.server.enumeration.*;
 import kohgylw.kiftd.server.listener.ServerInitListener;
 import kohgylw.kiftd.server.model.*;
 import kohgylw.kiftd.server.pojo.CreateNewFolderByNameRespons;
+import kohgylw.kiftd.server.pojo.FolderCountResult;
 import kohgylw.kiftd.server.util.*;
 
 import java.nio.charset.Charset;
@@ -336,6 +337,44 @@ public class FolderServiceImpl implements FolderService {
 		}
 		cnfbnr.setResult("error");
 		return gson.toJson(cnfbnr);
+	}
+
+	@Override
+	public String getFolderCountResult(HttpServletRequest request) {
+		// 例行检查
+		final String folderId = request.getParameter("folderId");
+		if (folderId == null || folderId.length() == 0) {
+			return "ERROR";
+		}
+		Folder vf = this.fm.queryById(folderId);
+		final String account = (String) request.getSession().getAttribute("ACCOUNT");
+		if (!ConfigureReader.instance().accessFolder(vf, account)) {
+			return "ERROR";
+		}
+		FolderCountResult fcr = new FolderCountResult();
+		countFoldersIterator(folderId, account, fcr);
+		return gson.toJson(fcr);
+	}
+
+	// 迭代统计文件夹内容
+	private void countFoldersIterator(String fid, String account, FolderCountResult fcr) {
+		// 迭代统计可访问的文件夹数量
+		long folderSize = 0L;
+		for (Folder f : this.fm.queryByParentId(fid)) {
+			if (ConfigureReader.instance().accessFolder(f, account)) {
+				folderSize++;
+				countFoldersIterator(f.getFolderId(), account, fcr);
+			}
+		}
+		fcr.setFolderNum(fcr.getFolderNum() + folderSize);
+		// 统计文件数量及其总体积
+		List<Node> nodes = this.nm.queryByParentFolderId(fid);
+		fcr.setFileNum(fcr.getFileNum() + nodes.size());
+		long fileSize = 0L;
+		for (Node n : nodes) {
+			fileSize += Long.parseLong(n.getFileSize());
+		}
+		fcr.setTotalSize(fcr.getTotalSize() + fileSize);
 	}
 
 }

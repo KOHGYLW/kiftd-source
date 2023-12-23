@@ -55,8 +55,7 @@ public class ConsoleRunner {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param args
-	 *            java.lang.String[] 启动参数
+	 * @param args java.lang.String[] 启动参数
 	 * @return kohgylw.kiftd.mc.ConsoleRunner 本启动器唯一实例
 	 */
 	public static ConsoleRunner build(final String[] args) {
@@ -222,6 +221,7 @@ public class ConsoleRunner {
 					}
 				}
 			} catch (Exception e) {
+				Printer.instance.print(e.toString());
 				Printer.instance.print("错误：读取命令时出现意外导致程序退出，请重启kiftd。");
 			}
 		});

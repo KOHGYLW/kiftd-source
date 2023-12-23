@@ -62,7 +62,7 @@ public class FileBlockUtil {
 				Iterator<Path> listFiles = Files.newDirectoryStream(f.toPath()).iterator();
 				while (listFiles.hasNext()) {
 					File tempFile = listFiles.next().toFile();
-					if(!tempFile.getName().startsWith(".")) {
+					if (!tempFile.getName().startsWith(".")) {
 						tempFile.delete();
 					}
 				}
@@ -272,18 +272,17 @@ public class FileBlockUtil {
 
 	/**
 	 * 
-	 * <h2>计算上传文件的体积</h2>
+	 * <h2>生成上传文件的体积标识</h2>
 	 * <p>
-	 * 该方法用于将上传文件的体积换算以MB表示，以便存入文件系统。
+	 * 该方法用于将上传文件的体积转换为以B为单位的字符串标识，以便存入文件系统。
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param size 文件的体积，以Byte为单位
-	 * @return java.lang.String 计算出来的体积，以MB为单位
+	 * @param size 文件的体积，以Byte为单位，例如“1024”
+	 * @return java.lang.String 以B为单位的字符串标识，例如“1024”
 	 */
 	public String getFileSize(final long size) {
-		final int mb = (int) (size / 1048576L);
-		return "" + mb;
+		return Long.toString(size);
 	}
 
 	/**
@@ -488,6 +487,14 @@ public class FileBlockUtil {
 			File block = getFileFromBlocks(node);
 			if (block == null) {
 				fm.deleteById(node.getFileId());
+			} else {
+				// 文件体积校对
+				long size = Long.parseLong(node.getFileSize());
+				if (block.length() != size) {
+					// 如果记录的文件体积与实际体积不符，则更正文件体积
+					node.setFileSize(Long.toString(block.length()));
+					fm.update(node);
+				}
 			}
 		}
 		List<Folder> folders = flm.queryByParentId(fid);
