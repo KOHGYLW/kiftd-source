@@ -195,6 +195,9 @@ public class ConfigureReader {
 	 * @return boolean 是否具备该操作的权限，若具备返回true，否则返回false
 	 */
 	public boolean authorized(final String account, final AccountAuth auth, List<String> folders) {
+		if (hasSuperAuth(account)) {
+			return true;// 对于具备超级权限的账户，判定其在任何文件夹内具备任何权限
+		}
 		if (account != null && account.length() > 0) {
 			final StringBuffer auths = new StringBuffer();
 			for (String id : folders) {
@@ -1019,12 +1022,17 @@ public class ConfigureReader {
 		if (f == null) {
 			return false;// 访问不存在的文件夹肯定是没权限
 		}
+		if (hasSuperAuth(account)) {
+			return true;// 如果账户具备超级权限，则可无视访问级别对任意文件夹进行访问
+		}
+		// 否则，根据文件夹访问级别判定该账户是否具备访问权限
 		int cl = f.getFolderConstraint();
 		if (cl == 0) {
-			return true;
+			return true;// 若是“公开的”（0）文件夹，任何账户均可访问
 		} else {
 			if (account != null) {
 				if (cl == 1) {
+					// 若是“仅小组”（1）文件夹，只允许创建者和同组账户访问
 					if (f.getFolderCreator().equals(account)) {
 						return true;
 					}
@@ -1046,12 +1054,13 @@ public class ConfigureReader {
 					}
 				}
 				if (cl == 2) {
+					// 若是“仅创建者”（2）文件夹，只允许创建者访问
 					if (f.getFolderCreator().equals(account)) {
 						return true;
 					}
 				}
 			}
-			return false;
+			return false;// 除了“公开的”文件夹外，匿名账户均无法访问
 		}
 	}
 
@@ -1575,15 +1584,40 @@ public class ConfigureReader {
 	public boolean isEnableWebDAV() {
 		return enableWebDAV;
 	}
-	
+
 	/**
 	 * 
 	 * <h2>获取删除留档路径</h2>
-	 * <p>该方法返回删除留档路径（绝对路径），用以将删除的文件归档至该文件夹内。</p>
+	 * <p>
+	 * 该方法返回删除留档路径（绝对路径），用以将删除的文件归档至该文件夹内。
+	 * </p>
+	 * 
 	 * @author 青阳龙野(kohgylw)
 	 * @return java.lang.String 归档文件夹的绝对路径。如果未启用此功能则返回null
 	 */
 	public String getRecycleBinPath() {
 		return recycleBinPath;
+	}
+
+	/**
+	 * 
+	 * <h2>判断某一账户是否具备超级权限</h2>
+	 * <p>
+	 * 该方法用于判断某一账户是否具备超级权限，该权限在账户配置文件中由“{账户名}.privilege=S”指定。
+	 * </p>
+	 * 
+	 * @param account 要检查的账户名，例如“admin”。
+	 * @author 青阳龙野(kohgylw)
+	 * @version 1.0
+	 * @return boolean 该账户若具备超级权限则返回true，否则返回false。若账户名为null也返回false。
+	 *
+	 */
+	private boolean hasSuperAuth(String account) {
+		if (account != null) {
+			if ("S".equals(accountp.getProperty(account + ".privilege"))) {
+				return true;
+			}
+		}
+		return false;
 	}
 }
