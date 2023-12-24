@@ -489,10 +489,10 @@ public class FileBlockUtil {
 				fm.deleteById(node.getFileId());
 			} else {
 				// 文件体积校对
-				long size = Long.parseLong(node.getFileSize());
-				if (block.length() != size) {
+				String correctSize = getFileSize(block.length());
+				if (!node.getFileSize().equals(correctSize)) {
 					// 如果记录的文件体积与实际体积不符，则更正文件体积
-					node.setFileSize(Long.toString(block.length()));
+					node.setFileSize(correctSize);
 					fm.update(node);
 				}
 			}

@@ -86,31 +86,22 @@ public class ServerUIModule extends KiftdDynamicWindow {
 
 				@Override
 				public void mouseReleased(MouseEvent e) {
-					// TODO 自动生成的方法存根
-
 				}
 
 				@Override
 				public void mousePressed(MouseEvent e) {
-					// TODO 自动生成的方法存根
-
 				}
 
 				@Override
 				public void mouseExited(MouseEvent e) {
-					// TODO 自动生成的方法存根
-
 				}
 
 				@Override
 				public void mouseEntered(MouseEvent e) {
-					// TODO 自动生成的方法存根
-
 				}
 
 				@Override
 				public void mouseClicked(MouseEvent e) {
-					// TODO 自动生成的方法存根
 					if (e.getClickCount() == 2) {
 						show();
 					}
@@ -120,7 +111,6 @@ public class ServerUIModule extends KiftdDynamicWindow {
 
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					// TODO 自动生成的方法存根
 					exit();
 				}
 			});
@@ -132,7 +122,6 @@ public class ServerUIModule extends KiftdDynamicWindow {
 						ServerUIModule.fsv = FSViewer.getInstance();
 						fsv.show();
 					} catch (SQLException e1) {
-						// TODO 自动生成的 catch 块
 						JOptionPane.showMessageDialog(window, "错误：无法打开文件，文件系统可能已损坏，您可以尝试重启应用。", "错误",
 								JOptionPane.ERROR_MESSAGE);
 					}
@@ -145,7 +134,6 @@ public class ServerUIModule extends KiftdDynamicWindow {
 
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					// TODO 自动生成的方法存根
 					show();
 				}
 			});
@@ -214,13 +202,10 @@ public class ServerUIModule extends KiftdDynamicWindow {
 
 			@Override
 			public void removeUpdate(DocumentEvent e) {
-				// TODO 自动生成的方法存根
-
 			}
 
 			@Override
 			public void insertUpdate(DocumentEvent e) {
-				// TODO 自动生成的方法存根
 				Thread t = new Thread(() -> {
 					if (output.getLineCount() >= 1000) {
 						int end = 0;
@@ -237,7 +222,6 @@ public class ServerUIModule extends KiftdDynamicWindow {
 
 			@Override
 			public void changedUpdate(DocumentEvent e) {
-				// TODO 自动生成的方法存根
 				output.selectAll();
 				output.setCaretPosition(output.getSelectedText().length());
 				output.requestFocus();
@@ -257,7 +241,6 @@ public class ServerUIModule extends KiftdDynamicWindow {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				// TODO 自动生成的方法存根
 				start.setEnabled(false);
 				setting.setEnabled(false);
 				fileIOUtil.setEnabled(false);
@@ -321,7 +304,6 @@ public class ServerUIModule extends KiftdDynamicWindow {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				// TODO 自动生成的方法存根
 				stop.setEnabled(false);
 				resatrt.setEnabled(false);
 				fileIOUtil.setEnabled(false);
@@ -352,7 +334,6 @@ public class ServerUIModule extends KiftdDynamicWindow {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				// TODO 自动生成的方法存根
 				fileIOUtil.setEnabled(false);
 				if (filesViewer != null) {
 					filesViewer.setEnabled(false);
@@ -364,7 +345,6 @@ public class ServerUIModule extends KiftdDynamicWindow {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				// TODO 自动生成的方法存根
 				stop.setEnabled(false);
 				resatrt.setEnabled(false);
 				fileIOUtil.setEnabled(false);
@@ -390,7 +370,6 @@ public class ServerUIModule extends KiftdDynamicWindow {
 		ServerUIModule.setting.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				// TODO 自动生成的方法存根
 				ServerUIModule.sw = SettingWindow.getInstance();
 				Thread t = new Thread(() -> {
 					sw.show();
@@ -408,7 +387,6 @@ public class ServerUIModule extends KiftdDynamicWindow {
 					ServerUIModule.fsv = FSViewer.getInstance();
 					fsv.show();
 				} catch (SQLException e1) {
-					// TODO 自动生成的 catch 块
 					Printer.instance.print("错误：无法读取文件，文件系统可能已经损坏，您可以尝试重启应用。");
 				}
 				ServerUIModule.fileIOUtil.setEnabled(true);

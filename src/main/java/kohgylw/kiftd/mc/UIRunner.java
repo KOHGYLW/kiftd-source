@@ -28,7 +28,7 @@ import kohgylw.kiftd.ui.callback.*;
 public class UIRunner {
 
 	private static UIRunner ui;
-	
+
 	// 实例化图形界面并显示它，同时将图形界面的各个操作与服务器控制器对应起来。
 	private UIRunner() throws Exception {
 		Printer.init(true);
@@ -41,7 +41,6 @@ public class UIRunner {
 
 			@Override
 			public boolean getServerStatus() {
-				// TODO 自动生成的方法存根
 				return ctl.started();
 			}
 
@@ -92,7 +91,6 @@ public class UIRunner {
 				}
 				return fsps;
 			}
-
 
 			@Override
 			public LogLevel getInitLogLevel() {
@@ -154,7 +152,7 @@ public class UIRunner {
 	 * 
 	 * @author 青阳龙野(kohgylw)
 	 * @return kohgylw.kiftd.mc.UIRunner 本启动器唯一实例
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	public static UIRunner build() throws Exception {
 		if (UIRunner.ui == null) {
