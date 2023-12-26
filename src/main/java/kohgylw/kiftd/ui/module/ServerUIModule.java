@@ -102,7 +102,7 @@ public class ServerUIModule extends KiftdDynamicWindow {
 
 				@Override
 				public void mouseClicked(MouseEvent e) {
-					if (e.getClickCount() == 2) {
+					if (e.getClickCount() == MouseEvent.BUTTON1) {
 						show();
 					}
 				}
