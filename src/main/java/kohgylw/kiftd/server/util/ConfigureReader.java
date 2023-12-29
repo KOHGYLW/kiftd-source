@@ -107,6 +107,8 @@ public class ConfigureReader {
 	private boolean enableWebDAV = true;// 是否启用WebDAV功能
 	private String recycleBinPath;// 删除留档路径
 
+	private boolean tempDirIsInit = false;
+
 	private static final int MAX_EXTENDSTORES_NUM = 255;// 扩展存储区最大数目
 	private static final String[] SYS_ACCOUNTS = { "SYS_IN", "Anonymous", "匿名用户" };// 一些系统的特殊账户
 
@@ -731,14 +733,19 @@ public class ConfigureReader {
 			return CANT_CREATE_FILE_NODE_PATH;
 		}
 		this.TFPath = this.fileSystemPath + "temporaryfiles" + File.separator;
-		if (!initTempDir()) {
-			Printer.instance.print("错误：无法创建临时文件存放区[" + this.TFPath + "]。");
-			return CANT_CREATE_TF_PATH;
+		if (!tempDirIsInit) {
+			// 如果临时文件夹尚未初始化，则对其进行初始化
+			if (!initTempDir()) {
+				Printer.instance.print("错误：无法创建临时文件存放区[" + this.TFPath + "]。");
+				return CANT_CREATE_TF_PATH;
+			}
+			// 退出程序时自动初始化（清理）临时文件夹
+			Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+				initTempDir();
+			}));
+			// 标识临时文件夹已经初始化，无需再次初始化
+			tempDirIsInit = true;
 		}
-		// 退出程序时自动初始化（清理）临时文件夹
-		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-			initTempDir();
-		}));
 		if ("true".equals(serverp.getProperty("mysql.enable"))) {
 			dbDriver = "com.mysql.cj.jdbc.Driver";
 			String url = serverp.getProperty("mysql.url", "127.0.0.1/kift");

@@ -14,6 +14,7 @@ import java.awt.dnd.DropTargetListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.io.File;
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -197,18 +198,21 @@ public class FSViewer extends KiftdDynamicWindow {
 						fsd.show();
 					});
 					t.start();
-					SwingUtilities.invokeLater(() -> {
-						try {
-							FileSystemManager.getInstance().exportTo(folders, nodes, path, type);
+					try {
+						FileSystemManager.getInstance().exportTo(folders, nodes, path, type);
+						SwingUtilities.invokeLater(() -> {
 							fsd.close();
-						} catch (Exception e1) {
+						});
+					} catch (Exception e1) {
+						SwingUtilities.invokeLater(() -> {
 							fsd.close();
+							Printer.instance.print(e1.toString());
 							JOptionPane.showMessageDialog(window, "导出文件时失败，该操作已被中断，未能全部导出。", "错误",
 									JOptionPane.ERROR_MESSAGE);
-						}
-						refresh();
-						enableAllButtons();
-					});
+						});
+					}
+					refresh();
+					enableAllButtons();
 				});
 			}
 		});
@@ -233,19 +237,22 @@ public class FSViewer extends KiftdDynamicWindow {
 						fsd.show();
 					});
 					t.start();
-					SwingUtilities.invokeLater(() -> {
-						try {
-							FileSystemManager.getInstance().delete(selectedFolders.toArray(new String[0]),
-									selectedNodes.toArray(new String[0]));
+					try {
+						FileSystemManager.getInstance().delete(selectedFolders.toArray(new String[0]),
+								selectedNodes.toArray(new String[0]));
+						SwingUtilities.invokeLater(() -> {
 							fsd.close();
-						} catch (Exception e1) {
+						});
+					} catch (Exception e1) {
+						SwingUtilities.invokeLater(() -> {
 							fsd.close();
+							Printer.instance.print(e1.toString());
 							JOptionPane.showMessageDialog(window, "删除文件时失败，该操作已被中断，未能全部删除。", "错误",
 									JOptionPane.ERROR_MESSAGE);
-						}
-						refresh();
-						enableAllButtons();
-					});
+						});
+					}
+					refresh();
+					enableAllButtons();
 				});
 			} else {
 				enableAllButtons();
@@ -323,26 +330,33 @@ public class FSViewer extends KiftdDynamicWindow {
 											fsd.show();
 										});
 										t.start();
-										SwingUtilities.invokeLater(() -> {
-											try {
-												boolean exportSuccess = FileSystemManager.getInstance().exportTo(
-														new String[0], new String[] { n.getFileId() }, previewDir,
-														null);
+										try {
+											boolean exportSuccess = FileSystemManager.getInstance().exportTo(
+													new String[0], new String[] { n.getFileId() }, previewDir, null);
+											SwingUtilities.invokeLater(() -> {
 												fsd.close();
 												if (exportSuccess) {
 													// 如果导出成功，将此文件设置为“只读”并以系统默认方式打开
 													File pf = new File(previewDir, n.getFileName());
 													if (pf.isFile() && pf.setReadOnly()) {
-														Desktop.getDesktop().open(pf);
+														try {
+															Desktop.getDesktop().open(pf);
+														} catch (IOException e1) {
+															Printer.instance.print(e1.toString());
+															JOptionPane.showMessageDialog(window, "无法预览此文件。", "错误",
+																	JOptionPane.ERROR_MESSAGE);
+														}
 													}
 												}
-											} catch (Exception e1) {
+											});
+										} catch (Exception e1) {
+											SwingUtilities.invokeLater(() -> {
 												fsd.close();
 												Printer.instance.print(e1.toString());
 												JOptionPane.showMessageDialog(window, "导出文件时失败，该操作已被中断，未能全部导出。", "错误",
 														JOptionPane.ERROR_MESSAGE);
-											}
-										});
+											});
+										}
 									}
 								}
 							}
@@ -508,17 +522,16 @@ public class FSViewer extends KiftdDynamicWindow {
 			fsd.show();
 		});
 		t.start();
+		try {
+			FileSystemManager.getInstance().importFrom(files, folderId, type);
+		} catch (FoldersTotalOutOfLimitException e1) {
+			JOptionPane.showMessageDialog(window, "导入失败，该文件夹内的文件夹数目已达上限，无法导入更多文件夹。", "错误", JOptionPane.ERROR_MESSAGE);
+		} catch (FilesTotalOutOfLimitException e2) {
+			JOptionPane.showMessageDialog(window, "导入失败，该文件夹内的文件数目已达上限，无法导入更多文件。", "错误", JOptionPane.ERROR_MESSAGE);
+		} catch (Exception e3) {
+			JOptionPane.showMessageDialog(window, "导入失败，无法完成导入，该操作已被中断。", "错误", JOptionPane.ERROR_MESSAGE);
+		}
 		SwingUtilities.invokeLater(() -> {
-			try {
-				FileSystemManager.getInstance().importFrom(files, folderId, type);
-			} catch (FoldersTotalOutOfLimitException e1) {
-				JOptionPane.showMessageDialog(window, "导入失败，该文件夹内的文件夹数目已达上限，无法导入更多文件夹。", "错误",
-						JOptionPane.ERROR_MESSAGE);
-			} catch (FilesTotalOutOfLimitException e2) {
-				JOptionPane.showMessageDialog(window, "导入失败，该文件夹内的文件数目已达上限，无法导入更多文件。", "错误", JOptionPane.ERROR_MESSAGE);
-			} catch (Exception e3) {
-				JOptionPane.showMessageDialog(window, "导入失败，无法完成导入，该操作已被中断。", "错误", JOptionPane.ERROR_MESSAGE);
-			}
 			fsd.close();
 			refresh();
 		});
