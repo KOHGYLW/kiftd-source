@@ -62,7 +62,6 @@ public class ServerInitListener implements ServletContextListener {
 		if (fspf.isDirectory() && fspf.canRead() && fspf.canWrite()) {
 			fbu = context.getBean(FileBlockUtil.class);
 			fbu.checkFileBlocks();
-			fbu.initTempDir();
 			Printer.instance.print("校对完成。");
 		} else {
 			Printer.instance.print("错误：文件系统节点信息校对失败，存储位置无法读写或不存在。");
@@ -79,11 +78,8 @@ public class ServerInitListener implements ServletContextListener {
 	}
 
 	public void contextDestroyed(final ServletContextEvent sce) {
-		// 1，关闭动态监听
+		// 停止服务器主目录改动的动态监听
 		run = false;
-		// 2，清理临时文件夹
-		Printer.instance.print("清理临时文件...");
-		fbu.initTempDir();
 	}
 
 	private void doWatch() {

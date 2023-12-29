@@ -171,7 +171,7 @@ public class FSViewer extends KiftdDynamicWindow {
 						enableAllButtons();
 						return;
 					}
-					String type = null;
+					final String type;
 					if (exi > 0) {
 						switch (JOptionPane.showConfirmDialog(window,
 								"该路径存在" + exi + "个同名文件或文件夹，您希望覆盖它们么？（“是”覆盖，“否”保留两者，“取消”终止导入）", "导入",
@@ -189,22 +189,26 @@ public class FSViewer extends KiftdDynamicWindow {
 							enableAllButtons();
 							return;
 						}
+					} else {
+						type = null;
 					}
 					FSProgressDialog fsd = FSProgressDialog.getNewInstance();
 					Thread t = new Thread(() -> {
 						fsd.show();
 					});
 					t.start();
-					try {
-						FileSystemManager.getInstance().exportTo(folders, nodes, path, type);
-						fsd.close();
-					} catch (Exception e1) {
-						fsd.close();
-						JOptionPane.showMessageDialog(window, "导出文件时失败，该操作已被中断，未能全部导出。", "错误",
-								JOptionPane.ERROR_MESSAGE);
-					}
-					refresh();
-					enableAllButtons();
+					SwingUtilities.invokeLater(() -> {
+						try {
+							FileSystemManager.getInstance().exportTo(folders, nodes, path, type);
+							fsd.close();
+						} catch (Exception e1) {
+							fsd.close();
+							JOptionPane.showMessageDialog(window, "导出文件时失败，该操作已被中断，未能全部导出。", "错误",
+									JOptionPane.ERROR_MESSAGE);
+						}
+						refresh();
+						enableAllButtons();
+					});
 				});
 			}
 		});
@@ -229,18 +233,19 @@ public class FSViewer extends KiftdDynamicWindow {
 						fsd.show();
 					});
 					t.start();
-					try {
-						FileSystemManager.getInstance().delete(selectedFolders.toArray(new String[0]),
-								selectedNodes.toArray(new String[0]));
-						fsd.close();
-					} catch (Exception e1) {
-						fsd.close();
-						JOptionPane.showMessageDialog(window, "删除文件时失败，该操作已被中断，未能全部删除。", "错误",
-								JOptionPane.ERROR_MESSAGE);
+					SwingUtilities.invokeLater(() -> {
+						try {
+							FileSystemManager.getInstance().delete(selectedFolders.toArray(new String[0]),
+									selectedNodes.toArray(new String[0]));
+							fsd.close();
+						} catch (Exception e1) {
+							fsd.close();
+							JOptionPane.showMessageDialog(window, "删除文件时失败，该操作已被中断，未能全部删除。", "错误",
+									JOptionPane.ERROR_MESSAGE);
+						}
 						refresh();
-					}
-					refresh();
-					enableAllButtons();
+						enableAllButtons();
+					});
 				});
 			} else {
 				enableAllButtons();
@@ -478,7 +483,7 @@ public class FSViewer extends KiftdDynamicWindow {
 			refresh();
 			return;
 		}
-		String type = null;
+		final String type;
 		if (exi > 0) {
 			switch (JOptionPane.showConfirmDialog(window, "该路径存在" + exi + "个同名文件或文件夹，您希望覆盖它们么？（“是”覆盖，“否”保留两者，“取消”终止导入）",
 					"导入", JOptionPane.YES_NO_CANCEL_OPTION)) {
@@ -494,6 +499,8 @@ public class FSViewer extends KiftdDynamicWindow {
 				type = "CANCEL";
 				return;
 			}
+		} else {
+			type = null;
 		}
 		// 打开进度提示会话框
 		FSProgressDialog fsd = FSProgressDialog.getNewInstance();
@@ -501,17 +508,20 @@ public class FSViewer extends KiftdDynamicWindow {
 			fsd.show();
 		});
 		t.start();
-		try {
-			FileSystemManager.getInstance().importFrom(files, folderId, type);
-		} catch (FoldersTotalOutOfLimitException e1) {
-			JOptionPane.showMessageDialog(window, "导入失败，该文件夹内的文件夹数目已达上限，无法导入更多文件夹。", "错误", JOptionPane.ERROR_MESSAGE);
-		} catch (FilesTotalOutOfLimitException e2) {
-			JOptionPane.showMessageDialog(window, "导入失败，该文件夹内的文件数目已达上限，无法导入更多文件。", "错误", JOptionPane.ERROR_MESSAGE);
-		} catch (Exception e3) {
-			JOptionPane.showMessageDialog(window, "导入失败，无法完成导入，该操作已被中断。", "错误", JOptionPane.ERROR_MESSAGE);
-		}
-		fsd.close();
-		refresh();
+		SwingUtilities.invokeLater(() -> {
+			try {
+				FileSystemManager.getInstance().importFrom(files, folderId, type);
+			} catch (FoldersTotalOutOfLimitException e1) {
+				JOptionPane.showMessageDialog(window, "导入失败，该文件夹内的文件夹数目已达上限，无法导入更多文件夹。", "错误",
+						JOptionPane.ERROR_MESSAGE);
+			} catch (FilesTotalOutOfLimitException e2) {
+				JOptionPane.showMessageDialog(window, "导入失败，该文件夹内的文件数目已达上限，无法导入更多文件。", "错误", JOptionPane.ERROR_MESSAGE);
+			} catch (Exception e3) {
+				JOptionPane.showMessageDialog(window, "导入失败，无法完成导入，该操作已被中断。", "错误", JOptionPane.ERROR_MESSAGE);
+			}
+			fsd.close();
+			refresh();
+		});
 	}
 
 	// 锁定全部按钮避免重复操作

@@ -7,7 +7,6 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import javax.swing.JTable;
-import javax.swing.SwingUtilities;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.JTableHeader;
@@ -152,80 +151,72 @@ public class FilesTable extends JTable {
 	}
 
 	public void updateValues(List<Folder> folders, List<Node> files) {
-		Runnable doUpdate = new Runnable() {
-			@Override
-			public void run() {
-				try {
-					setModel(new TableModel() {
-						@Override
-						public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
-						}
-
-						@Override
-						public void removeTableModelListener(TableModelListener l) {
-						}
-
-						@Override
-						public boolean isCellEditable(int rowIndex, int columnIndex) {
-							return false;
-						}
-
-						@Override
-						public Object getValueAt(int rowIndex, int columnIndex) {
-							switch (columnIndex) {
-							case 0:
-								return rowIndex < folders.size() ? "/" + folders.get(rowIndex).getFolderName()
-										: files.get(rowIndex - folders.size()).getFileName();
-							case 1:
-								return rowIndex < folders.size() ? folders.get(rowIndex).getFolderCreationDate()
-										: files.get(rowIndex - folders.size()).getFileCreationDate();
-							case 2:
-								return rowIndex < folders.size() ? "--"
-										: files.get(rowIndex - folders.size()).getFileSize();
-							case 3:
-								return rowIndex < folders.size() ? folders.get(rowIndex).getFolderCreator()
-										: files.get(rowIndex - folders.size()).getFileCreator();
-							default:
-								return "--";
-							}
-						}
-
-						@Override
-						public int getRowCount() {
-							long totalSize = folders.size() + files.size();
-							return totalSize > MAX_LIST_LIMIT ? MAX_LIST_LIMIT : (int) totalSize;
-						}
-
-						@Override
-						public String getColumnName(int columnIndex) {
-							return columns[columnIndex];
-						}
-
-						@Override
-						public int getColumnCount() {
-							return columns.length;
-						}
-
-						@Override
-						public Class<?> getColumnClass(int columnIndex) {
-							return Object.class;
-						}
-
-						@Override
-						public void addTableModelListener(TableModelListener l) {
-						}
-					});
-					setRowFontColor();
-					validate();
-					FilesTable.folders = folders;
-					FilesTable.files = files;
-				} catch (Exception e) {
-					Printer.instance.print(e.toString());
+		try {
+			setModel(new TableModel() {
+				@Override
+				public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
 				}
-			}
-		};
-		// 避免操作过快导致的异常
-		SwingUtilities.invokeLater(doUpdate);
+
+				@Override
+				public void removeTableModelListener(TableModelListener l) {
+				}
+
+				@Override
+				public boolean isCellEditable(int rowIndex, int columnIndex) {
+					return false;
+				}
+
+				@Override
+				public Object getValueAt(int rowIndex, int columnIndex) {
+					switch (columnIndex) {
+					case 0:
+						return rowIndex < folders.size() ? "/" + folders.get(rowIndex).getFolderName()
+								: files.get(rowIndex - folders.size()).getFileName();
+					case 1:
+						return rowIndex < folders.size() ? folders.get(rowIndex).getFolderCreationDate()
+								: files.get(rowIndex - folders.size()).getFileCreationDate();
+					case 2:
+						return rowIndex < folders.size() ? "--" : files.get(rowIndex - folders.size()).getFileSize();
+					case 3:
+						return rowIndex < folders.size() ? folders.get(rowIndex).getFolderCreator()
+								: files.get(rowIndex - folders.size()).getFileCreator();
+					default:
+						return "--";
+					}
+				}
+
+				@Override
+				public int getRowCount() {
+					long totalSize = folders.size() + files.size();
+					return totalSize > MAX_LIST_LIMIT ? MAX_LIST_LIMIT : (int) totalSize;
+				}
+
+				@Override
+				public String getColumnName(int columnIndex) {
+					return columns[columnIndex];
+				}
+
+				@Override
+				public int getColumnCount() {
+					return columns.length;
+				}
+
+				@Override
+				public Class<?> getColumnClass(int columnIndex) {
+					return Object.class;
+				}
+
+				@Override
+				public void addTableModelListener(TableModelListener l) {
+				}
+			});
+			setRowFontColor();
+			validate();
+			FilesTable.folders = folders;
+			FilesTable.files = files;
+		} catch (Exception e) {
+			Printer.instance.print(e.toString());
+		}
 	}
 
 	private void setRowFontColor() {
