@@ -285,20 +285,23 @@ public class FilesTable extends JTable {
 
 	/**
 	 * 
-	 * <h2>获取被双击的文件夹</h2>
+	 * <h2>获取被双击的项目</h2>
 	 * <p>
-	 * 该功能用于进入某一文件夹。如果双击的是文件夹，则返回其对象，否则返回null。
+	 * 该功能用于获取被双击的元素，可能是文件夹，也可能是文件。
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param e java.awt.event.MouseEvent 鼠标事件
-	 * @return kohgylw.kiftd.util.file_system_manager.pojo.Folder 被双击的文件夹
+	 * @param e awt鼠标事件。
+	 * @return Object 被双击的项目，如果是文件夹则返回Folder对象，如果是文件则返回Node对象。如果非双击操作则返回null。
 	 */
-	public Folder getDoubleClickFolder(MouseEvent e) {
+	public Object getDoubleClickItem(MouseEvent e) {
 		if (e.getClickCount() == 2) {
 			int row = rowAtPoint(e.getPoint());
 			if (row >= 0 && row < folders.size()) {
 				return folders.get(row);
+			}
+			if (row >= folders.size() && row < folders.size() + files.size()) {
+				return files.get(row - folders.size());
 			}
 		}
 		return null;

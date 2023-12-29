@@ -1,5 +1,6 @@
 package kohgylw.kiftd.server.util;
 
+import org.apache.commons.io.FileUtils;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.*;
 
@@ -62,8 +63,13 @@ public class FileBlockUtil {
 				Iterator<Path> listFiles = Files.newDirectoryStream(f.toPath()).iterator();
 				while (listFiles.hasNext()) {
 					File tempFile = listFiles.next().toFile();
-					if (!tempFile.getName().startsWith(".")) {
-						tempFile.delete();
+					if (tempFile.isFile()) {
+						if (!tempFile.getName().startsWith(".")) {
+							tempFile.delete();
+						}
+					}
+					if (tempFile.isDirectory()) {
+						FileUtils.deleteDirectory(tempFile);
 					}
 				}
 			} catch (IOException e) {
