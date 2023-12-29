@@ -14,6 +14,7 @@ import java.awt.dnd.DropTargetListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.io.File;
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +27,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JToolBar;
+import javax.swing.SwingUtilities;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
@@ -321,13 +323,20 @@ public class FSViewer extends KiftdDynamicWindow {
 											boolean exportSuccess = FileSystemManager.getInstance().exportTo(
 													new String[0], new String[] { n.getFileId() }, previewDir, null);
 											fsd.close();
-											if (exportSuccess) {
-												// 如果导出成功，将此文件设置为“只读”并以系统默认方式打开
-												File pf = new File(previewDir, n.getFileName());
-												if (pf.isFile() && pf.setReadOnly()) {
-													Desktop.getDesktop().open(pf);
+											SwingUtilities.invokeLater(() -> {
+												// 后续操作需等待进度条关闭后再进行，避免卡死
+												if (exportSuccess) {
+													// 如果导出成功，将此文件设置为“只读”并以系统默认方式打开
+													File pf = new File(previewDir, n.getFileName());
+													if (pf.isFile() && pf.setReadOnly()) {
+														try {
+															Desktop.getDesktop().open(pf);
+														} catch (IOException e1) {
+															Printer.instance.print(e1.toString());
+														}
+													}
 												}
-											}
+											});
 										} catch (Exception e1) {
 											fsd.close();
 											Printer.instance.print(e1.toString());
