@@ -473,7 +473,7 @@ $(function() {
 							// 获取成功，则解析其中的信息并显示
 							var folderCountResult = eval("(" + result + ")");
 							$("#fim_folderSize").text(formatFileSize(folderCountResult.totalSize));
-							$("#fim_statistics_total").html("（内部总计包含" + folderCountResult.folderNum + "个文件夹，" + folderCountResult.fileNum + "个文件）");
+							$("#fim_statistics_total").html("（总计包含" + folderCountResult.folderNum + "个文件夹，" + folderCountResult.fileNum + "个文件）");
 						}
 						// 最后请求完成，清空请求对象
 						folderCountRequest = null;
