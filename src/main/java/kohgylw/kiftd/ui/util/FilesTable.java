@@ -286,7 +286,7 @@ public class FilesTable extends JTable {
 	 * @return Object 被双击的项目，如果是文件夹则返回Folder对象，如果是文件则返回Node对象。如果非双击操作则返回null。
 	 */
 	public Object getDoubleClickItem(MouseEvent e) {
-		if (e.getClickCount() == 2) {
+		if (e.getButton() == MouseEvent.BUTTON1 && e.getClickCount() == 2) {
 			int row = rowAtPoint(e.getPoint());
 			if (row >= 0 && row < folders.size()) {
 				return folders.get(row);
