@@ -2,14 +2,11 @@ package kohgylw.kiftd.server.util;
 
 import java.util.*;
 
-import org.apache.commons.io.FileUtils;
-
 import kohgylw.kiftd.printer.*;
 import kohgylw.kiftd.server.enumeration.*;
 import kohgylw.kiftd.server.model.Folder;
 import kohgylw.kiftd.server.pojo.*;
 import java.io.*;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardWatchEventKinds;
@@ -106,8 +103,6 @@ public class ConfigureReader {
 	private boolean enableDownloadByZip = true;// 是否启用“打包下载”功能
 	private boolean enableWebDAV = true;// 是否启用WebDAV功能
 	private String recycleBinPath;// 删除留档路径
-
-	private boolean tempDirIsInit = false;
 
 	private static final int MAX_EXTENDSTORES_NUM = 255;// 扩展存储区最大数目
 	private static final String[] SYS_ACCOUNTS = { "SYS_IN", "Anonymous", "匿名用户" };// 一些系统的特殊账户
@@ -733,18 +728,10 @@ public class ConfigureReader {
 			return CANT_CREATE_FILE_NODE_PATH;
 		}
 		this.TFPath = this.fileSystemPath + "temporaryfiles" + File.separator;
-		if (!tempDirIsInit) {
-			// 如果临时文件夹尚未初始化，则对其进行初始化
-			if (!initTempDir()) {
-				Printer.instance.print("错误：无法创建临时文件存放区[" + this.TFPath + "]。");
-				return CANT_CREATE_TF_PATH;
-			}
-			// 退出程序时自动初始化（清理）临时文件夹
-			Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-				initTempDir();
-			}));
-			// 标识临时文件夹已经初始化，无需再次初始化
-			tempDirIsInit = true;
+		final File tpFile = new File(TFPath);
+		if (!tpFile.isDirectory() && !tpFile.mkdirs()) {
+			Printer.instance.print("错误：无法创建临时文件存放区[" + this.TFPath + "]。");
+			return CANT_CREATE_TF_PATH;
 		}
 		if ("true".equals(serverp.getProperty("mysql.enable"))) {
 			dbDriver = "com.mysql.cj.jdbc.Driver";
@@ -1633,29 +1620,4 @@ public class ConfigureReader {
 		return false;
 	}
 
-	private boolean initTempDir() {
-		final File f = new File(TFPath);
-		if (f.isDirectory()) {
-			try {
-				Iterator<Path> listFiles = Files.newDirectoryStream(f.toPath()).iterator();
-				while (listFiles.hasNext()) {
-					File tempFile = listFiles.next().toFile();
-					if (tempFile.isFile()) {
-						if (!tempFile.getName().startsWith(".")) {
-							tempFile.delete();
-						}
-					}
-					if (tempFile.isDirectory()) {
-						FileUtils.deleteDirectory(tempFile);
-					}
-				}
-			} catch (IOException e) {
-				Printer.instance.print(e.toString());
-				Printer.instance.print("错误：临时文件夹[" + f.getAbsolutePath() + "]清理失败，您可以在程序退出后手动清理此文件夹。");
-			}
-			return true;
-		} else {
-			return f.mkdir();
-		}
-	}
 }

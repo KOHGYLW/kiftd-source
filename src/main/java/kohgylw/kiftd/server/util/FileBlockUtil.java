@@ -47,6 +47,42 @@ public class FileBlockUtil {
 
 	/**
 	 * 
+	 * <h2>名称</h2>
+	 * <p>
+	 * 详细说明
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @version 1.0
+	 * @return void
+	 *
+	 */
+	public void initTempDir() {
+		final File f = new File(ConfigureReader.instance().getTemporaryfilePath());
+		if (f.isDirectory()) {
+			try {
+				Iterator<Path> listFiles = Files.newDirectoryStream(f.toPath()).iterator();
+				while (listFiles.hasNext()) {
+					File tempFile = listFiles.next().toFile();
+					if (tempFile.isFile()) {
+						if (!tempFile.getName().startsWith(".")) {
+							tempFile.delete();
+						}
+					}
+				}
+			} catch (IOException e) {
+				Printer.instance.print(e.toString());
+				Printer.instance.print("错误：临时文件存放区[" + f.getAbsolutePath() + "]清理失败，您可以在程序退出后手动清理此文件夹。");
+			}
+		} else {
+			if (!f.mkdir()) {
+				Printer.instance.print("错误：无法创建临时文件存放区[" + f.getAbsolutePath() + "]，请退出程序并检查操作系统的权限设置。");
+			}
+		}
+	}
+
+	/**
+	 * 
 	 * <h2>将新上传的文件存入文件系统</h2>
 	 * <p>
 	 * 将一个MultipartFile类型的文件对象存入节点，并返回保存的路径名称。其中，路径名称使用“file_{UUID}.block”

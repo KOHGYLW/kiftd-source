@@ -31,6 +31,8 @@ import javax.swing.SwingUtilities;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
+import org.apache.commons.io.FileUtils;
+
 import kohgylw.kiftd.printer.Printer;
 import kohgylw.kiftd.server.exception.FilesTotalOutOfLimitException;
 import kohgylw.kiftd.server.exception.FoldersTotalOutOfLimitException;
@@ -67,6 +69,8 @@ public class FSViewer extends KiftdDynamicWindow {
 	private static FSViewer fsv;// 该窗口的唯一实例
 	private static FolderView currentView;// 当前显示的视图
 	private static ExecutorService worker;// 操作线程池
+
+	private static String previewDirName = "preview";// 用于预览的文件导出文件夹名，该文件夹将被创建在文件系统目录内
 
 	// 资源加载
 	private FSViewer() throws SQLException {
@@ -317,55 +321,77 @@ public class FSViewer extends KiftdDynamicWindow {
 							if (Desktop.isDesktopSupported()) {
 								// 如果支持本地桌面操作，则继续
 								Node n = (Node) i;
-								String tempDir = ConfigureReader.instance().getTemporaryfilePath();
-								// 为要预留的文件创建一个唯一的文件夹
-								File previewDir = new File(tempDir, "preview_" + n.getFileId());
+								// 为要预览的文件创建一个唯一的文件夹
+								String fsp = ConfigureReader.instance().getFileSystemPath();
+								File previewDir = new File(fsp, previewDirName);
 								if (previewDir.isDirectory() || previewDir.mkdir()) {
-									// 如果有旧文件存留，则先清理
-									File pfOld = new File(previewDir, n.getFileName());
-									if (!pfOld.isFile() || pfOld.delete()) {
-										// 将要预览的文件导出至此文件夹内
-										FSProgressDialog fsd = FSProgressDialog.getNewInstance();
-										Thread t = new Thread(() -> {
-											fsd.show();
-										});
-										t.start();
-										try {
-											boolean exportSuccess = FileSystemManager.getInstance().exportTo(
-													new String[0], new String[] { n.getFileId() }, previewDir, null);
-											SwingUtilities.invokeLater(() -> {
-												fsd.close();
-												if (exportSuccess) {
-													// 如果导出成功，将此文件设置为“只读”并以系统默认方式打开
-													File pf = new File(previewDir, n.getFileName());
-													if (pf.isFile() && pf.setReadOnly()) {
-														try {
-															Desktop.getDesktop().open(pf);
-														} catch (IOException e1) {
-															Printer.instance.print(e1.toString());
-															JOptionPane.showMessageDialog(window, "无法预览此文件。", "错误",
-																	JOptionPane.ERROR_MESSAGE);
+									File previewFileDir = new File(previewDir, n.getFileId());
+									if (previewFileDir.isDirectory() || previewFileDir.mkdir()) {
+										// 如果有旧文件存留，则先清理
+										File pfOld = new File(previewFileDir, n.getFileName());
+										if (!pfOld.isFile() || pfOld.delete()) {
+											// 将要预览的文件导出至此文件夹内
+											FSProgressDialog fsd = FSProgressDialog.getNewInstance();
+											Thread t = new Thread(() -> {
+												fsd.show();
+											});
+											t.start();
+											try {
+												boolean exportSuccess = FileSystemManager.getInstance().exportTo(
+														new String[0], new String[] { n.getFileId() }, previewFileDir,
+														null);
+												SwingUtilities.invokeLater(() -> {
+													fsd.close();
+													if (exportSuccess) {
+														// 如果导出成功，将此文件设置为“只读”并以系统默认方式打开
+														File pf = new File(previewFileDir, n.getFileName());
+														if (pf.isFile() && pf.setReadOnly()) {
+															try {
+																Desktop.getDesktop().open(pf);
+																return;
+															} catch (IOException e1) {
+																Printer.instance.print(e1.toString());
+															}
 														}
+														JOptionPane.showMessageDialog(window, "无法预览此文件。", "错误",
+																JOptionPane.ERROR_MESSAGE);
+													} else {
+														JOptionPane.showMessageDialog(window, "导出预览缓存文件时失败，该操作已被中断。",
+																"错误", JOptionPane.ERROR_MESSAGE);
 													}
-												}
-											});
-										} catch (Exception e1) {
-											SwingUtilities.invokeLater(() -> {
-												fsd.close();
-												Printer.instance.print(e1.toString());
-												JOptionPane.showMessageDialog(window, "导出文件时失败，该操作已被中断，未能全部导出。", "错误",
-														JOptionPane.ERROR_MESSAGE);
-											});
+												});
+											} catch (Exception e1) {
+												SwingUtilities.invokeLater(() -> {
+													fsd.close();
+													Printer.instance.print(e1.toString());
+													JOptionPane.showMessageDialog(window, "导出预览缓存文件时失败，无法预览此文件。", "错误",
+															JOptionPane.ERROR_MESSAGE);
+												});
+											}
+										} else {
+											JOptionPane.showMessageDialog(window, "缓存文件清理失败，无法预览此文件。", "错误",
+													JOptionPane.ERROR_MESSAGE);
 										}
+									} else {
+										JOptionPane.showMessageDialog(window, "预览缓存区创建失败，无法预览此文件。", "错误",
+												JOptionPane.ERROR_MESSAGE);
 									}
+								} else {
+									JOptionPane.showMessageDialog(window, "预览缓存区创建失败，无法预览此文件。", "错误",
+											JOptionPane.ERROR_MESSAGE);
 								}
+							} else {
+								JOptionPane.showMessageDialog(window, "系统不支持快速预览功能，无法预览此文件。", "错误",
+										JOptionPane.ERROR_MESSAGE);
 							}
 						}
+						// 如果双击的不是文件和文件夹，则不进行任何操作
 					}
 					enableAllButtons();
 				});
 			}
 		});
+
 		// 文件列表的拖拽监听
 		DropTargetListener dtl = new DropTargetListener() {
 
@@ -409,6 +435,20 @@ public class FSViewer extends KiftdDynamicWindow {
 		window.setDropTarget(new DropTarget(window, DnDConstants.ACTION_COPY_OR_MOVE, dtl));
 		c.add(mianPane);
 		modifyComponentSize(window);
+
+		// 退出程序时清理预览文件夹
+		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+			String fsp = ConfigureReader.instance().getFileSystemPath();
+			File previewDir = new File(fsp, previewDirName);
+			if (previewDir.isDirectory()) {
+				try {
+					FileUtils.deleteDirectory(previewDir);
+				} catch (IOException e1) {
+					Printer.instance.print(e1.toString());
+					Printer.instance.print("错误：预览缓存区[" + previewDir.getAbsolutePath() + "]清理失败，您可以在程序退出后手动清理此文件夹。");
+				}
+			}
+		}));
 	}
 
 	// 刷新文件列表
