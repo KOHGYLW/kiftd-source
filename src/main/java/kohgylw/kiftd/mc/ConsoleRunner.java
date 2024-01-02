@@ -44,7 +44,7 @@ public class ConsoleRunner {
 		ConsoleRunner.ctl = new KiftdCtl();
 		worker = Executors.newSingleThreadExecutor();
 		ConsoleRunner.commandTips = "kiftd:您可以输入以下指令以控制服务器：\r\n-start 启动服务器\r\n-stop 停止服务器\r\n-exit 停止服务器并退出应用\r\n-restart 重启服务器\r\n-files 文件管理\r\n-status 查看服务器状态\r\n-help 显示帮助文本";
-		ConsoleRunner.fsCommandTips = "kiftd files:您可以输入以下指令进行文件管理：\r\nls 显示当前文件夹内容\r\ncd {“文件夹名称” 或 “--文件夹序号”} 进入指定文件夹（示例：“cd foo” 或 “cd --1”，如需返回上一级请输入“cd ../”）\r\nimport {要导入的本地文件（必须使用完整路径）} 将本地文件或文件夹导入至此\r\nexport {“目标名称” 或 “--目标序号”（省略该项则导出当前文件夹的全部内容）} {要导出至本地的路径（必须使用完整路径）} 将指定文件或文件夹导出本地\r\nrm {“目标名称” 或 “--目标序号”} 删除指定文件或文件夹\r\nexit 退出文件管理并返回kiftd控制台\r\nhelp 显示帮助文本";
+		ConsoleRunner.fsCommandTips = "kiftd files:您可以输入以下指令进行文件管理：\r\nls 显示当前文件夹内容（可使用参数“-l”显示所有项目的详情）\r\ncd {“文件夹名称” 或 “--文件夹序号”} 进入指定文件夹（示例：“cd foo” 或 “cd --1”，如需返回上一级请输入“cd ../”）\r\nimport {要导入的本地文件（必须使用完整路径）} 将本地文件或文件夹导入至此\r\nexport {“目标名称” 或 “--目标序号”（省略该项则导出当前文件夹的全部内容）} {要导出至本地的路径（必须使用完整路径）} 将指定文件或文件夹导出本地\r\nrm {“目标名称” 或 “--目标序号”} 删除指定文件或文件夹\r\nexit 退出文件管理并返回kiftd控制台\r\nhelp 显示帮助文本";
 	}
 
 	/**
@@ -272,11 +272,16 @@ public class ConsoleRunner {
 					doExport(command.substring(7));
 					continue;
 				}
+				if (command.equals("ls")) {
+					showCurrentFolder(false);
+					continue;
+				}
+				if (command.equals("ls -l")) {
+					showCurrentFolder(true);
+					continue;
+				}
 				// 针对一些不带参数指令的操作
 				switch (command) {
-				case "ls":
-					showCurrentFolder();
-					break;
 				case "exit":
 					Printer.instance.print("退出文件管理。");
 					return;
@@ -301,7 +306,7 @@ public class ConsoleRunner {
 	}
 
 	// 打印当前文件夹内容（ls）
-	private void showCurrentFolder() {
+	private void showCurrentFolder(boolean showDetailedInformation) {
 		try {
 			String folderId = currentFolder.getCurrent().getFolderId();
 			if (Math.max(FileSystemManager.getInstance().getFilesTotalNumByFoldersId(folderId),
@@ -316,15 +321,67 @@ public class ConsoleRunner {
 		List<Folder> fls = currentFolder.getFolders();
 		int index = 1;
 		for (Folder f : fls) {
-			System.out.println("--" + index + " [文件夹] " + f);
+			StringBuffer row = new StringBuffer();
+			row.append("--" + index);
+			row.append("\t");
+			row.append("[文件夹]");
+			row.append("\t");
+			row.append(f);
+			if (showDetailedInformation) {
+				row.append("\t");
+				row.append(f.getFolderCreationDate());
+				row.append("\t");
+				row.append("--");
+				row.append("\t");
+				row.append(f.getFolderCreator());
+			}
+			System.out.println(row.toString());
 			index++;
 		}
 		List<Node> fs = currentFolder.getFiles();
 		for (Node f : fs) {
-			System.out.println("--" + index + " [文件] " + f.getFileName());
+			StringBuffer row = new StringBuffer();
+			row.append("--" + index);
+			row.append("\t");
+			row.append("[文件]");
+			row.append("\t");
+			row.append(f.getFileName());
+			if (showDetailedInformation) {
+				row.append("\t");
+				row.append(f.getFileCreationDate());
+				row.append("\t");
+				row.append(formatFileSize(f.getFileSize()));
+				row.append("\t");
+				row.append(f.getFileCreator());
+			}
+			System.out.println(row.toString());
 			index++;
 		}
 		System.out.println();
+	}
+
+	// 将以Byte为单位表示的文件字符转换为以合适单位表示的字符串
+	private String formatFileSize(String value) {
+		double convertSize;
+		String unit;
+		long size = Long.parseLong((String) value);
+		if (size < 1024) {
+			convertSize = (double) size;
+			unit = "B";
+		} else if (size < 1048576L) {
+			convertSize = ((double) size / 1024.0);
+			unit = "KB";
+		} else if (size < 1073741824L) {
+			convertSize = ((double) size / 1048576.0);
+			unit = "MB";
+		} else if (size < 1099511627776L) {
+			convertSize = ((double) size / 1073741824.0);
+			unit = "GB";
+		} else {
+			convertSize = ((double) size / 1099511627776.0);
+			unit = "TB";
+		}
+		return String.format("%.1f", convertSize) + " " + unit;
 	}
 
 	// 进入某一文件夹，可以输入文件夹名或是前方编号（例如cd foo或是cd --1）
