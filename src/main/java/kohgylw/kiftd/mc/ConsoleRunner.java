@@ -449,8 +449,8 @@ public class ConsoleRunner {
 			return currentFolder.getCurrent().getFolderId();
 		}
 		if (fname.startsWith("--")) {
-			int index = Integer.parseInt(fname.substring(2));
 			try {
+				int index = Integer.parseInt(fname.substring(2));
 				if (index >= 1 && index <= currentFolder.getFolders().size()) {
 					return currentFolder.getFolders().get(index - 1).getFolderId();
 				}
