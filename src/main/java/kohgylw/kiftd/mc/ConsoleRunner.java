@@ -7,6 +7,7 @@ import kohgylw.kiftd.server.model.Node;
 
 import java.io.File;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
@@ -189,8 +190,10 @@ public class ConsoleRunner {
 			try {
 				while (true) {
 					Printer.instance.print("kiftd: console$ ");
-					String command = reader.nextLine();
+					String command = reader.nextLine().trim();
 					switch (command) {
+					case "":
+						break;
 					case "-start":
 						startServer();
 						break;
@@ -254,7 +257,11 @@ public class ConsoleRunner {
 		try {
 			while (true) {
 				System.out.println("kiftd: " + currentFolder.getCurrent().getFolderName() + "$ ");
-				String command = reader.nextLine();
+				String command = reader.nextLine().trim();
+				// 若未输入任何命令，则直接跳过
+				if (command.length() == 0) {
+					continue;
+				}
 				// 针对一些带参数指令的操作
 				if (command.startsWith("cd ")) {
 					gotoFolder(command.substring(3));
@@ -272,12 +279,16 @@ public class ConsoleRunner {
 					doExport(command.substring(7));
 					continue;
 				}
-				if (command.equals("ls")) {
-					showCurrentFolder(false);
-					continue;
-				}
-				if (command.equals("ls -l")) {
-					showCurrentFolder(true);
+				if (command.startsWith("ls ") || command.equals("ls")) {
+					String[] oArgs = command.substring(2).trim().split(" ");
+					String[] args = Arrays.stream(oArgs).filter(s -> !s.isEmpty()).toArray(String[]::new);
+					if (args.length == 0) {
+						showCurrentFolder(false);
+					} else if (args.length == 1 && "-l".equals(args[0])) {
+						showCurrentFolder(true);
+					} else {
+						Printer.instance.print("错误：显示当前文件夹内容失败，输入参数不正确。");
+					}
 					continue;
 				}
 				// 针对一些不带参数指令的操作
@@ -386,6 +397,7 @@ public class ConsoleRunner {
 
 	// 进入某一文件夹，可以输入文件夹名或是前方编号（例如cd foo或是cd --1）
 	private void gotoFolder(String fname) {
+		fname = fname.trim();
 		try {
 			currentFolder = FileSystemManager.getInstance().getFolderView(currentFolder.getCurrent().getFolderId());
 			String fid = getSelectFolderId(fname);
@@ -562,6 +574,7 @@ public class ConsoleRunner {
 
 	// 导入一个文件或文件夹
 	private void doImport(String fpath) {
+		fpath = fpath.trim();
 		File f = new File(fpath);
 		if (!f.exists()) {
 			Printer.instance.print("错误：无法导入文件或文件夹，该目标不存在（" + fpath + "），请重新检查。");
@@ -575,7 +588,7 @@ public class ConsoleRunner {
 			if (FileSystemManager.getInstance().hasExistsFilesOrFolders(importFiles, targetFolder) > 0) {
 				System.out.println("提示：该路径下已经存在同名文件或文件夹（" + f.getName() + "），您希望？[C]取消 [V]覆盖 [B]保留两者");
 				q: while (true) {
-					String command = reader.nextLine();
+					String command = reader.nextLine().trim();
 					switch (command) {
 					case "C":
 						Printer.instance.print("导入被取消。");
@@ -694,7 +707,11 @@ public class ConsoleRunner {
 
 	// 导出一个文件或文件夹
 	private void doExport(String command) {
-		String[] args = command.split(" ");
+		command = command.trim();
+		// 将参数按照空格分隔
+		String[] oArgs = command.split(" ");
+		// 提取有效的参数（避免中间有多个空格）
+		String[] args = Arrays.stream(oArgs).filter(s -> !s.isEmpty()).toArray(String[]::new);
 		String id;
 		String path;
 		ProgressListener pl = null;
@@ -732,7 +749,7 @@ public class ConsoleRunner {
 				if (FileSystemManager.getInstance().hasExistsFilesOrFolders(foldersId, filesId, targetPath) > 0) {
 					System.out.println("提示：该路径下已经存在同名文件或文件夹（" + targetPath.getName() + "），您希望？[C]取消 [V]覆盖 [B]保留两者");
 					q: while (true) {
-						String command2 = reader.nextLine();
+						String command2 = reader.nextLine().trim();
 						switch (command2) {
 						case "C":
 							Printer.instance.print("导出被取消。");
@@ -768,6 +785,7 @@ public class ConsoleRunner {
 
 	// 删除某一文件或文件夹
 	private void doDelete(String fname) {
+		fname = fname.trim();
 		ProgressListener pl = null;
 		try {
 			currentFolder = FileSystemManager.getInstance().getFolderView(currentFolder.getCurrent().getFolderId());
@@ -823,7 +841,7 @@ public class ConsoleRunner {
 		System.out.println("提示：" + tip + " [Y/N]");
 		while (true) {
 			System.out.print("> ");
-			String command = reader.nextLine();
+			String command = reader.nextLine().trim();
 			switch (command) {
 			case "Y":
 				return true;
@@ -864,7 +882,7 @@ public class ConsoleRunner {
 		Printer.instance.print("错误：无法读取指定文件夹，是否返回根目录？[Y/N]");
 		while (true) {
 			System.out.print("> ");
-			String command = reader.nextLine();
+			String command = reader.nextLine().trim();
 			switch (command) {
 			case "Y":
 				try {
