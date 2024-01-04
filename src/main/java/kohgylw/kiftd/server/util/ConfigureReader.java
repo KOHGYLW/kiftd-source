@@ -1620,4 +1620,26 @@ public class ConfigureReader {
 		return false;
 	}
 
+	/**
+	 * 
+	 * <h2>获取导入账户名</h2>
+	 * <p>
+	 * 该方法用于获取在“文件”功能中执行导入操作时，应为导入内容设置的账户名称。
+	 * 该项目由账户配置文件中的“import.account”项设置，例如“import.account=admin”。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @version 1.0
+	 * @return String 账户配置文件中设置的导入账户名，若无此设置或此项设置的值为空则返回默认值“SYS_IN”。
+	 *
+	 */
+	public String getImportAccount() {
+		String importAccount = accountp.getProperty("import.account");
+		if (importAccount != null && importAccount.length() > 0) {
+			return importAccount;
+		} else {
+			return "SYS_IN";
+		}
+	}
+
 }

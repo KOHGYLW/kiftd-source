@@ -456,7 +456,7 @@ public class FileSystemManager {
 			node.setFileId(UUID.randomUUID().toString());
 			node.setFileParentFolder(folderId);
 			node.setFileCreationDate(ServerTimeUtil.accurateToDay());
-			node.setFileCreator("SYS_IN");
+			node.setFileCreator(ConfigureReader.instance().getImportAccount());
 			node.setFileSize(Long.toString(size));
 			// 保存文件块并写入新节点
 			File block = saveToFileBlocks(f);
@@ -528,7 +528,7 @@ public class FileSystemManager {
 				folder.setFolderConstraint(parent.getFolderConstraint());
 				folder.setFolderParent(folderId);
 				if ("root".equals(parent.getFolderId())) {
-					folder.setFolderCreator("SYS_IN");
+					folder.setFolderCreator(ConfigureReader.instance().getImportAccount());
 				} else {
 					folder.setFolderCreator(parent.getFolderCreator());
 				}
