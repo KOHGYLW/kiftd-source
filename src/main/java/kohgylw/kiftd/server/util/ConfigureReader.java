@@ -105,7 +105,8 @@ public class ConfigureReader {
 	private String recycleBinPath;// 删除留档路径
 
 	private static final int MAX_EXTENDSTORES_NUM = 255;// 扩展存储区最大数目
-	private static final String[] SYS_ACCOUNTS = { "SYS_IN", "Anonymous", "匿名用户" };// 一些系统的特殊账户
+	private final static String DEFAULT_IMPORT_ACCOUNT = "SYS_IN";// 默认的导入账户
+	private static final String[] SYS_ACCOUNTS = { DEFAULT_IMPORT_ACCOUNT, "Anonymous", "匿名用户" };// 一些系统的特殊账户
 
 	private ConfigureReader() {
 		this.propertiesStatus = -1;
@@ -170,6 +171,10 @@ public class ConfigureReader {
 			if (sysAccount.equals(account)) {
 				return true;
 			}
+		}
+		// 被设置为导入账户的值也直接认为已经存在（理由同上）
+		if (getImportAccount().equals(account)) {
+			return true;
 		}
 		final String accountPwd = this.accountp.getProperty(account + ".pwd");
 		return accountPwd != null && accountPwd.length() > 0;
@@ -1638,7 +1643,7 @@ public class ConfigureReader {
 		if (importAccount != null && importAccount.length() > 0) {
 			return importAccount;
 		} else {
-			return "SYS_IN";
+			return DEFAULT_IMPORT_ACCOUNT;
 		}
 	}
 
