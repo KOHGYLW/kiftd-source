@@ -925,13 +925,22 @@ function showAccountView(folderView) {
 				"showDeleteAllCheckedModel()");
 		}
 		if (checkAuth(authList, "M")) {
-			$("#cutFileButtonLi").removeClass("disabled");
-			$("#stickFileButtonLi").removeClass("disabled");
+			// 若具备M权限，则允许复制文件
 			$("#copyFileButtonLi").removeClass("disabled");
-			$("#cutFileButtonLi a").attr("onclick", "cutFile()");
+			$("#stickFileButtonLi").removeClass("disabled");
 			$("#copyFileButtonLi a").attr("onclick", "copyFile()");
 			$("#stickFileButtonLi a").attr("onclick", "stickFile()");
+			$("#copyFileButtonLi").removeClass("hidden");
+			$("#copyFileButtonLi").addClass("show");
+			if (checkAuth(authList, "D")) {
+				// 若同时具备D权限，则允许剪切文件
+				$("#cutFileButtonLi").removeClass("disabled");
+				$("#cutFileButtonLi a").attr("onclick", "cutFile()");
+				$("#cutFileButtonLi").removeClass("hidden");
+				$("#cutFileButtonLi").addClass("show");
+			}
 			if (checkedMovefiles !== undefined && checkedMovefiles.size > 0) {
+				// 如果移动目标列表已经有项目，则启用“粘贴”按钮
 				if (checkedMovefiles.size < 100) {
 					$("#stickFilesCount").text(
 						"（" + checkedMovefiles.size + "）");
@@ -941,10 +950,7 @@ function showAccountView(folderView) {
 				$("#stickFileButtonLi").removeClass("hidden");
 				$("#stickFileButtonLi").addClass("show");
 			} else {
-				$("#copyFileButtonLi").removeClass("hidden");
-				$("#copyFileButtonLi").addClass("show");
-				$("#cutFileButtonLi").removeClass("hidden");
-				$("#cutFileButtonLi").addClass("show");
+				// 如果移动目标列表没有项目，则隐藏“粘贴”按钮
 				$("#stickFileButtonLi").removeClass("show");
 				$("#stickFileButtonLi").addClass("hidden");
 				$("#stickFilesCount").text("");

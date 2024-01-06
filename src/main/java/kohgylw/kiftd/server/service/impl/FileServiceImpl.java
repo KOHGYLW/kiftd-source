@@ -559,6 +559,14 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 			// 获取涉及移动的文件节点的ID数组
 			final List<String> idList = gson.fromJson(strIdList, new TypeToken<List<String>>() {
 			}.getType());
+			// 获取涉及移动的文件夹的ID数组
+			final List<String> fidList = gson.fromJson(strFidList, new TypeToken<List<String>>() {
+			}.getType());
+			// 如果移动文件夹，则还需要创建文件夹权限
+			if (fidList.size() > 0 && !ConfigureReader.instance().authorized(account, AccountAuth.CREATE_NEW_FOLDER,
+					fu.getAllFoldersId(locationpath))) {
+				return NO_AUTHORIZED;
+			}
 			// 对涉及的文件节点逐一进行操作
 			for (final String id : idList) {
 				// 先对涉及的原节点进行合法性检查
@@ -699,9 +707,6 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 				}
 				// 完成了一个原节点的操作，继续循环直至所有涉及节点均操作完毕
 			}
-			// 获取涉及移动的文件夹的ID数组
-			final List<String> fidList = gson.fromJson(strFidList, new TypeToken<List<String>>() {
-			}.getType());
 			// 对涉及的文件夹节点逐一进行操作
 			for (final String fid : fidList) {
 				// 该过程与移动文件节点的流程类似
@@ -907,6 +912,11 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 				}.getType());
 				final List<String> fidList = gson.fromJson(strFidList, new TypeToken<List<String>>() {
 				}.getType());
+				// 如果移动文件夹，则还需要创建文件夹权限
+				if (fidList.size() > 0 && !ConfigureReader.instance().authorized(account, AccountAuth.CREATE_NEW_FOLDER,
+						fu.getAllFoldersId(locationpath))) {
+					return NO_AUTHORIZED;
+				}
 				List<Node> repeNodes = new ArrayList<>();
 				List<Folder> repeFolders = new ArrayList<>();
 				// 检查每个涉及的文件节点是否合法
