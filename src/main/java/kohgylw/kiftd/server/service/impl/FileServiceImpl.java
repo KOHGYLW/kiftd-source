@@ -551,6 +551,11 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		if (!ConfigureReader.instance().authorized(account, AccountAuth.MOVE_FILES, fu.getAllFoldersId(locationpath))) {
 			return NO_AUTHORIZED;
 		}
+		// 如果执行的是剪切操作，则还需要同时具备删除权限
+		if (!isCopy && !ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER,
+				fu.getAllFoldersId(locationpath))) {
+			return NO_AUTHORIZED;
+		}
 		// 对涉及的文件和文件夹逐一进行移动或复制操作
 		try {
 			// 获取存在冲突的文件的对应处理表
@@ -905,8 +910,14 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		Folder targetFolder = flm.queryById(locationpath);
 		int needMovefilesCount = 0;// 记录可以合法移动（或复制）的文件数目
 		int needMoveFoldersCount = 0;// 同理，记录可以合法移动（或复制）的文件夹数目
+		// 权限检查，确认是否具备移动权限
 		if (ConfigureReader.instance().accessFolder(targetFolder, account) && ConfigureReader.instance()
 				.authorized(account, AccountAuth.MOVE_FILES, fu.getAllFoldersId(locationpath))) {
+			// 如果执行的是剪切操作，则还需要同时具备删除权限
+			if (!isCopy && !ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER,
+					fu.getAllFoldersId(locationpath))) {
+				return NO_AUTHORIZED;
+			}
 			try {
 				final List<String> idList = gson.fromJson(strIdList, new TypeToken<List<String>>() {
 				}.getType());
