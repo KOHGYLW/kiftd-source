@@ -126,8 +126,9 @@ public class FileSystemPathViewer extends KiftdDynamicWindow {
 		});
 		changeBtn.addActionListener((e) -> {
 			disableAllButtons();
-			if (JOptionPane.showConfirmDialog(window, "确认要修改该存储路径么？警告：修改为新路径后，该存储区内原先存放的数据将会丢失。", "修改路径",
-					JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+			if (JOptionPane.showConfirmDialog(window,
+					"确认要修改该存储区路径么？警告：如需保留该存储区内的全部数据，应先将该存储区原路径指定的文件夹移动到新位置，再将移动后的文件夹设置为该存储区的新路径。否则，该存储区内的数据将全部丢失。",
+					"修改路径", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
 				short index = pathsTable.getSelectFileSystemIndex();
 				if (index == 0) {
 					JFileChooser mainFileSystemPathChooer = new JFileChooser();
