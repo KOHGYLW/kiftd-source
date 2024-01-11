@@ -154,21 +154,57 @@ public class RangeFileStreamWriter {
 		final String ifRange = request.getHeader("If-Range");
 		if (rangeTag != null && rangeTag.startsWith("bytes=")
 				&& (ifRange == null || ifRange.trim().equals(eTag) || ifRange.trim().equals(lastModified))) {
-			status = HttpServletResponse.SC_PARTIAL_CONTENT;
-			response.setStatus(status);
+			// 进行断点续传
 			rangeBytes = rangeTag.replaceAll("bytes=", "");
+			if (rangeBytes.indexOf("-") < 0) {
+				// 数据范围请求格式不正确，应为?-?的格式
+				status = HttpServletResponse.SC_BAD_REQUEST;
+				response.setStatus(status);
+				return status;
+			}
 			if (rangeBytes.endsWith("-")) {
 				// 解析请求参数范围为仅有起始偏移量而无结束偏移量的情况
-				startOffset = Long.parseLong(rangeBytes.substring(0, rangeBytes.indexOf('-')).trim());
+				try {
+					startOffset = Long.parseLong(rangeBytes.substring(0, rangeBytes.indexOf('-')).trim());
+				} catch (NumberFormatException e) {
+					// 数据范围请求不正确
+					status = HttpServletResponse.SC_BAD_REQUEST;
+					response.setStatus(status);
+					return status;
+				}
 				// 仅具备起始偏移量时，例如文件长为13，请求为5-，则响应体长度为8
 				contentLength = fileLength - startOffset;
 			} else {
 				hasEnd = true;
-				startOffset = Long.parseLong(rangeBytes.substring(0, rangeBytes.indexOf('-')).trim());
-				endOffset = Long.parseLong(rangeBytes.substring(rangeBytes.indexOf('-') + 1).trim());
-				// 具备起始偏移量与结束偏移量时，例如0-9，则响应体长度为10个字节
+				try {
+					if (rangeBytes.startsWith("-")) {
+						// 解析请求参数范围为仅有结束偏移量而无起始偏移量的情况，例如-3
+						startOffset = fileLength
+								- Long.parseLong(rangeBytes.substring(rangeBytes.indexOf('-') + 1).trim());
+						endOffset = fileLength - 1;
+					} else {
+						// 解析请求参数范围既有起始偏移量又有结束偏移量的情况，例如0-9
+						startOffset = Long.parseLong(rangeBytes.substring(0, rangeBytes.indexOf('-')).trim());
+						endOffset = Long.parseLong(rangeBytes.substring(rangeBytes.indexOf('-') + 1).trim());
+					}
+				} catch (NumberFormatException e) {
+					// 数据范围请求不正确
+					status = HttpServletResponse.SC_BAD_REQUEST;
+					response.setStatus(status);
+					return status;
+				}
+				// 具备结束偏移量时，例如文件长为10，请求为0-9或-10，则响应体长度为10
 				contentLength = endOffset - startOffset + 1;
 			}
+			if (contentLength > fileLength || contentLength <= 0) {
+				// 数据范围请求不正确
+				status = HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE;
+				response.setStatus(status);
+				return status;
+			}
+			// 设置响应状态为206
+			status = HttpServletResponse.SC_PARTIAL_CONTENT;
+			response.setStatus(status);
 			// 设置Content-Range，格式为“bytes 起始偏移-结束偏移/文件的总大小”
 			String contentRange;
 			if (!hasEnd) {
@@ -179,8 +215,9 @@ public class RangeFileStreamWriter {
 						.toString();
 			}
 			response.setHeader("Content-Range", contentRange);
-		} else { // 从开始进行下载
-			contentLength = fileLength; // 客户端要求全文下载
+		} else {
+			// 不进行断点续传
+			contentLength = fileLength;
 		}
 		if (sendBody) {
 			response.setHeader("Content-Length", "" + contentLength);// 设置请求体长度
