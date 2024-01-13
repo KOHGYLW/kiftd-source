@@ -99,13 +99,9 @@ public class KiftdFFMPEGLocator implements ProcessLocator {
 			// 临时文件中是否已经拷贝好了ffmpeg可执行文件了？
 			ffmpegFile = new File(dirFolder, "ffmpeg-" + arch + "-" + Version.getVersion() + suffix);
 			if (!ffmpegFile.exists()) {
-				// 没有？那将自带的、对应操作系统的ffmpeg文件拷贝到临时目录中，如果没有对应自带的ffmpeg，那么会抛出异常
-				// 如果抛出异常，那么直接结束构造
-				try {
-					copyFile("ffmpeg-" + arch + suffix, ffmpegFile);
-				} catch (NullPointerException e) {
+				// 没有？那将自带的、对应操作系统的ffmpeg文件拷贝到临时目录中，如果没有对应自带的ffmpeg，那么直接结束构造
+				if (!copyFile("ffmpeg-" + arch + suffix, ffmpegFile)) {
 					Printer.instance.print("警告：未能找到适合此操作系统的ffmpeg引擎可执行文件，视频播放的在线解码功能将不可用。");
-					lu.writeException(e);
 					enableFFmpeg = false;
 					return null;
 				}
@@ -132,30 +128,28 @@ public class KiftdFFMPEGLocator implements ProcessLocator {
 	}
 
 	// 把文件从自带的jar包中拷贝出来，移入指定文件夹
-	private void copyFile(String path, File dest) {
+	private boolean copyFile(String path, File dest) {
 		String resourceName = "nativebin/" + path;
-		try {
-			InputStream is = getClass().getResourceAsStream(resourceName);
-			if (is == null) {
-				resourceName = "ws/schild/jave/nativebin/" + path;
-				is = ClassLoader.getSystemResourceAsStream(resourceName);
-			}
-			if (is == null) {
-				resourceName = "ws/schild/jave/nativebin/" + path;
-				ClassLoader classloader = Thread.currentThread().getContextClassLoader();
-				is = classloader.getResourceAsStream(resourceName);
-			}
-			if (is != null) {
-				copy(is, dest.getAbsolutePath());
-				try {
-					is.close();
-				} catch (IOException ioex) {
-					lu.writeException(ioex);
-				}
-			}
-		} catch (NullPointerException ex) {
-			lu.writeException(ex);
+		InputStream is = getClass().getResourceAsStream(resourceName);
+		if (is == null) {
+			resourceName = "ws/schild/jave/nativebin/" + path;
+			is = ClassLoader.getSystemResourceAsStream(resourceName);
 		}
+		if (is == null) {
+			resourceName = "ws/schild/jave/nativebin/" + path;
+			ClassLoader classloader = Thread.currentThread().getContextClassLoader();
+			is = classloader.getResourceAsStream(resourceName);
+		}
+		if (is != null) {
+			boolean copyResult = copy(is, dest.getAbsolutePath());
+			try {
+				is.close();
+				return copyResult;
+			} catch (IOException ioex) {
+				lu.writeException(ioex);
+			}
+		}
+		return false;
 	}
 
 	// 以文件的形式把流存入指定文件夹内
