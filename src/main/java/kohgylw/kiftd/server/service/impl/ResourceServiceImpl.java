@@ -100,7 +100,7 @@ public class ResourceServiceImpl implements ResourceService {
 						case ".wmv":
 						case ".mkv":
 						case ".flv":
-							if (kfl.getExecutablePath() != null) {
+							if (kfl.isEnableFFmpeg()) {
 								contentType = "video/mp4";
 								synchronized (VideoTranscodeUtil.videoTranscodeThreads) {
 									VideoTranscodeThread vtt = VideoTranscodeUtil.videoTranscodeThreads.get(fid);
@@ -154,16 +154,11 @@ public class ResourceServiceImpl implements ResourceService {
 	 * </p>
 	 * 
 	 * @author 青阳龙野(kohgylw)
-	 * @param resource
-	 *            java.io.File 要发送的文件资源
-	 * @param fname
-	 *            java.lang.String 要传递给客户端的文件名，会加入到响应头中
-	 * @param contentType
-	 *            java.lang.String 返回资源的CONTENT_TYPE标识名，例如“text/html”
-	 * @param request
-	 *            javax.servlet.http.HttpServletRequest 请求对象
-	 * @param response
-	 *            javax.servlet.http.HttpServletResponse 响应对象
+	 * @param resource    java.io.File 要发送的文件资源
+	 * @param fname       java.lang.String 要传递给客户端的文件名，会加入到响应头中
+	 * @param contentType java.lang.String 返回资源的CONTENT_TYPE标识名，例如“text/html”
+	 * @param request     javax.servlet.http.HttpServletRequest 请求对象
+	 * @param response    javax.servlet.http.HttpServletResponse 响应对象
 	 * @return int 操作完毕后返回的状态码，例如“200”
 	 */
 	private int sendResource(File resource, String fname, String contentType, HttpServletRequest request,
@@ -369,7 +364,7 @@ public class ResourceServiceImpl implements ResourceService {
 
 	@Override
 	public String getVideoTranscodeStatus(HttpServletRequest request) {
-		if (kfl.getExecutablePath() != null) {
+		if (kfl.isEnableFFmpeg()) {
 			String fId = request.getParameter("fileId");
 			if (fId != null) {
 				try {
