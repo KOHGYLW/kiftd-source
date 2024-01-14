@@ -7,8 +7,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
-import javax.annotation.Resource;
-
 import org.springframework.stereotype.Component;
 
 import kohgylw.kiftd.printer.Printer;
@@ -19,9 +17,6 @@ import ws.schild.jave.process.ffmpeg.FFMPEGProcess;
 
 @Component
 public class KiftdFFMPEGLocator implements ProcessLocator {
-
-	@Resource
-	private LogUtil lu;
 
 	private boolean enableFFmpeg;
 
@@ -87,8 +82,8 @@ public class KiftdFFMPEGLocator implements ProcessLocator {
 				try {
 					Files.copy(customFFMPEGexef.toPath(), ffmpegFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 				} catch (IOException e) {
+					Printer.instance.print(e.toString());
 					Printer.instance.print("警告：自定义的ffmpeg引擎可执行文件无法读取，视频播放的在线解码功能将不可用。");
-					lu.writeException(e);
 					enableFFmpeg = false;
 					return null;
 				}
@@ -115,7 +110,8 @@ public class KiftdFFMPEGLocator implements ProcessLocator {
 					Runtime.getRuntime().exec(new String[] { "/bin/chmod", "755", ffmpegFile.getAbsolutePath() });
 				} catch (IOException e) {
 					// 授予权限失败的话……好像也没啥好办法
-					lu.writeException(e);
+					Printer.instance.print(e.toString());
+					Printer.instance.print("警告：ffmpeg引擎初始化失败，视频播放的在线解码功能将不可用。");
 					enableFFmpeg = false;
 					return null;
 				}
@@ -146,7 +142,8 @@ public class KiftdFFMPEGLocator implements ProcessLocator {
 				is.close();
 				return copyResult;
 			} catch (IOException ioex) {
-				lu.writeException(ioex);
+				Printer.instance.print(ioex.toString());
+				Printer.instance.print("警告：ffmpeg引擎初始化失败，视频播放的在线解码功能将不可用。");
 			}
 		}
 		return false;
