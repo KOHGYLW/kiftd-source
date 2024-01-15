@@ -24,8 +24,6 @@ public class KiftdFFMPEGLocator implements ProcessLocator {
 
 	private String arch;
 
-	private File dirFolder;
-
 	private boolean isWindows;
 
 	/**
@@ -43,12 +41,6 @@ public class KiftdFFMPEGLocator implements ProcessLocator {
 		String os = System.getProperty("os.name").toLowerCase();
 		isWindows = os.contains("windows");
 		boolean isMac = os.contains("mac");
-
-		dirFolder = new File(System.getProperty("java.io.tmpdir"), "jave/");
-		if (!dirFolder.exists()) {
-			dirFolder.mkdirs();
-		}
-
 		suffix = isWindows ? ".exe" : (isMac ? "-osx" : "");
 		arch = System.getProperty("os.arch");
 		// 服务器启动时第一次初始化ffmpeg执行路径
@@ -69,6 +61,15 @@ public class KiftdFFMPEGLocator implements ProcessLocator {
 		if (!ConfigureReader.instance().isEnableFFMPEG()) {
 			enableFFmpeg = false;
 			return null;
+		}
+		// 在临时文件夹内创建用于存放ffmpeg可执行文件的专用文件夹
+		File dirFolder = new File(System.getProperty("java.io.tmpdir"), "jave/");
+		if (!dirFolder.exists()) {
+			if (!dirFolder.mkdirs()) {
+				Printer.instance.print("警告：无法在临时文件夹内生成ffmpeg引擎可执行文件，视频播放的在线解码功能将不可用。");
+				enableFFmpeg = false;
+				return null;
+			}
 		}
 		// 是否在程序主目录下放置了自定义的ffmpeg可执行文件“ffmpeg.exe”/“ffmpeg”？
 		File ffmpegFile;
@@ -111,7 +112,7 @@ public class KiftdFFMPEGLocator implements ProcessLocator {
 				} catch (IOException e) {
 					// 授予权限失败的话……好像也没啥好办法
 					Printer.instance.print(e.toString());
-					Printer.instance.print("警告：ffmpeg引擎初始化失败，视频播放的在线解码功能将不可用。");
+					Printer.instance.print("警告：无法为ffmpeg引擎可执行文件授予执行权限，视频播放的在线解码功能将不可用。");
 					enableFFmpeg = false;
 					return null;
 				}
@@ -143,7 +144,7 @@ public class KiftdFFMPEGLocator implements ProcessLocator {
 				return copyResult;
 			} catch (IOException ioex) {
 				Printer.instance.print(ioex.toString());
-				Printer.instance.print("警告：ffmpeg引擎初始化失败，视频播放的在线解码功能将不可用。");
+				Printer.instance.print("警告：无法在临时文件夹内生成ffmpeg引擎可执行文件，视频播放的在线解码功能将不可用。");
 			}
 		}
 		return false;
