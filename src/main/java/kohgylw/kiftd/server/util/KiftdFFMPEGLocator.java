@@ -161,6 +161,9 @@ public class KiftdFFMPEGLocator implements ProcessLocator {
 	}
 
 	public boolean isEnableFFmpeg() {
+		if (enableFFmpeg) {
+			initFFMPEGExecutablePath();// 避免在kiftd运行途中ffmpeg作为临时文件被清除
+		}
 		return enableFFmpeg;
 	}
 
