@@ -38,7 +38,6 @@ import kohgylw.kiftd.server.exception.FilesTotalOutOfLimitException;
 import kohgylw.kiftd.server.exception.FoldersTotalOutOfLimitException;
 import kohgylw.kiftd.server.model.Node;
 import kohgylw.kiftd.server.util.ConfigureReader;
-import kohgylw.kiftd.server.util.FileNodeUtil;
 import kohgylw.kiftd.ui.util.FilesTable;
 import kohgylw.kiftd.util.file_system_manager.FileSystemManager;
 import kohgylw.kiftd.util.file_system_manager.pojo.Folder;
@@ -197,7 +196,7 @@ public class FSViewer extends KiftdDynamicWindow {
 					} else {
 						type = null;
 					}
-					FSProgressDialog fsd = FSProgressDialog.getNewInstance();
+					FSProgressDialog fsd = FSProgressDialog.getNewInstance(window);
 					Thread t = new Thread(() -> {
 						fsd.show();
 					});
@@ -236,7 +235,7 @@ public class FSViewer extends KiftdDynamicWindow {
 							selectedNodes.add(currentView.getFiles().get(i - borderIndex).getFileId());
 						}
 					}
-					FSProgressDialog fsd = FSProgressDialog.getNewInstance();
+					FSProgressDialog fsd = FSProgressDialog.getNewInstance(window);
 					Thread t = new Thread(() -> {
 						fsd.show();
 					});
@@ -331,7 +330,7 @@ public class FSViewer extends KiftdDynamicWindow {
 										File pfOld = new File(previewFileDir, n.getFileName());
 										if (!pfOld.isFile() || pfOld.delete()) {
 											// 将要预览的文件导出至此文件夹内
-											FSProgressDialog fsd = FSProgressDialog.getNewInstance();
+											FSProgressDialog fsd = FSProgressDialog.getNewInstance(window);
 											Thread t = new Thread(() -> {
 												fsd.show();
 											});
@@ -472,7 +471,6 @@ public class FSViewer extends KiftdDynamicWindow {
 	 */
 	public void show() {
 		disableAllButtons();
-		FileNodeUtil.initNodeTableToDataBase();
 		try {
 			if (currentView == null) {
 				getFolderView("root");
@@ -557,7 +555,7 @@ public class FSViewer extends KiftdDynamicWindow {
 			type = null;
 		}
 		// 打开进度提示会话框
-		FSProgressDialog fsd = FSProgressDialog.getNewInstance();
+		FSProgressDialog fsd = FSProgressDialog.getNewInstance(window);
 		Thread t = new Thread(() -> {
 			fsd.show();
 		});

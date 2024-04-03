@@ -244,7 +244,6 @@ public class ConsoleRunner {
 	private void fileSystemManagerModel() {
 		Printer.instance.print("已进入文件管理功能。");
 		try {
-			FileNodeUtil.initNodeTableToDataBase();
 			if (currentFolder == null || currentFolder.getCurrent() == null || FileSystemManager.getInstance()
 					.selectFolderById(currentFolder.getCurrent().getFolderId()) == null) {
 				getFolderView("root");
@@ -510,7 +509,6 @@ public class ConsoleRunner {
 	private void doImport(String[] args) {
 		// 针对简化命令（只有1个参数），认为要将整个ROOT导出至某位置
 		try {
-			FileNodeUtil.initNodeTableToDataBase();
 			String importTarget;
 			String importPath;
 			Object path;
@@ -633,7 +631,6 @@ public class ConsoleRunner {
 	private void doExport(String[] args) {
 		// 针对简化命令（只有1个参数），认为要将整个ROOT导出至某位置
 		try {
-			FileNodeUtil.initNodeTableToDataBase();
 			String exportTarget;
 			String exportPath;
 			Object target;

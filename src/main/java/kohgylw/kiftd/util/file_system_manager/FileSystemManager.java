@@ -81,9 +81,12 @@ public class FileSystemManager {
 	private PreparedStatement countNodesByFolderId;
 	private PreparedStatement countFoldersByParentFolderId;
 	private PreparedStatement selectNodesByPathExcludeById;
+	private PreparedStatement countNodesByExtendStoreIndex;
+	private PreparedStatement selectNodesByExtendStoreIndex;
 
 	// 加载资源
 	private FileSystemManager() {
+		FileNodeUtil.initNodeTableToDataBase();
 		Connection c = FileNodeUtil.getNodeDBConnection();
 		try {
 			selectFolderById = c.prepareStatement("SELECT * FROM FOLDER WHERE folder_id = ?");
@@ -103,6 +106,8 @@ public class FileSystemManager {
 			countNodesByFolderId = c.prepareStatement("SELECT count(file_id) FROM FILE WHERE file_parent_folder = ?");
 			countFoldersByParentFolderId = c
 					.prepareStatement("SELECT count(folder_id) FROM FOLDER WHERE folder_parent = ?");
+			countNodesByExtendStoreIndex = c.prepareStatement("SELECT count(file_id) FROM FILE WHERE file_path LIKE ?");
+			selectNodesByExtendStoreIndex = c.prepareStatement("SELECT * FROM FILE WHERE file_path LIKE ?");
 		} catch (SQLException e) {
 			Printer.instance.print("错误：出现未知错误，文件系统解析失败，无法浏览文件。");
 		}
@@ -987,5 +992,103 @@ public class FileSystemManager {
 			}
 		}
 		return 0L;
+	}
+
+	/**
+	 * 
+	 * <h2>移出指定扩展存储区内的数据至指定文件夹内</h2>
+	 * <p>
+	 * 该方法会将指定扩展存储区内的文件逐一移出到指定文件夹内（注意不是复制），若全部移出成功，则原扩展存储区将被清空。
+	 * 该方法应作为移除某一扩展存储区前的预操作。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @version 1.0
+	 * @return boolean 若全部移出成功则返回true，否则为false
+	 * @throws SQLException 各种查询失败的原因
+	 * @throws IOException  各种移动失败的原因
+	 *
+	 */
+	public boolean transferExtendStore(short index, File reservePath) throws SQLException, IOException {
+		final List<Node> nodes = selectNodesByExtendStoreIndex(index);
+		int total = nodes.size();
+		if (reservePath != null && reservePath.isDirectory()) {
+			per = 0;
+			message = "正在移出数据...";
+			gono = true;
+			for (int i = 0; i < total && gono; i++) {
+				message = "正在移出数据(" + i + "/" + total + ")...";
+				per = (int) (((double) i / total) * 100.0);
+				Node n = nodes.get(i);
+				File b = getFileFormBlocks(n);
+				File parentFolder = new File(reservePath, getNativePath(n));
+				if (!parentFolder.isDirectory()) {
+					if (!parentFolder.mkdirs()) {
+						return false;
+					}
+				}
+				File target = new File(parentFolder, n.getFileName());
+				Files.move(b.toPath(), target.toPath());
+				deleteNodeById(n.getFileId());
+			}
+			return gono;
+		}
+		return false;
+	}
+
+	/**
+	 * 
+	 * <h2>获取指定扩展存储区内的文件节点数量</h2>
+	 * <p>
+	 * 该方法会返回指定扩展存储区内的文件数量，以供判断在移除该扩展存储区前是否需要执行移出操作。
+	 * </p>
+	 * 
+	 * @author 青阳龙野(kohgylw)
+	 * @version 1.0
+	 * @return int 指定扩展存储区内的文件节点数量
+	 * @throws SQLException 统计时发生错误
+	 *
+	 */
+	public long getTotalOfNodesAtExtendStore(short index) throws SQLException {
+		return countNodesByExtendStoreIndex(index);
+	}
+
+	private long countNodesByExtendStoreIndex(short index) throws SQLException {
+		countNodesByExtendStoreIndex.setString(1, index + "\\_%");
+		ResultSet rs = countNodesByExtendStoreIndex.executeQuery();
+		if (rs.first()) {
+			return rs.getLong(1);
+		}
+		return 0L;
+	}
+
+	private List<Node> selectNodesByExtendStoreIndex(short index) throws SQLException {
+		selectNodesByExtendStoreIndex.setString(1, index + "\\_%");
+		List<Node> nodes = new ArrayList<>();
+		ResultSet rs = selectNodesByExtendStoreIndex.executeQuery();
+		while (rs.next()) {
+			nodes.add(resultSetAccessNode(rs));
+		}
+		return nodes;
+	}
+
+	// 获取一个文件节点的本地路径，例如/ROOT/foo/bar/target.txt在Windows系统下的本地路径为“ROOT\foo\bar\”
+	private String getNativePath(final Node n) throws SQLException {
+		List<String> parentList = new ArrayList<String>();
+		Folder f = selectFolderById(n.getFileParentFolder());
+		while (f != null) {
+			parentList.add(f.getFolderName());
+			if (f.getFolderParent().equals("null")) {
+				break;
+			} else {
+				f = selectFolderById(f.getFolderParent());
+			}
+		}
+		StringBuffer np = new StringBuffer();
+		for (int i = parentList.size() - 1; i >= 0; i--) {
+			np.append(parentList.get(i));
+			np.append(File.separator);
+		}
+		return np.toString();
 	}
 }

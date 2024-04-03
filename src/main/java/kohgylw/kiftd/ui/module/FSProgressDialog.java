@@ -22,9 +22,9 @@ public class FSProgressDialog extends KiftdDynamicWindow {
 	private static JButton cancel;// 取消按钮
 	private static boolean listen;// 是否继续监听
 
-	private FSProgressDialog() {
+	private FSProgressDialog(JDialog parentWindow) {
 		setUIFont();// 自动设置字体大小
-		(window = new JDialog(FSViewer.window, "执行中...")).setModal(true);
+		(window = new JDialog(parentWindow, "执行中...")).setModal(true);
 		window.setSize(380, 120);
 		window.setLocation(200, 200);
 		window.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
@@ -138,11 +138,12 @@ public class FSProgressDialog extends KiftdDynamicWindow {
 	 * 通过该方法获取一个新的进度窗口，与前几个窗口不同，每次进行进度监听操作均应获取新窗口而不能使用前一个。
 	 * </p>
 	 * 
+	 * @param parentWindow 创建此进度窗口的父窗口对象
 	 * @author 青阳龙野(kohgylw)
 	 * @return kohgylw.kiftd.ui.module.FSProgressDialog 新的窗口对象
 	 */
-	protected static FSProgressDialog getNewInstance() {
-		return new FSProgressDialog();
+	protected static FSProgressDialog getNewInstance(JDialog parentWindow) {
+		return new FSProgressDialog(parentWindow);
 	}
 
 }
