@@ -213,29 +213,29 @@ public class FileSystemPathViewer extends KiftdDynamicWindow {
 		});
 		removeBtn.addActionListener((e) -> {
 			disableAllButtons();
-			worker.execute(() -> {
-				if (JOptionPane.showConfirmDialog(window, "确认要移除该扩展存储区么？警告：移除后，该存储区内原先存放的数据将丢失，且设置生效后不可恢复。", "移除扩展存储区",
-						JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
-					short index = pathsTable.getSelectFileSystemIndex();
-					for (int i = 0; i < SettingWindow.extendStores.size(); i++) {
-						if (SettingWindow.extendStores.get(i).getIndex() == index) {
-							final int removeItemIndex = i;// 待删除的扩展存储区索引号
-							// 检查该存储区内是否存有数据
-							try {
-								long total = FileSystemManager.getInstance().getTotalOfNodesAtExtendStore(index);
-								if (total > 0) {
-									// 如果已存有数据，则询问是否需要移出
-									switch (JOptionPane.showConfirmDialog(window,
-											"是否立即将该存储区内的数据全部移出以便留档？注意：该操作即时生效，无论是否应用新设置均无法回退。", "移出",
-											JOptionPane.YES_NO_CANCEL_OPTION)) {
-									case 0:
-										// 是：先执行移出操作
-										JFileChooser transferDirChooer = new JFileChooser();
-										transferDirChooer.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-										transferDirChooer.setPreferredSize(fileChooerSize);
-										transferDirChooer.setDialogTitle("请选择移出数据的保存路径...");
-										if (transferDirChooer.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
-											File transferDir = transferDirChooer.getSelectedFile();
+			if (JOptionPane.showConfirmDialog(window, "确认要移除该扩展存储区么？警告：移除后，该存储区内原先存放的数据将丢失，且设置生效后不可恢复。", "移除扩展存储区",
+					JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+				short index = pathsTable.getSelectFileSystemIndex();
+				for (int i = 0; i < SettingWindow.extendStores.size(); i++) {
+					if (SettingWindow.extendStores.get(i).getIndex() == index) {
+						final int removeItemIndex = i;// 待删除的扩展存储区索引号
+						// 检查该存储区内是否存有数据
+						try {
+							long total = FileSystemManager.getInstance().getTotalOfNodesAtExtendStore(index);
+							if (total > 0) {
+								// 如果已存有数据，则询问是否需要移出
+								switch (JOptionPane.showConfirmDialog(window,
+										"是否立即将该扩展存储区内的数据全部移出以便留档？如果您确定要移除该扩展存储区，推荐执行该操作。注意：该操作即时生效，无论是否应用新设置均无法回退。",
+										"移出", JOptionPane.YES_NO_CANCEL_OPTION)) {
+								case 0:
+									// 是：先执行移出操作
+									JFileChooser transferDirChooer = new JFileChooser();
+									transferDirChooer.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+									transferDirChooer.setPreferredSize(fileChooerSize);
+									transferDirChooer.setDialogTitle("请选择移出数据的保存路径...");
+									if (transferDirChooer.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+										File transferDir = transferDirChooer.getSelectedFile();
+										worker.execute(() -> {
 											FSProgressDialog fsd = FSProgressDialog.getNewInstance(window);
 											Thread t = new Thread(() -> {
 												fsd.show();
@@ -249,6 +249,7 @@ public class FileSystemPathViewer extends KiftdDynamicWindow {
 													if (r) {
 														// 若所有数据移出成功，则移除指定存储区并结束流程
 														SettingWindow.extendStores.remove(removeItemIndex);
+														refresh();// 这里单独刷新一次是因为此部分逻辑可能会稍后才执行
 													} else {
 														// 若出现错误，则进行提示
 														JOptionPane.showMessageDialog(window,
@@ -263,32 +264,40 @@ public class FileSystemPathViewer extends KiftdDynamicWindow {
 															"目标文件夹内存在同名文件，建议选择一个空文件夹作为移出数据的保存路径。", "错误",
 															JOptionPane.ERROR_MESSAGE);
 												});
+											} catch (Exception e1) {
+												SwingUtilities.invokeLater(() -> {
+													fsd.close();
+													JOptionPane.showMessageDialog(window,
+															"出现意外错误，无法统计扩展存储区数据，请重启应用后重试。", "错误",
+															JOptionPane.ERROR_MESSAGE);
+												});
+
 											}
-										}
-										break;
-									case 1:
-										// 否：直接移除指定存储区
-										SettingWindow.extendStores.remove(i);
-										break;
-									case 2:
-									default:
-										break;
+										});
 									}
-								} else {
+									break;
+								case 1:
+									// 否：直接移除指定存储区
 									SettingWindow.extendStores.remove(i);
+									break;
+								case 2:
+								default:
+									break;
 								}
-							} catch (Exception e1) {
-								JOptionPane.showMessageDialog(window, "出现意外错误，无法统计存储区数据，请重启应用后重试。", "错误",
-										JOptionPane.ERROR_MESSAGE);
-								e1.printStackTrace();
+							} else {
+								SettingWindow.extendStores.remove(i);
 							}
-							break;
+						} catch (Exception e1) {
+							JOptionPane.showMessageDialog(window, "出现意外错误，无法统计扩展存储区数据，请重启应用后重试。", "错误",
+									JOptionPane.ERROR_MESSAGE);
 						}
+						break;
 					}
 				}
-				enableAllButtons();
-				refresh();
-			});
+			}
+			enableAllButtons();
+			refresh();
+
 		});
 		// 生成文件列表
 		pathsTable = new PathsTable();

@@ -6,6 +6,7 @@ import kohgylw.kiftd.server.exception.FoldersTotalOutOfLimitException;
 import kohgylw.kiftd.server.model.Node;
 
 import java.io.File;
+import java.nio.file.FileAlreadyExistsException;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
@@ -78,6 +79,10 @@ public class ConsoleRunner {
 			}
 			case "-import": {
 				doImport(args);
+				break;
+			}
+			case "-transfer": {
+				doTransfer(args);
 				break;
 			}
 			case "-console": {
@@ -695,7 +700,7 @@ public class ConsoleRunner {
 			if (FileSystemManager.getInstance().exportTo(foldersId, filesId, path, type)) {
 				return;
 			} else {
-				Printer.instance.print("错误：导出失败，可能导出全部文件。");
+				Printer.instance.print("错误：导出失败，可能未导出全部文件。");
 			}
 		} catch (Exception e1) {
 			Printer.instance.print("错误：导出失败，出现意外错误。");
@@ -777,6 +782,40 @@ public class ConsoleRunner {
 			}
 		} else {
 			Printer.instance.print("错误：导出失败，导出的目标必须是一个文件夹（" + path + "）。");
+		}
+	}
+
+	// 移出指定存储区的数据至指定文件夹内
+	private void doTransfer(String[] args) {
+		short extendStoreIndex;
+		File reservePath;
+		if (args.length == 3) {
+			try {
+				extendStoreIndex = Short.parseShort(args[1]);
+				reservePath = new File(args[2]);
+				if (!reservePath.isDirectory()) {
+					Printer.instance.print("错误：移出数据的保存路径（" + args[2] + "）必须指向一个已经存在的文件夹。");
+					return;
+				}
+				try {
+					long total = FileSystemManager.getInstance().getTotalOfNodesAtExtendStore(extendStoreIndex);
+					if (total > 0) {
+						FileSystemManager.getInstance().transferExtendStore(extendStoreIndex, reservePath);
+						return;
+					} else {
+						Printer.instance.print("错误：该扩展存储区（" + args[1] + "）不存在或其内部尚无任何数据，无需执行该操作。");
+						return;
+					}
+				} catch (FileAlreadyExistsException e1) {
+					Printer.instance.print("错误：目标文件夹内存在同名文件，建议选择一个空文件夹作为移出数据的保存路径。");
+				} catch (Exception e2) {
+					Printer.instance.print("错误：无法移出该扩展存储区内的数据，请重试。");
+				}
+			} catch (NumberFormatException e) {
+				Printer.instance.print("错误：扩展存储区编号（" + args[1] + "）无法被识别。");
+			}
+		} else {
+			Printer.instance.print("错误：移出失败，必须指定要移出的扩展存储区编号和移出数据的保存路径（示例：“-transfer 1 /home/your/transfer/folder”）。");
 		}
 	}
 
