@@ -1289,6 +1289,9 @@ public class ConfigureReader {
 					}
 				}
 				switch (unit) {
+				case "k":
+					r = Integer.parseInt(value) * 1024L;
+					break;
 				case "m":
 					r = Integer.parseInt(value) * 1048576L;
 					break;
@@ -1296,7 +1299,7 @@ public class ConfigureReader {
 					r = Integer.parseInt(value) * 1073741824L;
 					break;
 				default:
-					r = Integer.parseInt(value) * 1024L;
+					r = Integer.parseInt(in.trim()) * 1024L;
 					break;
 				}
 			} else {

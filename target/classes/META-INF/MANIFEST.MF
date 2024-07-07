@@ -38,7 +38,7 @@ Class-Path: libs/spring-boot-starter-web-2.7.0.jar libs/spring-boot-star
  r libs/commons-codec-1.15.jar libs/flexmark-0.50.44.jar libs/flexmark-u
  til-0.50.44.jar
 Implementation-Title: kiftd
-Implementation-Version: 1.2.0-RELEASE
+Implementation-Version: 1.2.1-RELEASE
 Main-Class: kohgylw.kiftd.mc.MC
 Created-By: Maven Integration for Eclipse
 

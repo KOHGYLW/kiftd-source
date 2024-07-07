@@ -964,7 +964,7 @@ public class FileSystemManager {
 		if (pfId != null) {
 			countNodesByFolderId.setString(1, pfId);
 			ResultSet rs = countNodesByFolderId.executeQuery();
-			if (rs.first()) {
+			if (rs.next()) {
 				return rs.getLong(1);
 			}
 		}
@@ -987,7 +987,7 @@ public class FileSystemManager {
 		if (pfId != null) {
 			countFoldersByParentFolderId.setString(1, pfId);
 			ResultSet rs = countFoldersByParentFolderId.executeQuery();
-			if (rs.first()) {
+			if (rs.next()) {
 				return rs.getLong(1);
 			}
 		}
