@@ -551,11 +551,6 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		if (!ConfigureReader.instance().authorized(account, AccountAuth.MOVE_FILES, fu.getAllFoldersId(locationpath))) {
 			return NO_AUTHORIZED;
 		}
-		// 如果执行的是剪切操作，则还需要同时具备删除权限
-		if (!isCopy && !ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER,
-				fu.getAllFoldersId(locationpath))) {
-			return NO_AUTHORIZED;
-		}
 		// 对涉及的文件和文件夹逐一进行移动或复制操作
 		try {
 			// 获取存在冲突的文件的对应处理表
@@ -594,7 +589,11 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 				}
 				if (!ConfigureReader.instance().authorized(account, AccountAuth.MOVE_FILES,
 						fu.getAllFoldersId(node.getFileParentFolder()))) {
-					return NO_AUTHORIZED;// 无操作权限
+					return NO_AUTHORIZED;// 无移动操作权限
+				}
+				if (!isCopy && !ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER,
+						fu.getAllFoldersId(node.getFileParentFolder()))) {
+					return NO_AUTHORIZED;// 进行剪切但没有删除权限
 				}
 				// 记录原始的文件路径，便于执行后记录日志
 				String originPath = fbu.getNodePath(node);
@@ -729,6 +728,10 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 					return NO_AUTHORIZED;
 				}
 				if (!ConfigureReader.instance().authorized(account, AccountAuth.MOVE_FILES,
+						fu.getAllFoldersId(folder.getFolderParent()))) {
+					return NO_AUTHORIZED;
+				}
+				if (!isCopy && !ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER,
 						fu.getAllFoldersId(folder.getFolderParent()))) {
 					return NO_AUTHORIZED;
 				}
@@ -913,11 +916,6 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 		// 权限检查，确认是否具备移动权限
 		if (ConfigureReader.instance().accessFolder(targetFolder, account) && ConfigureReader.instance()
 				.authorized(account, AccountAuth.MOVE_FILES, fu.getAllFoldersId(locationpath))) {
-			// 如果执行的是剪切操作，则还需要同时具备删除权限
-			if (!isCopy && !ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER,
-					fu.getAllFoldersId(locationpath))) {
-				return NO_AUTHORIZED;
-			}
 			try {
 				final List<String> idList = gson.fromJson(strIdList, new TypeToken<List<String>>() {
 				}.getType());
@@ -949,6 +947,10 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 							fu.getAllFoldersId(node.getFileParentFolder()))) {
 						return NO_AUTHORIZED;// 无权操作
 					}
+					if (!isCopy && !ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER,
+							fu.getAllFoldersId(node.getFileParentFolder()))) {
+						return NO_AUTHORIZED;// 只能复制不能剪切
+					}
 					if (fm.queryByParentFolderId(locationpath).parallelStream()
 							.anyMatch((e) -> e.getFileName().equals(node.getFileName()))) {
 						repeNodes.add(node);// 与目标文件夹里的某个文件夹重名？重名列表加一
@@ -973,6 +975,10 @@ public class FileServiceImpl extends RangeFileStreamWriter implements FileServic
 						return NO_AUTHORIZED;
 					}
 					if (!ConfigureReader.instance().authorized(account, AccountAuth.MOVE_FILES,
+							fu.getAllFoldersId(folder.getFolderParent()))) {
+						return NO_AUTHORIZED;
+					}
+					if (!isCopy && !ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER,
 							fu.getAllFoldersId(folder.getFolderParent()))) {
 						return NO_AUTHORIZED;
 					}
