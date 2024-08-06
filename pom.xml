@@ -224,6 +224,64 @@
 					</execution>
 				</executions>
 			</plugin>
+			<plugin>
+				<groupId>io.github.fvarrui</groupId>
+				<artifactId>javapackager</artifactId>
+				<version>1.7.5</version>
+				<executions>
+					<execution>
+						<id>bundling-for-windows</id>
+						<phase>package</phase>
+						<goals>
+							<goal>package</goal>
+						</goals>
+						<configuration>
+							<platform>auto</platform>
+							<!--是否以管理员权限运行-->
+							<administratorRequired>false</administratorRequired>
+							<mainClass>kohgylw.kiftd.mc.MC</mainClass>
+
+							<!-- optional -->
+							<!-- 是否将jvm一起打包到程序中 -->
+							<bundleJre>true</bundleJre>
+							<!-- jre路径本地路径 java8需要手动配置jre路径-->
+							<jrePath>${java.home}</jrePath>
+							<!-- 定制jre,开启可精简jre大小;(java9+) -->
+							<customizedJre>false</customizedJre>
+							<!-- 复制依赖库到libs文件夹 -->
+							<copyDependencies>true</copyDependencies>
+							<!--是否生成安装包，需要安装inno setup-->
+							<generateInstaller>false</generateInstaller>
+							<runnableJar>${project.build.directory}/${project.name}-${project.version}.jar</runnableJar>
+							<additionalResources>
+								<additionalResource>conf</additionalResource>
+								<additionalResource>filesystem</additionalResource>
+								<additionalResource>fonts</additionalResource>
+								<additionalResource>logs</additionalResource>
+								<additionalResource>mybatisResource</additionalResource>
+								<additionalResource>webContext</additionalResource>
+							</additionalResources>
+							<winConfig>
+								<headerType>gui</headerType>
+								<!-- exe图标文件地址 -->
+								<!-- <icoFile></icoFile> -->
+							</winConfig>
+							<linuxConfig>
+								<headerType>gui</headerType>
+								<!-- 图标文件地址 -->
+								<!-- <pngFile></pngFile> -->
+							</linuxConfig>
+							<macConfig>
+								<headerType>gui</headerType>
+								<!-- <appId>app unique identifier</appId> -->
+								<!-- 图标文件地址 -->
+								<!-- <icnsFile></icnsFile> -->
+							</macConfig>
+
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 	<!-- end 项目基本配置 -->
