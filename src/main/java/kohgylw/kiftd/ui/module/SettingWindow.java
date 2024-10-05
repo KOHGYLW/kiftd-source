@@ -115,7 +115,7 @@ public class SettingWindow extends KiftdDynamicWindow {
 		// 日志等级选择框
 		final JPanel logbox = new JPanel(new FlowLayout(1));
 		logbox.setBorder(new EmptyBorder(interval, 0, interval, 0));
-		final JLabel logtitle = new JLabel("日志等级(port)：");
+		final JLabel logtitle = new JLabel("日志等级(log level)：");
 		(SettingWindow.logLevelinput = new JComboBox<String>()).addItem("记录全部(ALL)");
 		SettingWindow.logLevelinput.addItem("仅异常(EXCEPTION)");
 		SettingWindow.logLevelinput.addItem("不记录(NONE)");
