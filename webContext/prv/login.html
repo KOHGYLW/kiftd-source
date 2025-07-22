@@ -9,7 +9,18 @@
 	content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"
 	name="viewport" />
 <title>KIFT</title>
-<link rel="stylesheet" href="css/bootstrap.min.css">
+<link rel="stylesheet" href="/styleEr.css">
+<!-- Bootstrap基本框架 -->
+<!-- 在<head>中预加载两种CSS -->
+<link rel="preload" href="/css/bootstrap.min.css" as="style">
+<link rel="preload" href="/css/bootstrap.min.dark.css" as="style">
+<script src="/styleEr.js"></script>
+<script>
+// 初始化页面样式
+document.addEventListener('DOMContentLoaded', () => {
+  initStyle();
+});
+</script>
 <link rel="stylesheet" href="css/overrall.min.css">
 <link rel="icon" type="image/x-icon" href="css/icon.png" />
 <!--[if lt IE 9]>
