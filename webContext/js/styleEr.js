@@ -47,17 +47,7 @@ function setUrl(url) {
     localStorage.setItem('styleUrl', url);
 }
 
-// 根据当前样式设置logo图片
-function setLogoImage(defaultUrl = '/css/bootstrap.min.css') {
-    const logoImg = document.getElementById('lg');
-    if (!logoImg) return;
-    
-    const currentUrl = getUrl(defaultUrl);
-    const isDefaultStyle = currentUrl === defaultUrl;
-    
-    // 根据当前使用的样式设置对应的logo图片
-    logoImg.src = isDefaultStyle ? '/l.png' : '/d.png';
-}
+
 
 // 初始化页面样式
 function initStyle(defaultUrl = '/css/bootstrap.min.css', alternateUrl = '/css/bootstrap.min.dark.css') {
@@ -79,9 +69,6 @@ function initStyle(defaultUrl = '/css/bootstrap.min.css', alternateUrl = '/css/b
     
     loadCSS(url, (success) => {
         if (success) {
-            // 设置logo图片
-            setLogoImage(defaultUrl);
-            // 显示页面内容
             document.body.style.visibility = 'visible';
         }
         hideLoader(loader);
