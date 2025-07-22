@@ -60,7 +60,7 @@ function setLogoImage(defaultUrl = '/css/bootstrap.min.css') {
 }
 
 // 初始化页面样式
-function initStyle(defaultUrl = '/css/bootstrap.min.css', alternateUrl = '/css/bootstrap.min.orange.css') {
+function initStyle(defaultUrl = '/css/bootstrap.min.css', alternateUrl = '/css/bootstrap.min.dark.css') {
     // 预加载两种样式
     const preload1 = document.createElement('link');
     preload1.rel = 'preload';
