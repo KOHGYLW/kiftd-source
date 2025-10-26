@@ -1,0 +1,259 @@
+version: '3.8'
+
+services:
+  # PostgreSQL数据库
+  postgres:
+    image: postgres:15-alpine
+    container_name: license-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: license_management
+      POSTGRES_USER: license_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-license_password_2024!}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - license-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U license_user -d license_management"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis缓存
+  redis:
+    image: redis:7-alpine
+    container_name: license-redis
+    restart: always
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_password_2024!}
+    volumes:
+      - redis_data:/data
+      - ./config/redis.conf:/etc/redis/redis.conf:ro
+    ports:
+      - "6379:6379"
+    networks:
+      - license-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # 后端应用
+  license-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: license-backend
+    restart: always
+    environment:
+      # 数据库配置
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: license_management
+      DB_USERNAME: license_user
+      DB_PASSWORD: ${DB_PASSWORD:-license_password_2024!}
+      
+      # Redis配置
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_password_2024!}
+      
+      # 应用配置
+      SPRING_PROFILES_ACTIVE: prod
+      SERVER_PORT: 8080
+      
+      # JWT配置
+      JWT_SECRET: ${JWT_SECRET:-license-management-jwt-secret-key-2024-enterprise-production}
+      JWT_EXPIRATION: 86400000
+      JWT_REFRESH_EXPIRATION: 604800000
+      
+      # 加密配置
+      RSA_KEY_LENGTH: 4096
+      AES_KEY_LENGTH: 256
+      SIGNATURE_ALGORITHM: SHA256withRSA
+      
+      # 密钥轮换配置
+      KEY_ROTATION_INTERVAL: 24
+      MAX_KEY_AGE: 168
+      
+      # 硬件指纹配置
+      HARDWARE_ONLINE_THRESHOLD: 0.85
+      HARDWARE_OFFLINE_THRESHOLD: 0.70
+      
+      # JVM参数
+      JAVA_OPTS: >-
+        -Xms1g -Xmx2g
+        -XX:+UseG1GC
+        -XX:MaxGCPauseMillis=200
+        -XX:+UnlockExperimentalVMOptions
+        -XX:+UseJVMCICompiler
+        -Dfile.encoding=UTF-8
+        -Duser.timezone=Asia/Shanghai
+    volumes:
+      - app_logs:/var/log/license-management-system
+      - app_data:/app/data
+    ports:
+      - "8080:8080"
+    networks:
+      - license-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # 前端应用 (Nginx)
+  license-frontend:
+    build:
+      context: ../license-management-frontend
+      dockerfile: Dockerfile
+      target: production
+    container_name: license-frontend
+    restart: always
+    volumes:
+      - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./config/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - frontend_logs:/var/log/nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - license-network
+    depends_on:
+      - license-backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Prometheus监控
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: license-prometheus
+    restart: always
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - license-network
+    profiles:
+      - monitoring
+
+  # Grafana可视化
+  grafana:
+    image: grafana/grafana:latest
+    container_name: license-grafana
+    restart: always
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin123}
+      GF_USERS_ALLOW_SIGN_UP: false
+      GF_SERVER_DOMAIN: localhost
+      GF_SMTP_ENABLED: false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    ports:
+      - "3000:3000"
+    networks:
+      - license-network
+    depends_on:
+      - prometheus
+    profiles:
+      - monitoring
+
+  # ELK日志收集 (可选)
+  elasticsearch:
+    image: elasticsearch:8.8.0
+    container_name: license-elasticsearch
+    restart: always
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - xpack.security.enabled=false
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    networks:
+      - license-network
+    profiles:
+      - logging
+
+  kibana:
+    image: kibana:8.8.0
+    container_name: license-kibana
+    restart: always
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    networks:
+      - license-network
+    depends_on:
+      - elasticsearch
+    profiles:
+      - logging
+
+  logstash:
+    image: logstash:8.8.0
+    container_name: license-logstash
+    restart: always
+    volumes:
+      - ./logging/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+      - app_logs:/var/log/license-management-system:ro
+    networks:
+      - license-network
+    depends_on:
+      - elasticsearch
+    profiles:
+      - logging
+
+# 网络配置
+networks:
+  license-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# 数据卷配置
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  app_logs:
+    driver: local
+  app_data:
+    driver: local
+  frontend_logs:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
