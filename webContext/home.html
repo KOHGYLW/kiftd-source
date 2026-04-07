@@ -12,7 +12,16 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 	<title>KIFT</title>
 	<!-- Bootstrap基本框架 -->
-	<link rel="stylesheet" href="css/bootstrap.min.css">
+	<link rel="stylesheet" href="/css/styleEr.css">
+	<link rel="preload" href="/css/bootstrap.min.css" as="style">
+	<link rel="preload" href="/css/bootstrap.min.dark.css" as="style">
+   	<script src="/css/styleEr.js"></script>
+  	<script>
+    	// 初始化页面样式
+   	 document.addEventListener('DOMContentLoaded', () => {
+   	     initStyle();
+  	  });
+	</script>
 	<!-- 全局样式 -->
 	<link rel="stylesheet" href="css/overrall.min.css">
 	<!-- 图片查看器插件 -->
@@ -40,6 +49,9 @@
 							</small>
 						</em>
 					</span> <span id="tb" class="rightbtn hidden-xs"></span>
+                  			<button class="btn btn-link" onclick="changeStyle()">
+						更换主题 <span class="glyphicon glyphicon-cog" aria-hidden="true"></span>
+					</button>
 					<button class="btn btn-link rightbtn hidden-xs" onclick="refreshFolderView()">
 						刷新 <span class="glyphicon glyphicon-repeat" aria-hidden="true"></span>
 					</button>
@@ -52,6 +64,9 @@
 			<div class="col-md-12">
 				<p class="subtitle visible-xs-block">
 					<span id="tb2"></span>
+                  			<button class="btn btn-link" onclick="changeStyle()">
+						更换主题 <span class="glyphicon glyphicon-cog" aria-hidden="true"></span>
+					</button>
 					<button class="btn btn-link" onclick="refreshFolderView()">
 						刷新 <span class="glyphicon glyphicon-repeat" aria-hidden="true"></span>
 					</button>
