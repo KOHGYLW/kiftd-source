@@ -195,7 +195,7 @@ public class ServerUIModule extends KiftdDynamicWindow {
 		outputBox.add(new JLabel("[输出信息(Server Message)]："));
 		(ServerUIModule.output = new JTextArea()).setLineWrap(true);
 		output.setRows(3 + (int) (proportion));
-		output.setSize((int) (292 * proportion), 100);
+		output.setSize((int) ((OriginSize_Width * proportion) - 18), 100);
 		ServerUIModule.output.setEditable(false);
 		ServerUIModule.output.setForeground(Color.RED);
 		ServerUIModule.output.getDocument().addDocumentListener(new DocumentListener() {
