@@ -1,0 +1,346 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+spring:
+  application:
+    name: license-management-system
+  
+  profiles:
+    active: dev
+  
+  # 数据库配置
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/license_management
+    username: ${DB_USERNAME:license_user}
+    password: ${DB_PASSWORD:license_password}
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      auto-commit: true
+      idle-timeout: 300000
+      pool-name: LicenseHikariCP
+      max-lifetime: 1800000
+      connection-timeout: 30000
+      connection-test-query: SELECT 1
+
+  # JPA配置
+  jpa:
+    hibernate:
+      ddl-auto: update
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.SnakeCasePhysicalNamingStrategy
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+        batch_versioned_data: true
+    open-in-view: false
+
+  # Redis配置
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: 0
+      timeout: 6000ms
+      lettuce:
+        pool:
+          max-active: 20
+          max-wait: -1ms
+          max-idle: 10
+          min-idle: 0
+
+  # Jackson配置
+  jackson:
+    time-zone: GMT+8
+    date-format: yyyy-MM-dd HH:mm:ss
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+
+  # 文件上传配置
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 100MB
+
+# 日志配置
+logging:
+  level:
+    com.enterprise.license: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/license-management-system.log
+    max-size: 10MB
+    max-history: 30
+
+# Actuator配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# OpenAPI文档配置
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: alpha
+    tags-sorter: alpha
+  info:
+    title: License Management System API
+    description: Enterprise Customer License Management System API Documentation
+    version: 1.0.0
+    contact:
+      name: Enterprise Team
+      email: support@enterprise.com
+
+# 自定义配置
+license:
+  jwt:
+    secret: ${JWT_SECRET:license-management-system-secret-key-2024-enterprise-security}
+    expiration: ${JWT_EXPIRATION:86400000} # 24小时
+    refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000} # 7天
+  
+  security:
+    # 密钥轮换间隔（小时）
+    key-rotation-interval: ${KEY_ROTATION_INTERVAL:24}
+    # 密钥最大存活时间（小时） 
+    max-key-age: ${MAX_KEY_AGE:168}
+    
+    # 不需要认证的路径
+    permit-all:
+      - /v3/api-docs/**
+      - /swagger-ui/**
+      - /swagger-ui.html
+      - /auth/login
+      - /auth/register
+      - /actuator/health
+      - /api/licenses/validate
+      - /api/licenses/validate-offline
+      - /api/licenses/hardware-fingerprint
+    
+    # 允许跨域的源
+    allowed-origins:
+      - http://localhost:3000
+      - http://localhost:8080
+      - https://license.enterprise.com
+  
+  # 加密算法配置
+  encryption:
+    # RSA密钥长度
+    rsa-key-length: ${RSA_KEY_LENGTH:4096}
+    # AES密钥长度
+    aes-key-length: ${AES_KEY_LENGTH:256}
+    # 签名算法
+    signature-algorithm: ${SIGNATURE_ALGORITHM:SHA256withRSA}
+    
+  # 硬件指纹配置
+  hardware:
+    # 硬件指纹相似度阈值（在线验证）
+    online-similarity-threshold: ${HARDWARE_ONLINE_THRESHOLD:0.8}
+    # 硬件指纹相似度阈值（离线验证）
+    offline-similarity-threshold: ${HARDWARE_OFFLINE_THRESHOLD:0.6}
+
+---
+# 开发环境配置
+spring:
+  config:
+    activate:
+      on-profile: dev
+  
+  datasource:
+    url: jdbc:postgresql://localhost:5432/license_management_dev
+  
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+
+logging:
+  level:
+    root: INFO
+    com.enterprise.license: DEBUG
+
+---
+# 测试环境配置
+spring:
+  config:
+    activate:
+      on-profile: test
+  
+  datasource:
+    url: jdbc:postgresql://localhost:5432/license_management_test
+  
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+
+logging:
+  level:
+    root: WARN
+    com.enterprise.license: INFO
+
+---
+# 生产环境配置
+spring:
+  config:
+    activate:
+      on-profile: prod
+  
+  # 生产数据库配置
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:license_management}
+    username: ${DB_USERNAME:license_user}
+    password: ${DB_PASSWORD:license_password}
+    hikari:
+      minimum-idle: 10
+      maximum-pool-size: 50
+      auto-commit: false
+      idle-timeout: 600000
+      pool-name: LicenseHikariCP-Prod
+      max-lifetime: 1800000
+      connection-timeout: 30000
+      connection-test-query: SELECT 1
+      leak-detection-threshold: 60000
+      validation-timeout: 5000
+  
+  # 生产JPA配置
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: validate
+      jdbc:
+        batch_size: 100
+        fetch_size: 50
+      order_inserts: true
+      order_updates: true
+      batch_versioned_data: true
+      cache:
+        use_second_level_cache: true
+        use_query_cache: true
+        region:
+          factory_class: org.hibernate.cache.ehcache.EhCacheRegionFactory
+    properties:
+      hibernate:
+        cache:
+          use_minimal_puts: true
+          use_structured_entries: true
+  
+  # 生产Redis配置
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: 0
+      timeout: 6000ms
+      ssl: ${REDIS_SSL:false}
+      lettuce:
+        pool:
+          max-active: 50
+          max-wait: 2000ms
+          max-idle: 20
+          min-idle: 5
+        shutdown-timeout: 100ms
+
+# 生产日志配置
+logging:
+  level:
+    root: WARN
+    com.enterprise.license: INFO
+    org.springframework.security: WARN
+    org.hibernate: WARN
+    org.apache.tomcat: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId:-}] %logger{36} - %msg%n"
+  file:
+    name: /var/log/license-management-system/application.log
+    max-size: 100MB
+    max-history: 60
+    total-size-cap: 10GB
+  logback:
+    rollingpolicy:
+      clean-history-on-start: true
+
+# 生产环境Actuator配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+    metrics:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: license-management-system
+      environment: production
+
+# 生产环境自定义配置
+license:
+  security:
+    # 生产环境密钥轮换间隔（小时）
+    key-rotation-interval: ${KEY_ROTATION_INTERVAL:24}
+    # 密钥最大存活时间（小时）
+    max-key-age: ${MAX_KEY_AGE:168}
+    
+  # 生产环境加密配置
+  encryption:
+    rsa-key-length: ${RSA_KEY_LENGTH:4096}
+    aes-key-length: ${AES_KEY_LENGTH:256}
+    signature-algorithm: ${SIGNATURE_ALGORITHM:SHA256withRSA}
+    
+  # 生产环境硬件指纹配置
+  hardware:
+    online-similarity-threshold: ${HARDWARE_ONLINE_THRESHOLD:0.85}
+    offline-similarity-threshold: ${HARDWARE_OFFLINE_THRESHOLD:0.70}
+
+server:
+  # 生产环境Tomcat配置
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 20
+    max-connections: 8192
+    accept-count: 100
+    connection-timeout: 20000
+    max-http-form-post-size: 2MB
+    max-swallow-size: 2MB
+  # 启用压缩
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
+    min-response-size: 1024
