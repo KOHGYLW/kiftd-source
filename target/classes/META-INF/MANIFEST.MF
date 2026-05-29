@@ -1,5 +1,5 @@
 Manifest-Version: 1.0
-Build-Jdk-Spec: 17
+Build-Jdk-Spec: 21
 Class-Path: libs/spring-boot-starter-web-2.7.0.jar libs/spring-boot-star
  ter-2.7.0.jar libs/spring-boot-2.7.0.jar libs/spring-boot-autoconfigure
  -2.7.0.jar libs/spring-boot-starter-logging-2.7.0.jar libs/logback-clas
@@ -36,7 +36,8 @@ Class-Path: libs/spring-boot-starter-web-2.7.0.jar libs/spring-boot-star
  tivebin-osx64-3.3.1.jar libs/jave-nativebin-osxm1-3.3.1.jar libs/jave-n
  ativebin-linux-arm32-3.3.1.jar libs/jave-nativebin-linux-arm64-3.3.1.ja
  r libs/commons-codec-1.15.jar libs/flexmark-0.50.44.jar libs/flexmark-u
- til-0.50.44.jar
+ til-0.50.44.jar libs/ftpserver-core-1.2.0.jar libs/ftplet-api-1.2.0.jar
+  libs/mina-core-2.1.6.jar
 Implementation-Title: kiftd
 Implementation-Version: 1.2.3-SNAPSHOT
 Main-Class: kohgylw.kiftd.mc.MC

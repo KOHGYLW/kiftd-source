@@ -1,4 +1,4 @@
-package kohgylw.kiftd.server.webdav.util;
+package kohgylw.kiftd.server.util;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -13,15 +13,11 @@ import kohgylw.kiftd.server.mapper.FolderMapper;
 import kohgylw.kiftd.server.mapper.NodeMapper;
 import kohgylw.kiftd.server.model.Folder;
 import kohgylw.kiftd.server.model.Node;
-import kohgylw.kiftd.server.util.ConfigureReader;
-import kohgylw.kiftd.server.util.FileBlockUtil;
-import kohgylw.kiftd.server.util.FolderUtil;
-import kohgylw.kiftd.server.util.LogUtil;
-import kohgylw.kiftd.server.webdav.pojo.KiftdWebDAVResource;
+import kohgylw.kiftd.server.pojo.KiftdResource;
 
 /**
  * 
- * <h2>kiftd虚拟文件系统资源操作工具</h2>
+ * <h2>kiftd虚拟文件系统路径操作工具</h2>
  * <p>
  * 该工具用于实现基于逻辑路径的各类操作。例如根据逻辑路径获取文件、文件夹以及封装为KiftdResource的资源对象等。 具体功能详见其中各个方法的注释。
  * 该工具使用Spring IOC容器进行管理。
@@ -31,7 +27,7 @@ import kohgylw.kiftd.server.webdav.pojo.KiftdWebDAVResource;
  * @version 1.0
  */
 @Component
-public class KiftdWebDAVResourcesUtil {
+public class PathUtil {
 
 	@Resource
 	private FolderMapper fm;
@@ -129,18 +125,18 @@ public class KiftdWebDAVResourcesUtil {
 	 *         资源对象，封装了kiftd虚拟文件系统中文件或文件夹。
 	 *         该方法永远不会返回null，当路径不正确时，将会返回一个不存在的WebDAVResource对象。
 	 */
-	public KiftdWebDAVResource getResource(String path) {
+	public KiftdResource getResource(String path) {
 		if (path != null && !path.endsWith("/")) {
 			// 从文件（或文件夹）中获取资源对象，Windows客户端在请求文件夹时并不会以“/”结尾，因此无法判定是否为文件夹
 			kohgylw.kiftd.server.model.Node node = getNodeByPath(path);
 			if (node != null) {
 				// 如果该逻辑路径确实对应一个文件，则返回文件节点的资源对象
-				return new KiftdWebDAVResource(path, node, fbu.getFileFromBlocks(node));
+				return new KiftdResource(path, node, fbu.getFileFromBlocks(node));
 			}
 		}
 		// 否则尝试获取文件夹的资源对象
 		Folder folder = getFolderByPath(path);
-		return new KiftdWebDAVResource(path, folder);
+		return new KiftdResource(path, folder);
 	}
 
 	/**

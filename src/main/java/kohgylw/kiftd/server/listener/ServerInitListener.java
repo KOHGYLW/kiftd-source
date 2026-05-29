@@ -2,6 +2,17 @@ package kohgylw.kiftd.server.listener;
 
 import javax.servlet.annotation.*;
 
+import org.apache.ftpserver.FtpServer;
+import org.apache.ftpserver.FtpServerFactory;
+import org.apache.ftpserver.filesystem.nativefs.NativeFileSystemFactory;
+import org.apache.ftpserver.ftplet.Authority;
+import org.apache.ftpserver.ftplet.FtpException;
+import org.apache.ftpserver.ftplet.User;
+import org.apache.ftpserver.ftplet.UserManager;
+import org.apache.ftpserver.listener.ListenerFactory;
+import org.apache.ftpserver.usermanager.PropertiesUserManagerFactory;
+import org.apache.ftpserver.usermanager.UserFactory;
+import org.apache.ftpserver.usermanager.impl.WritePermission;
 import org.springframework.context.ApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
 
@@ -48,6 +59,7 @@ public class ServerInitListener implements ServletContextListener {
 	private NoticeUtil nu;// 公告信息解析工具
 	private FolderMapper nm;// 文件夹映射表
 	private LogUtil lu;// 日志记录工具
+	private FtpServer ftpServer; // FTP服务器
 
 	public void contextInitialized(final ServletContextEvent sce) {
 		// 获取IOC容器，用于实例化一些必要的工具
@@ -67,12 +79,39 @@ public class ServerInitListener implements ServletContextListener {
 		} else {
 			Printer.instance.print("错误：文件系统节点信息校对失败，存储位置无法读写或不存在。");
 		}
-		// 3，解析公告信息（请确保该操作在校对文件块后进行）
+		// 3，启用内置FTP服务器（如需）
+		FtpServerFactory fsf = new FtpServerFactory();
+		ListenerFactory lf = new ListenerFactory();
+		lf.setPort(21);
+		fsf.addListener("default", lf.createListener());
+		// TODO 重构文件系统为kiftd文件系统
+		fsf.setFileSystem(new NativeFileSystemFactory());
+		// TODO 重构UserManagerFactory，改为kiftd内置的账户管理机制
+		PropertiesUserManagerFactory pumf = new PropertiesUserManagerFactory();
+		UserManager manager = pumf.createUserManager();
+		// TODO 实现kiftd内置账户的载入
+		UserFactory uf = new UserFactory();
+		uf.setName("admin");
+		uf.setHomeDirectory("testftpdir");
+		uf.setPassword("000000");
+		List<Authority> as = new ArrayList<Authority>();
+		as.add(new WritePermission("testftpdir"));
+		uf.setAuthorities(as);
+		User u1 = uf.createUser();
+		try {
+			manager.save(u1);
+			fsf.setUserManager(manager);
+			ftpServer = fsf.createServer();
+			ftpServer.start();
+		} catch (FtpException e) {
+			Printer.instance.print(e.toString());
+		}
+		// 4，解析公告信息（请确保该操作在校对文件块后进行）
 		nu = context.getBean(NoticeUtil.class);
 		nu.loadNotice();// 解析公告文件
-		// 4，启动文件自动更新监听，对需要自动更新的文件进行实时更新
+		// 5，启动文件自动更新监听，对需要自动更新的文件进行实时更新
 		doWatch();
-		// 5，启动失效额外权限检查线程，对删除的文件夹对应的额外权限设置进行清理工作，避免堆积
+		// 6，启动失效额外权限检查线程，对删除的文件夹对应的额外权限设置进行清理工作，避免堆积
 		nm = context.getBean(FolderMapper.class);
 		lu = context.getBean(LogUtil.class);
 		cleanInvalidAddedAuth();
@@ -81,6 +120,10 @@ public class ServerInitListener implements ServletContextListener {
 	public void contextDestroyed(final ServletContextEvent sce) {
 		// 停止服务器主目录改动的动态监听
 		run = false;
+		// 停止FTP服务器（如有）
+		if (ftpServer != null) {
+			ftpServer.stop();
+		}
 		// 清理临时文件
 		Printer.instance.print("清理临时文件...");
 		fbu.initTempDir();

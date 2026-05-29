@@ -37,6 +37,16 @@ public class ServerTimeUtil {
 
 	public static String accurateToDay() {
 		LocalDateTime ldt = LocalDateTime.now();
+		return accurateToDay(ldt);
+	}
+	
+	public static String accurateToDay(long time) {
+		Date d = new Date(time);
+		LocalDateTime ldt = d.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+		return accurateToDay(ldt);
+	}
+	
+	public static String accurateToDay(LocalDateTime ldt) {
 		DateTimeFormatter dtfDateTimeFormatter = DateTimeFormatter.ofPattern("yyyy年MM月dd日");
 		return dtfDateTimeFormatter.format(ldt);
 	}

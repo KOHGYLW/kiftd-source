@@ -60,22 +60,22 @@ import kohgylw.kiftd.server.listener.ServerInitListener;
 import kohgylw.kiftd.server.mapper.FolderMapper;
 import kohgylw.kiftd.server.mapper.NodeMapper;
 import kohgylw.kiftd.server.model.Folder;
+import kohgylw.kiftd.server.pojo.KiftdResource;
 import kohgylw.kiftd.server.util.ConfigureReader;
 import kohgylw.kiftd.server.util.FileBlockUtil;
 import kohgylw.kiftd.server.util.FileNodeUtil;
 import kohgylw.kiftd.server.util.FolderUtil;
 import kohgylw.kiftd.server.util.IpAddrGetter;
 import kohgylw.kiftd.server.util.LogUtil;
+import kohgylw.kiftd.server.util.PathUtil;
 import kohgylw.kiftd.server.util.RangeFileStreamWriter;
 import kohgylw.kiftd.server.webdav.date.ConcurrentDateFormat;
 import kohgylw.kiftd.server.webdav.date.FastHttpDateFormat;
 import kohgylw.kiftd.server.webdav.dom.DOMWriter;
 import kohgylw.kiftd.server.webdav.exception.UnAuthorizedException;
-import kohgylw.kiftd.server.webdav.pojo.KiftdWebDAVResource;
 import kohgylw.kiftd.server.webdav.range.ContentRange;
 import kohgylw.kiftd.server.webdav.url.HttpPathUtil;
 import kohgylw.kiftd.server.webdav.url.URLEncoder;
-import kohgylw.kiftd.server.webdav.util.KiftdWebDAVResourcesUtil;
 
 /**
  * 
@@ -179,7 +179,7 @@ public class KiftdWebDAVServlet extends HttpServlet {
 
 	// 一些由IOC容器管理的工具类
 	private LogUtil lu;
-	private KiftdWebDAVResourcesUtil resources;
+	private PathUtil resources;
 	private FolderMapper fm;
 	private NodeMapper nm;
 	private IpAddrGetter idg;
@@ -192,7 +192,7 @@ public class KiftdWebDAVServlet extends HttpServlet {
 		// 获取Spring IOC容器并从中获得由IOC容器管理的工具类。
 		ApplicationContext context = WebApplicationContextUtils.getWebApplicationContext(config.getServletContext());
 		lu = context.getBean(LogUtil.class);// 获取日志生成工具对象
-		resources = context.getBean(KiftdWebDAVResourcesUtil.class);// 获取kiftd虚拟文件系统资源操作工具
+		resources = context.getBean(PathUtil.class);// 获取kiftd虚拟文件系统资源操作工具
 		fm = context.getBean(FolderMapper.class);// 获取文件夹查询映射
 		idg = context.getBean(IpAddrGetter.class);// 获取IP地址解析器
 		fu = context.getBean(FolderUtil.class);// 获取文件夹操作工具
@@ -598,7 +598,7 @@ public class KiftdWebDAVServlet extends HttpServlet {
 			return;
 		}
 		// 如果资源存在，则检查用户是否具备检索权限
-		KiftdWebDAVResource kiftdWebDAVResource = (KiftdWebDAVResource) resource;
+		KiftdResource kiftdWebDAVResource = (KiftdResource) resource;
 		if (resource.isDirectory()) {
 			// 如果该资源对应一个文件夹，则检查访问者是否有权访问此文件夹
 			Folder target = kiftdWebDAVResource.getFolder();
@@ -878,7 +878,7 @@ public class KiftdWebDAVServlet extends HttpServlet {
 			response.setStatus(WebdavStatus.SC_FORBIDDEN);
 			return;
 		}
-		KiftdWebDAVResource kiftdWebDAVResource = ((KiftdWebDAVResource) resource);
+		KiftdResource kiftdWebDAVResource = ((KiftdResource) resource);
 		Folder accessFolder = kiftdWebDAVResource.isDirectory() ? kiftdWebDAVResource.getFolder()
 				: fm.queryById(kiftdWebDAVResource.getNode().getFileParentFolder());
 		if (!ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES,
@@ -891,7 +891,7 @@ public class KiftdWebDAVServlet extends HttpServlet {
 		// 执行发送资源操作
 		if (resource.isFile()) {
 			// 对于文件资源，直接写回文件数据
-			kohgylw.kiftd.server.model.Node n = ((KiftdWebDAVResource) resource).getNode();
+			kohgylw.kiftd.server.model.Node n = ((KiftdResource) resource).getNode();
 			final File fo = this.fbu.getFileFromBlocks(n);
 			final String ip = idg.getIpAddr(request);
 			final String range = request.getHeader("Range");
@@ -957,7 +957,7 @@ public class KiftdWebDAVServlet extends HttpServlet {
 			response.setStatus(WebdavStatus.SC_FORBIDDEN);
 			return;
 		}
-		KiftdWebDAVResource kiftdWebDAVResource = ((KiftdWebDAVResource) resource);
+		KiftdResource kiftdWebDAVResource = ((KiftdResource) resource);
 		Folder accessFolder = kiftdWebDAVResource.isDirectory() ? kiftdWebDAVResource.getFolder()
 				: fm.queryById(kiftdWebDAVResource.getNode().getFileParentFolder());
 		if (!ConfigureReader.instance().authorized(account, AccountAuth.DOWNLOAD_FILES,
@@ -970,7 +970,7 @@ public class KiftdWebDAVServlet extends HttpServlet {
 		// 执行发送资源操作
 		if (resource.isFile()) {
 			// 对于文件资源，直接写回文件的响应头（但不发送具体内容）
-			kohgylw.kiftd.server.model.Node n = ((KiftdWebDAVResource) resource).getNode();
+			kohgylw.kiftd.server.model.Node n = ((KiftdResource) resource).getNode();
 			final File fo = this.fbu.getFileFromBlocks(n);
 			if (fo != null) {
 				RangeFileStreamWriter.writeRangeFileHead(request, response, fo, n.getFileName(), CONTENT_STREAM,
@@ -1381,7 +1381,7 @@ public class KiftdWebDAVServlet extends HttpServlet {
 			return;
 		}
 		// 检查要删除的资源是否存在
-		KiftdWebDAVResource resource = resources.getResource(path);
+		KiftdResource resource = resources.getResource(path);
 		if (!resource.exists()) {
 			// 若资源不存在，则返回状态码404
 			resp.setStatus(WebdavStatus.SC_NOT_FOUND);
@@ -1415,6 +1415,11 @@ public class KiftdWebDAVServlet extends HttpServlet {
 			Folder folder = resource.getFolder();
 			if (folder != null) {
 				// 权限检查……
+				if ("root".equals(folder.getFolderId())) {
+					// 不允许删除根目录
+					needAuthorizationByBasic(resp);
+					return;
+				}
 				Folder parentFolder = fm.queryById(folder.getFolderParent());
 				if (!ConfigureReader.instance().accessFolder(parentFolder, account)
 						|| !ConfigureReader.instance().authorized(account, AccountAuth.DELETE_FILE_OR_FOLDER,
@@ -1533,7 +1538,7 @@ public class KiftdWebDAVServlet extends HttpServlet {
 		// 获取资源路径
 		String path = getRelativePath(req);
 		// 此资源存在？
-		KiftdWebDAVResource resource = resources.getResource(path);
+		KiftdResource resource = resources.getResource(path);
 		if (!resource.exists()) {
 			resp.setStatus(WebdavStatus.SC_NOT_FOUND);
 			return;

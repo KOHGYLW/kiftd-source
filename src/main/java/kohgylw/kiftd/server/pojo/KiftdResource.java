@@ -1,4 +1,4 @@
-package kohgylw.kiftd.server.webdav.pojo;
+package kohgylw.kiftd.server.pojo;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -24,7 +24,7 @@ import kohgylw.kiftd.server.webdav.url.HttpPathUtil;
 
 /**
  * 
- * <h2>封装WebDAV请求的文件或文件夹的资源类</h2>
+ * <h2>封装文件或文件夹的资源类</h2>
  * <p>
  * 该类用于将kiftd中的文件或文件夹封装为一个抽象的“资源”以便进行统一处理，避免文件和文件夹区分处理带来的代码混乱。
  * </p>
@@ -32,7 +32,7 @@ import kohgylw.kiftd.server.webdav.url.HttpPathUtil;
  * @author 青阳龙野(kohgylw)
  * @version 1.0
  */
-public class KiftdWebDAVResource implements WebResource {
+public class KiftdResource implements WebResource {
 
 	private String path;// 该资源的路径
 	private boolean isExists;// 该资源是否存在？
@@ -57,7 +57,7 @@ public class KiftdWebDAVResource implements WebResource {
 	 * @param path   资源路径，必须输入完整的路径名称，以“/”开头，例如“/foo”或“/foo/bar”
 	 * @param folder 文件夹对象，如果文件夹不存在则可传入null
 	 */
-	public KiftdWebDAVResource(String path, Folder folder) {
+	public KiftdResource(String path, Folder folder) {
 		this.path = path;
 		this.folder = folder;
 		if (this.path != null && this.folder != null) {
@@ -86,7 +86,7 @@ public class KiftdWebDAVResource implements WebResource {
 	 * @param node  文件节点对象，如果文件节点不存在则可传入null
 	 * @param block 文件块对象，如果文件节点不存在则也应传入null（但不会作为文件节点存在与否的判断条件）
 	 */
-	public KiftdWebDAVResource(String path, Node node, File block) {
+	public KiftdResource(String path, Node node, File block) {
 		this.path = path;
 		this.node = node;
 		this.fileBlock = block;

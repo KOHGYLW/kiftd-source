@@ -229,7 +229,7 @@ public class FolderServiceImpl implements FolderService {
 						.equals(new String(folderName.getBytes(Charset.forName("UTF-8")), Charset.forName("UTF-8"))))
 				.toArray(Folder[]::new);
 		for (Folder rf : repeatFolders) {
-			if (!ConfigureReader.instance().accessFolder(rf, account)) {
+			if ("root".equals(rf.getFolderId()) || !ConfigureReader.instance().accessFolder(rf, account)) {
 				return "deleteError";
 			}
 			final List<Folder> l = this.fu.getParentList(rf.getFolderId());

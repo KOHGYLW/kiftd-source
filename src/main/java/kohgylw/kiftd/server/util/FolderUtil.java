@@ -45,7 +45,20 @@ public class FolderUtil {
 		Collections.reverse(folderList);
 		return folderList;
 	}
-
+	
+	/**
+	 * 
+	 * <h2>获取整个父文件夹树的文件夹ID</h2>
+	 * <p>
+	 * 该方法用于获取包括本级文件夹在内的所有层级的文件夹ID。
+	 * </p>
+	 * 
+	 * @param fid 要获取的目标文件夹ID
+	 * @author 青阳龙野(kohgylw)
+	 * @version 1.0
+	 * @return List<String> 从目标文件夹开始（包括），直至根目录（包括）的每一层文件夹的ID
+	 *
+	 */
 	public List<String> getAllFoldersId(final String fid) {
 		List<String> idList = new ArrayList<>();
 		idList.addAll(getParentList(fid).parallelStream().map((e) -> e.getFolderId()).collect(Collectors.toList()));

@@ -175,6 +175,16 @@
 			<version>0.50.44</version>
 		</dependency>
 		<!-- end Markdown解析器 -->
+		
+		<!-- 内置FTP服务器模块 -->
+		<!--
+		https://mvnrepository.com/artifact/org.apache.ftpserver/ftpserver-core -->
+		<dependency>
+			<groupId>org.apache.ftpserver</groupId>
+			<artifactId>ftpserver-core</artifactId>
+			<version>1.2.0</version>
+		</dependency>
+		<!-- end 内置FTP服务器模块 -->
 
 	</dependencies>
 	<!-- end 外部资源 -->
