@@ -121,7 +121,11 @@ public class FolderViewServiceImpl implements FolderViewService {
 		final ConfigureReader cr = ConfigureReader.instance();
 		String fid = request.getParameter("fid");
 		String keyWorld = request.getParameter("keyworld");
+		String method = request.getParameter("method");
 		if (fid == null || fid.length() == 0 || keyWorld == null) {
+			return "ERROR";
+		}
+		if (!"all".equals(method) && !"usr".equals(method)) {
 			return "ERROR";
 		}
 		// 如果啥么也不查，那么直接返回指定文件夹标准视图
@@ -138,7 +142,8 @@ public class FolderViewServiceImpl implements FolderViewService {
 		// 先准备搜索视图的文件夹信息
 		Folder sf = new Folder();
 		sf.setFolderId(vf.getFolderId());// 搜索视图的主键设置与搜索路径一致
-		sf.setFolderName("在“" + vf.getFolderName() + "”内搜索“" + keyWorld + "”的结果...");// 名称就是搜索的描述
+		sf.setFolderName("在“" + vf.getFolderName() + "”内搜索“" + keyWorld + "”" + ("usr".equals(method) ? "（创建者）" : "")
+				+ "的结果...");// 名称就是搜索的描述
 		sf.setFolderParent(vf.getFolderId());// 搜索视图的父级也与搜索路径一致
 		sf.setFolderCreator("--");// 搜索视图是虚拟的，没有这些
 		sf.setFolderCreationDate("--");
@@ -151,7 +156,12 @@ public class FolderViewServiceImpl implements FolderViewService {
 		// 设置所有搜索到的文件夹和文件，该方法迭查找：
 		List<Node> ns = new LinkedList<>();
 		List<Folder> fs = new LinkedList<>();
-		sreachFilesAndFolders(fid, keyWorld.toUpperCase(), account, ns, fs);
+		String key = keyWorld;// 区分按文件名搜索和按其他属性搜索时比对的关键字格式
+		if ("all".equals(method)) {
+			// 如果按文件名搜索，则关键字不区分大小写（都按大写匹配）
+			key = keyWorld.toUpperCase();
+		}
+		sreachFilesAndFolders(fid, key, account, ns, fs, method);
 		sv.setFileList(ns);
 		sv.setFolderList(fs);
 		// 搜索不支持分段加载，所以统计数据直接写入实际查询到的列表大小
@@ -191,22 +201,39 @@ public class FolderViewServiceImpl implements FolderViewService {
 		return gson.toJson(sv);
 	}
 
-	// 迭代查找所有匹配项，参数分别是：从哪找、找啥、谁要找、添加的前缀是啥（便于分辨不同路径下的同名文件）、找到的文件放哪、找到的文件夹放哪
+	// 迭代查找所有匹配项，参数分别是：从哪找、找啥、谁要找、添加的前缀是啥（便于分辨不同路径下的同名文件）、找到的文件放哪、找到的文件夹放哪、按啥找
 	// 注：为了模糊大小写，该方法均按照“大写”匹配关键字。因此应先将关键字转为大写再传入
-	private void sreachFilesAndFolders(String fid, String key, String account, List<Node> ns, List<Folder> fs) {
+	private void sreachFilesAndFolders(String fid, String key, String account, List<Node> ns, List<Folder> fs,
+			String method) {
 		for (Folder f : this.fm.queryByParentId(fid)) {
 			if (ConfigureReader.instance().accessFolder(f, account)) {
-				if (f.getFolderName().toUpperCase().indexOf(key) >= 0) {
-					f.setFolderName(f.getFolderName());
-					fs.add(f);
+				if ("all".equals(method)) {
+					if (f.getFolderName().toUpperCase().indexOf(key) >= 0) {
+						f.setFolderName(f.getFolderName());
+						fs.add(f);
+					}
 				}
-				sreachFilesAndFolders(f.getFolderId(), key, account, ns, fs);
+				if ("usr".equals(method)) {
+					if (f.getFolderCreator().equals(key)) {
+						f.setFolderName(f.getFolderName());
+						fs.add(f);
+					}
+				}
+				sreachFilesAndFolders(f.getFolderId(), key, account, ns, fs, method);
 			}
 		}
 		for (Node n : this.flm.queryByParentFolderId(fid)) {
-			if (n.getFileName().toUpperCase().indexOf(key) >= 0) {
-				n.setFileName(n.getFileName());
-				ns.add(n);
+			if ("all".equals(method)) {
+				if (n.getFileName().toUpperCase().indexOf(key) >= 0) {
+					n.setFileName(n.getFileName());
+					ns.add(n);
+				}
+			}
+			if ("usr".equals(method)) {
+				if (n.getFileCreator().equals(key)) {
+					n.setFileName(n.getFileName());
+					ns.add(n);
+				}
 			}
 		}
 	}

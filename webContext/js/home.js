@@ -487,6 +487,8 @@ $(function() {
 			}
 		}
 	});
+	// 初始化搜索输入栏的提示框（并使其支持HTML语法）
+	$('[data-toggle="popover"]').popover({html:true});
 });
 
 // 更新页面高度
@@ -2953,10 +2955,15 @@ var screenedFoldrView;// 经过排序的文件视图
 // 执行搜索功能
 function doSearchFile() {
 	var keyworld = $("#sreachKeyWordIn").val();
+	// 移除搜索框焦点
+	$("#sreachKeyWordIn").blur();
 	if (keyworld.length != 0) {
-		// 如果用户在搜索字段中声明了全局搜索
 		if (keyworld.startsWith("all:") || keyworld.startsWith("all：")) {
-			selectInCompletePath(keyworld.substring(4));
+			// 如果用户在搜索字段中声明了全局搜索
+			advancedSearch(keyworld.substring(4), 'all');
+		} else if(keyworld.startsWith("usr:") || keyworld.startsWith("usr：")) {
+			// 如果用户在搜索字段中声明了创建者搜索
+			advancedSearch(keyworld.substring(4), 'usr');
 		} else {
 			startLoading();
 			selectInThisPath(keyworld);// 否则，均在本级下搜索
@@ -3003,7 +3010,7 @@ function selectInThisPath(keyworld) {
 }
 
 // 全路径查找
-function selectInCompletePath(keyworld) {
+function advancedSearch(keyworld, method) {
 	if (keyworld.length == 0) {
 		showFolderView(locationpath);
 		return;
@@ -3019,7 +3026,8 @@ function selectInCompletePath(keyworld) {
 		dataType: 'text',
 		data: {
 			fid: locationpath,
-			keyworld: keyworld
+			keyworld: keyworld,
+			method: method
 		},
 		url: 'homeController/sreachInCompletePath.ajax',
 		success: function(result) {
@@ -3042,7 +3050,7 @@ function selectInCompletePath(keyworld) {
 				parentpath = folderView.folder.folderParent;
 				constraintLevel = folderView.folder.folderConstraint;
 				screenedFoldrView = null;
-				$("#sreachKeyWordIn").val("all:" + folderView.keyWorld);
+				$("#sreachKeyWordIn").val(method +":" + folderView.keyWorld);
 				showParentList(folderView);
 				showAccountView(folderView);
 				showPublishTime(folderView);
