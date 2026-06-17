@@ -1,0 +1,26 @@
+# 开发环境Dockerfile - 支持热重载
+FROM node:18-alpine
+
+# 设置工作目录
+WORKDIR /app
+
+# 安装工具
+RUN apk add --no-cache curl
+
+# 设置npm镜像源
+RUN npm config set registry https://registry.npmmirror.com/
+
+# 复制package文件
+COPY package*.json ./
+
+# 安装依赖（包括开发依赖）
+RUN npm ci
+
+# 复制源代码
+COPY . .
+
+# 暴露端口
+EXPOSE 3000
+
+# 启动开发服务器
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

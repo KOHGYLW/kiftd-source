@@ -1,0 +1,101 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 数据库 (开发环境)
+  postgres-dev:
+    image: postgres:15-alpine
+    container_name: license-postgres-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: license_management_dev
+      POSTGRES_USER: license_user
+      POSTGRES_PASSWORD: license_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./deployments/database/init:/docker-entrypoint-initdb.d
+    ports:
+      - "5433:5432"
+    networks:
+      - license-dev-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U license_user -d license_management_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis 缓存 (开发环境)
+  redis-dev:
+    image: redis:7-alpine
+    container_name: license-redis-dev
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    networks:
+      - license-dev-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 后端应用 (开发环境)
+  backend-dev:
+    build:
+      context: ./license-management-system
+      dockerfile: Dockerfile
+    container_name: license-backend-dev
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_HOST: postgres-dev
+      DB_PORT: 5432
+      DB_NAME: license_management_dev
+      DB_USERNAME: license_user
+      DB_PASSWORD: license_password
+      REDIS_HOST: redis-dev
+      REDIS_PORT: 6379
+      JWT_SECRET: dev-secret-key-2024
+    volumes:
+      - ./license-management-system/src:/app/src:ro
+      - backend_dev_logs:/app/logs
+    ports:
+      - "8081:8080"
+    networks:
+      - license-dev-network
+    depends_on:
+      postgres-dev:
+        condition: service_healthy
+      redis-dev:
+        condition: service_healthy
+
+  # 前端应用 (开发环境) - 使用热重载
+  frontend-dev:
+    build:
+      context: ./license-management-frontend
+      dockerfile: Dockerfile.dev
+    container_name: license-frontend-dev
+    restart: unless-stopped
+    environment:
+      API_BASE_URL: http://localhost:8081/api
+    volumes:
+      - ./license-management-frontend/src:/app/src:ro
+      - ./license-management-frontend/public:/app/public:ro
+    ports:
+      - "3001:3000"
+    networks:
+      - license-dev-network
+    depends_on:
+      - backend-dev
+
+# 网络配置
+networks:
+  license-dev-network:
+    driver: bridge
+
+# 数据卷配置
+volumes:
+  postgres_dev_data:
+    driver: local
+  backend_dev_logs:
+    driver: local

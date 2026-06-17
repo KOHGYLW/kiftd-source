@@ -1,0 +1,90 @@
+server:
+  port: 0
+
+spring:
+  application:
+    name: license-management-system-test
+  
+  # 测试数据库配置 - 使用H2内存数据库
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:license_test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password: ""
+    
+  # JPA测试配置
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.SnakeCasePhysicalNamingStrategy
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+        generate_statistics: true
+    open-in-view: false
+
+  # Redis测试配置 - 使用嵌入式Redis
+  data:
+    redis:
+      host: localhost
+      port: 6370  # 不同于生产环境端口
+      database: 15  # 测试专用数据库
+      timeout: 1000ms
+
+  # Jackson配置
+  jackson:
+    time-zone: GMT+8
+    date-format: yyyy-MM-dd HH:mm:ss
+    serialization:
+      write-dates-as-timestamps: false
+
+# 日志配置
+logging:
+  level:
+    com.enterprise.license: DEBUG
+    org.springframework.test: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.springframework.web: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# 测试专用配置
+license:
+  jwt:
+    secret: test-secret-key-for-unit-testing-only
+    expiration: 3600000  # 1小时
+    refresh-expiration: 7200000  # 2小时
+  
+  security:
+    key-rotation-interval: 1  # 测试环境1小时轮换
+    max-key-age: 24
+    
+    permit-all:
+      - /test/**
+      - /v3/api-docs/**
+      - /swagger-ui/**
+      - /auth/login
+      - /auth/register
+      - /actuator/health
+      - /api/licenses/validate
+  
+  encryption:
+    rsa-key-length: 2048  # 测试环境使用较小密钥提升速度
+    aes-key-length: 256
+    signature-algorithm: SHA256withRSA
+    
+  hardware:
+    online-similarity-threshold: 0.8
+    offline-similarity-threshold: 0.6
+
+# 禁用Actuator端点
+management:
+  endpoints:
+    enabled-by-default: false
+  endpoint:
+    health:
+      enabled: true
